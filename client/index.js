@@ -632,12 +632,15 @@ window.__ModuleLoader__.load({
             .wsf-results-count{margin-inline-start:auto;color:var(--dsw-alias-label-tertiary);font-size:12px;white-space:nowrap}
             .wsf-list{border-block-start:.5px solid var(--dsw-alias-border-l2)}
             .wsf-service{border-block-end:.5px solid var(--dsw-alias-border-l2);min-inline-size:0}
-            .wsf-row{display:grid;grid-template-columns:minmax(0,1fr) 36px;align-items:center;gap:12px;min-block-size:58px}
-            .wsf-open{display:flex;align-items:center;gap:12px;flex:1;min-inline-size:0;text-align:start;border:0;border-radius:var(--dsw-radius-sm);color:inherit;background:transparent;padding-block:10px;padding-inline:4px;cursor:pointer;font:inherit}
-            .wsf-name{flex:1;min-inline-size:0}
+            .wsf-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:12px;min-block-size:58px}
+            .wsf-row[data-toggle=true]{grid-template-columns:minmax(0,1fr) auto 36px auto}
+            .wsf-row>[role=switch]{grid-column:3;grid-row:1;z-index:1}
+            .wsf-open{grid-area:1/1/2/-1;display:grid;grid-template-columns:subgrid;align-items:center;gap:12px;min-inline-size:0;text-align:start;border:0;border-radius:var(--dsw-radius-sm);color:inherit;background:transparent;padding-block:10px;padding-inline:4px;cursor:pointer;font:inherit}
+            .wsf-name{grid-column:1;min-inline-size:0}
             .wsf-name strong{display:block;font-size:13px;font-weight:500;overflow-wrap:anywhere}
             .wsf-name small{display:block;margin-block-start:2px;color:var(--dsw-alias-label-tertiary);font-size:11px}
-            .wsf-state{color:var(--dsw-alias-label-tertiary);font-size:11px;white-space:nowrap}
+            .wsf-state{grid-column:2;color:var(--dsw-alias-label-tertiary);font-size:11px;white-space:nowrap}
+            .wsf-chevron{grid-column:-2/-1}
             .wsf-state[data-dirty=true]{color:var(--dsw-alias-label-secondary);font-weight:500}
             .wsf-detail{padding-block:2px 14px;padding-inline:4px;display:grid;gap:10px}
             .wsf-participation{display:flex;flex-wrap:wrap;gap:12px 20px}
@@ -768,7 +771,7 @@ window.__ModuleLoader__.load({
                         const specificHint = ['http', 'siliconflow', 'firecrawl', 'github', 'doubao', 'tinyfish', 'serply', 'kimi', 'bing', 'aihot'].includes(service.id)
                             ? (service.id === 'siliconflow' ? 'rerankHint' : service.id + 'Hint') : service.extension ? 'extensionHint' : 'baseHint';
                         return jsxs('section', { className: 'wsf-service', 'aria-label': name, children: [
-                            jsxs('div', { className: 'wsf-row', children: [
+                            jsxs('div', { className: 'wsf-row', 'data-toggle': service.extension ? 'true' : undefined, children: [
                                 jsxs('button', { type: 'button', className: 'wsf-open', 'aria-expanded': expanded,
                                     'aria-controls': detailId, 'aria-label': t('configure') + ' ' + name, onClick: () => toggleService(service.id), children: [
                                         jsxs('span', { className: 'wsf-name', children: [jsx('strong', { children: name }), jsx('small', { children: t(service.capability) })] }),
