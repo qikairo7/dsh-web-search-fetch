@@ -1,3 +1,4 @@
+import { isTavilyKeylessEndpoint } from '../../keyless.js';
 import { WebError } from '@deepseek-ai/dsh-web';
 import type { BreakerSignal } from '../../breaker/index.js';
 import { parseRetryAfterMs } from '../anysearch/error.js';
@@ -68,13 +69,14 @@ export class EngineHttp {
       url.pathname = url.pathname.replace(/\/+$/, '') + path;
       url.search = query?.toString() ?? '';
       url.hash = '';
-      if (this.options.auth !== 'none' && !key && !(this.options.id === 'firecrawl' && isFirecrawlKeylessEndpoint(url.href))) {
+      if (this.options.auth !== 'none' && !key && !(this.options.id === 'firecrawl' && isFirecrawlKeylessEndpoint(url.href)) && !(this.options.id === 'tavily' && isTavilyKeylessEndpoint(url.href))) {
         throw new WebError(`${this.options.id}: credential is not configured`, 'WEB_PROVIDER_ERROR');
       }
       const headers: Record<string, string> = {
         accept: this.options.accept ?? 'application/json', 'content-type': 'application/json',
         'user-agent': 'dsh-web-search-fetch', 'accept-encoding': 'gzip, br',
         ...(!key || this.options.auth === 'none' ? {} : this.options.auth === 'bearer' ? { authorization: `Bearer ${key}` } : { 'x-api-key': key }),
+        ...(this.options.id === 'tavily' && !key ? { 'x-tavily-access-mode': 'keyless' } : {}),
         ...extraHeaders,
       };
       if (this.options.id === 'github') {

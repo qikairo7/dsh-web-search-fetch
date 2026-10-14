@@ -11,11 +11,11 @@ window.__ModuleLoader__.load({
         //#region locales
         const zh = {
             servicesTitle: '服务与凭证', settingsTitle: '调用设置', advanced: '高级调用限制', advancedHint: '请求数、超时与正文长度',
-            startGuide: '免密钥使用说明', organizeHint: '合并多份正文，去重与互补，保留来源与差异。', selectHint: '兼容旧版，仅返回一份提取正文。',
+            startGuide: '推荐服务与匿名额度', organizeHint: '合并多份正文，去重与互补，保留来源与差异。', selectHint: '兼容旧版，仅返回一份提取正文。',
             customPresetHint: '按服务开关、参与范围与调用限制执行。', balancedPresetHint: '每次最多调用三路服务，兼顾覆盖范围与调用用量。', deepPresetHint: '调用已选择且可用的服务，仍受调用限制约束。',
             invalidNumber: '请输入范围内的整数：', invalidControls: '请先修正调用限制', resetField: '撤销此项', range: '范围',
 
-            title: '网络搜索与提取', intro: '首次使用无需填写密钥：可先用 Firecrawl 官方匿名额度搜索和提取，并使用 Bing RSS 搜索；后续按需配置更多服务。',
+            title: '网络搜索与提取', intro: '新安装默认启用 AnySearch、Firecrawl、Tavily，使用官方匿名额度，无需填写密钥；其他服务按需开启作为增强。匿名额度有限流，填写密钥后使用账户额度。',
             controlsTitle: '正文整理与调用控制', modeLabel: '网页正文处理', organizeMode: '整理正文', selectMode: '单份正文',
             presetLabel: '调用预设', customPreset: '自定义', freePreset: '免费接口', balancedPreset: '均衡', deepPreset: '深度',
             maxSearchServices: '每个查询的搜索服务上限', maxFetchServices: '每个 URL 的提取服务上限', maxRequests: '每次操作的 HTTP 请求上限',
@@ -36,7 +36,7 @@ window.__ModuleLoader__.load({
             'bing-service': 'Bing RSS', 'aihot-service': 'AIHOT', 'siliconflow-service': '硅基流动', 'http-service': '直接 HTTP 抓取',
             all: '全部', search: '搜索', fetch: '提取', rerank: '重排', searchFetch: '搜索 · 提取',
             githubCapabilities: '仓库搜索 · README / 文件提取', staticFetch: '静态资源提取', aiNews: 'AI 资讯搜索 · API 读取',
-            configured: '已配置', unconfigured: '未配密钥', partial: '部分配置', staged: '待保存', readOnly: '只读',
+            anonymous: '匿名额度', recommended: '推荐', enhancement: '可选增强', configured: '已配置', unconfigured: '未配密钥', partial: '部分配置', staged: '待保存', readOnly: '只读',
             checking: '读取中…', statusFailed: '状态未知', noKey: '无需密钥', configure: '配置',
             enable: '启用',
             searchLabel: '查找服务', searchPlaceholder: '搜索服务名称或用途', clearSearch: '清空搜索',
@@ -47,7 +47,9 @@ window.__ModuleLoader__.load({
             transportHint: 'GLM Coding Plan 为付费订阅；tools-api 使用按次计费的 search_pro。套餐额度不属于免费额度，两条通道共用此密钥。',
             baseHint: '启用后按参与范围调用。关闭会保留凭证与参与范围。',
             extensionHint: '启用并保存后，参与下一次搜索或适用网页的提取。',
-            firecrawlHint: '官方端点未配置密钥时使用匿名额度，受服务方额度及限流约束。填写密钥后使用账户额度，自定义端点仍需密钥。总开关控制搜索与提取，下方可分别选择参与范围。',
+            anysearchHint: '推荐服务。官方搜索与提取支持匿名额度，按 IP 限流；配置 API Key 后使用账户额度。自定义端点需要密钥。',
+            tavilyHint: '推荐服务。官方 search / extract 支持 keyless 匿名额度，受共享限流约束；配置 API Key 后使用账户额度。自定义端点需要密钥。',
+            firecrawlHint: '推荐服务。官方端点未配置密钥时使用匿名额度，受服务方额度及限流约束。填写密钥后使用账户额度，自定义端点仍需密钥。总开关控制搜索与提取，下方可分别选择参与范围。',
             githubHint: '搜索公开仓库；提取仅适用于仓库 README 和 blob 文件 URL。',
             doubaoHint: '搜索和提取分别使用密钥，可独立配置。',
             tinyfishHint: 'Search 与 Fetch 使用独立 API 地址，共用此密钥。',
@@ -68,11 +70,11 @@ window.__ModuleLoader__.load({
         };
         const en = {
             servicesTitle: 'Services & credentials', settingsTitle: 'Call settings', advanced: 'Advanced limits', advancedHint: 'Requests, deadlines and content length',
-            startGuide: 'Start without credentials', organizeHint: 'Combine extracts, remove duplicates and retain sources and differences.', selectHint: 'Legacy behavior: return one extract.',
+            startGuide: 'Recommended services and anonymous quotas', organizeHint: 'Combine extracts, remove duplicates and retain sources and differences.', selectHint: 'Legacy behavior: return one extract.',
             customPresetHint: 'Use service switches, participation and call limits.', balancedPresetHint: 'Use up to three services per operation to balance coverage and usage.', deepPresetHint: 'Use selected, available services within the call limits.',
             invalidNumber: 'Enter an integer within ', invalidControls: 'Correct the call limits first', resetField: 'Undo this field', range: 'Range',
 
-            title: 'Web search & fetch', intro: 'Start without a key using official Firecrawl anonymous credits and Bing RSS search. Configure more services when needed.',
+            title: 'Web search & fetch', intro: 'New installations enable AnySearch, Firecrawl and Tavily with official anonymous quotas. Enable other services when needed. Anonymous access is rate-limited; configured keys use account quotas.',
             controlsTitle: 'Content organization and call limits', modeLabel: 'Page content', organizeMode: 'Organize', selectMode: 'Single extract',
             presetLabel: 'Call preset', customPreset: 'Custom', freePreset: 'Free APIs', balancedPreset: 'Balanced', deepPreset: 'Deep',
             maxSearchServices: 'Search services per query', maxFetchServices: 'Extraction services per URL', maxRequests: 'HTTP requests per operation',
@@ -93,7 +95,7 @@ window.__ModuleLoader__.load({
             'bing-service': 'Bing RSS', 'aihot-service': 'AIHOT', 'siliconflow-service': 'SiliconFlow', 'http-service': 'Direct HTTP fetch',
             all: 'All', search: 'Search', fetch: 'Extraction', rerank: 'Reranking', searchFetch: 'Search · Extraction',
             githubCapabilities: 'Repository search · README / Files', staticFetch: 'Static resources', aiNews: 'AI news search · API reading',
-            configured: 'Configured', unconfigured: 'Needs key', partial: 'Partially configured', staged: 'Unsaved', readOnly: 'Read-only',
+            anonymous: 'Anonymous quota', recommended: 'Recommended', enhancement: 'Optional', configured: 'Configured', unconfigured: 'Needs key', partial: 'Partially configured', staged: 'Unsaved', readOnly: 'Read-only',
             checking: 'Checking…', statusFailed: 'Status unknown', noKey: 'No key needed', configure: 'Configure',
             enable: 'Enable',
             searchLabel: 'Find a service', searchPlaceholder: 'Search by service or purpose', clearSearch: 'Clear search',
@@ -104,7 +106,9 @@ window.__ModuleLoader__.load({
             transportHint: 'Coding Plan is a paid subscription; tools-api uses pay-per-call search_pro. Plan credits are not free credits. Both share this key.',
             baseHint: 'Enable to use the selected capabilities. Disabling preserves credentials and participation settings.',
             extensionHint: 'Enable and save to join the next search or supported page extraction.',
-            firecrawlHint: 'Official endpoints use anonymous credits without a key, subject to quota and rate limits. A configured key uses account credits; custom endpoints still require a key. The switch controls both search and extraction; select each capability below.',
+            anysearchHint: 'Recommended. Official search and extraction support anonymous quotas with IP rate limits. A configured key uses account quotas; custom endpoints require a key.',
+            tavilyHint: 'Recommended. Official search and extract support keyless access with a shared rate limit. A configured key uses account quotas; custom endpoints require a key.',
+            firecrawlHint: 'Recommended. Official endpoints use anonymous credits without a key, subject to quota and rate limits. A configured key uses account credits; custom endpoints still require a key. The switch controls both search and extraction; select each capability below.',
             githubHint: 'Search public repositories; extract only repository README and blob file URLs.',
             doubaoHint: 'Search and extraction use separate credentials.',
             tinyfishHint: 'Separate Search and Fetch API endpoints share this key.',
@@ -323,8 +327,8 @@ window.__ModuleLoader__.load({
                 return words.includes(query.trim().toLowerCase())
                     && (capability === 'all' || service.capabilities.includes(capability))
                     && (status === 'all' || status === 'pending' && this.serviceDirty(service)
-                        || status === 'noKey' && service.keys.length === 0
-                        || status === 'needsKey' && service.keys.some(id => this.credentials.get(id)?.ready && !this.credentials.get(id)?.configured && !this.keyDrafts.has(id)));
+                        || status === 'noKey' && (service.keys.length === 0 || anonymousService(service, { section: this.section() }))
+                        || status === 'needsKey' && !anonymousService(service, { section: this.section() }) && service.keys.some(id => this.credentials.get(id)?.ready && !this.credentials.get(id)?.configured && !this.keyDrafts.has(id)));
             }
 			/**
 			* @param scope - the bound settings scope for the `web-search-fetch` namespace.
@@ -444,6 +448,7 @@ window.__ModuleLoader__.load({
 					const views = slot.refs.map(ref => response?.ok ? response.value?.[ref] : undefined);
 					next.set(slot.id, {
 						configured: views.every(view => view?.configured === true),
+                        partial: views.some(view => view?.configured === true) && !views.every(view => view?.configured === true),
                         ready: response?.ok === true,
                         writable: views.every(view => view?.writable !== false)
 					});
@@ -590,6 +595,7 @@ window.__ModuleLoader__.load({
 					transportDirty: this.transportDraft !== void 0,
                     engines: Object.fromEntries(SERVICES.map(service => [service.id, this.serviceEnabled(service.id)])),
                     firecrawlSearchEnabled: this.engineEnabled('firecrawl'),
+                    section: this.section(),
 					keys: CREDENTIAL_SLOTS.map((slot) => {
 						const draft = this.keyDrafts.get(slot.id) ?? "";
 						const info = this.credentials.get(slot.id);
@@ -599,6 +605,7 @@ window.__ModuleLoader__.load({
 							staged: draft !== "",
                             ready: info?.ready,
 							configured: info?.configured === true,
+                            partial: info?.partial === true,
 							writable: info?.writable !== false
 						};
 					})
@@ -620,10 +627,10 @@ window.__ModuleLoader__.load({
         //#region card
         const SERVICES = [
             { id: 'anysearch', mark: 'AS', capability: 'searchFetch', capabilities: ['search', 'fetch'], keys: ['anysearch'] },
-            { id: 'zhipu', mark: '智', capability: 'search', capabilities: ['search'], keys: ['zhipu'] },
-            { id: 'zhihu', mark: '知', capability: 'search', capabilities: ['search'], keys: ['zhihu'] },
             { id: 'firecrawl', mark: 'FC', capability: 'searchFetch', capabilities: ['search', 'fetch'], keys: ['firecrawl'], extension: true },
             { id: 'tavily', mark: 'TV', capability: 'searchFetch', capabilities: ['search', 'fetch'], keys: ['tavily'], extension: true },
+            { id: 'zhipu', mark: '智', capability: 'search', capabilities: ['search'], keys: ['zhipu'] },
+            { id: 'zhihu', mark: '知', capability: 'search', capabilities: ['search'], keys: ['zhihu'] },
             { id: 'exa', mark: 'EX', capability: 'searchFetch', capabilities: ['search', 'fetch'], keys: ['exa'], extension: true },
             { id: 'keenable', mark: 'KE', capability: 'searchFetch', capabilities: ['search', 'fetch'], keys: ['keenable'], extension: true },
             { id: 'crawl4ai', mark: 'C4', capability: 'searchFetch', capabilities: ['search', 'fetch'], keys: ['crawl4ai'], extension: true },
@@ -701,12 +708,20 @@ window.__ModuleLoader__.load({
             @container(max-width:360px){.wsf-row,.wsf-open{gap:6px}.wsf-filters{gap:2px}.wsf-filter{padding-inline:8px!important}.wsf-filter-count{margin-inline-start:4px}.wsf-setting-row [role=tab]{padding-inline:8px}}
         `;
         function KeyField({ t, row, disabled, onEdit }) {
-            const status = row.ready === undefined ? 'checking' : !row.ready ? 'statusFailed' : row.configured ? 'configured' : 'unconfigured';
+            const status = row.ready === undefined ? 'checking' : !row.ready ? 'statusFailed' : row.configured ? 'configured' : row.partial ? 'partial' : 'unconfigured';
             return react_jsx_runtime.jsx(_deepseek_ai_dsh_client_ui_primitives.SettingsSecretField, {
                 id: slotDomId(row.id), label: t(row.id), hint: t('keyHint'), disabled: disabled || !row.writable,
                 text: row.text, configured: row.configured,
                 stateLabel: t(row.staged ? 'staged' : status) + (!row.writable ? ` · ${t('readOnly')}` : ''), onEdit,
             });
+        }
+        function anonymousService(service, state) {
+            const section = state.section ?? {};
+            const valid = (value, origin, path) => { try { const url = new URL(value); return url.origin === origin && !url.username && !url.password && url.pathname.replace(/\/+$/, '') === path && !url.search && !url.hash; } catch { return false; } };
+            if (service.id === 'anysearch') return valid(section.search?.anysearchBaseURL ?? 'https://api.anysearch.com', 'https://api.anysearch.com', '') && valid(section.fetch?.anysearchBaseURL ?? 'https://api.anysearch.com', 'https://api.anysearch.com', '');
+            if (service.id === 'tavily') return valid(section.engines?.tavily?.baseURL ?? 'https://api.tavily.com', 'https://api.tavily.com', '') && valid(section.engines?.tavily?.fetchBaseURL ?? section.engines?.tavily?.baseURL ?? 'https://api.tavily.com', 'https://api.tavily.com', '');
+            if (service.id === 'firecrawl') return valid(section.engines?.firecrawl?.baseURL ?? 'https://api.firecrawl.dev', 'https://api.firecrawl.dev', '') && valid(section.fetch?.firecrawlBaseURL ?? 'https://api.firecrawl.dev/v2/scrape', 'https://api.firecrawl.dev', '/v2/scrape');
+            return false;
         }
         function serviceStatus(service, state) {
             if (state.changedServiceIds.includes(service.id)) return 'staged';
@@ -715,6 +730,8 @@ window.__ModuleLoader__.load({
             if (rows.some(row => row.ready === undefined)) return 'checking';
             if (rows.some(row => !row.ready)) return 'statusFailed';
             if (rows.every(row => row.configured)) return 'configured';
+            if (rows.some(row => row.partial)) return 'partial';
+            if (anonymousService(service, state)) return 'anonymous';
             return rows.some(row => row.configured) ? 'partial' : 'unconfigured';
         }
         function WebSearchFetchCard(props) {
@@ -811,13 +828,13 @@ window.__ModuleLoader__.load({
                         const missingKey = service.keys.some(id => { const row = state.keys.find(row => row.id === id); return row.ready && !row.configured && !row.staged; });
                         const name = t(service.id + '-service');
                         const detailId = 'wsf-detail-' + service.id;
-                        const specificHint = ['http', 'siliconflow', 'firecrawl', 'github', 'doubao', 'tinyfish', 'serply', 'kimi', 'bing', 'aihot'].includes(service.id)
+                        const specificHint = ['http', 'siliconflow', 'anysearch', 'tavily', 'firecrawl', 'github', 'doubao', 'tinyfish', 'serply', 'kimi', 'bing', 'aihot'].includes(service.id)
                             ? (service.id === 'siliconflow' ? 'rerankHint' : service.id + 'Hint') : service.extension ? 'extensionHint' : 'baseHint';
                         return jsxs('section', { className: 'wsf-service', 'aria-label': name, children: [
                             jsxs('div', { className: 'wsf-row', children: [
                                 jsxs('button', { type: 'button', className: 'wsf-open', 'aria-expanded': expanded,
                                     'aria-controls': detailId, 'aria-label': t('configure') + ' ' + name, onClick: () => toggleService(service.id), children: [
-                                        jsxs('span', { className: 'wsf-name', children: [jsx('strong', { children: name }), jsx('small', { children: t(service.capability) })] }),
+                                        jsxs('span', { className: 'wsf-name', children: [jsx('strong', { children: name }), jsx('small', { children: t(service.capability) + (['anysearch', 'firecrawl', 'tavily'].includes(service.id) ? ' · ' + t('recommended') : service.id === 'http' ? '' : ' · ' + t('enhancement')) })] }),
                                         jsx('span', { className: 'wsf-state', 'data-dirty': status === 'staged', children: t(status) }),
                                         jsx('span', { className: 'wsf-chevron', 'aria-hidden': true, children: expanded ? '⌄' : '›' }),
                                     ] }),
@@ -843,7 +860,7 @@ window.__ModuleLoader__.load({
                                         label: t('transportLabel'), disabled, onChange: editTransport }),
                                     jsx('p', { className: 'wsf-muted', children: t('transportHint') }),
                                 ] }),
-                                service.extension && service.keys.length > 0 && (!state.engines[service.id] || missingKey && service.id !== 'firecrawl')
+                                service.extension && service.keys.length > 0 && (!state.engines[service.id] || missingKey && !anonymousService(service, state))
                                     && jsx('p', { className: 'wsf-notice', children: t(!state.engines[service.id] ? 'enableWarning' : 'missingWarning') }),
                                 service.keys.length > 0 && status === 'statusFailed' && jsx('button', { type: 'button', className: 'wsf-link', onClick: refresh, children: t('refresh') }),
                             ] }) }),

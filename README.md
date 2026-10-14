@@ -5,12 +5,12 @@
 
 **面向资料研究的 DSH 插件：融合多来源搜索，整理网页正文，保留来源与差异。**
 
-面向 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）的网络搜索与网页提取插件。首次使用可通过 Firecrawl 官方匿名额度与 Bing RSS 开始，无需注册或填写 API Key；配置更多服务后，通过原生 `web_search` 融合搜索结果，通过原生 `web_fetch` 整理多份正文。适合技术检索与资料研究。
+面向 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）的网络搜索与网页提取插件。新安装默认启用 AnySearch、Firecrawl、Tavily，使用官方匿名额度开始，无需注册或填写 API Key；配置更多服务后，通过原生 `web_search` 融合搜索结果，通过原生 `web_fetch` 整理多份正文。适合技术检索与资料研究。
 
 [快速开始](#快速开始) · [正文整理演示](./docs/content-organization.md#输入与输出演示) · [真实对比](./docs/modsearch-comparison.md) · [配置参考](./docs/configuration.md) · [参与贡献](./CONTRIBUTING.md)
 
 ```sh
-dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.4/dsh-web-search-fetch-0.2.4.tgz
+dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.5/dsh-web-search-fetch-0.2.5.tgz
 ```
 
 安装后重启 DSH，直接请求搜索或读取公开网页。匿名模式受服务方额度与限流约束，不能保证无限使用。未安装 DSH 的环境需先完成[宿主安装](https://github.com/deepseek-ai/deepseek-harness)。
@@ -20,7 +20,7 @@ dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/re
 | 特点 | 当前实现 | 使用价值 |
 | --- | --- | --- |
 | 多来源搜索融合 | 最多 16 个搜索服务并发调用，按 URL 去重，使用 RRF（Reciprocal Rank Fusion）融合排名 | 将多路可用结果整理为统一来源列表 |
-| 无需密钥首次体验 | 官方 Firecrawl Search / Scrape 未填密钥时使用匿名额度，Bing RSS 无需凭证 | 先完成一次搜索与提取，再按需增加服务 |
+| 无需密钥首次体验 | AnySearch、Firecrawl、Tavily 官方搜索与提取支持匿名额度，无需填写密钥 | 先完成一次搜索与提取，再按需增加服务 |
 | 多来源正文整理 | 动态提取按章节和共同内容块去重、互补，保留提取来源及文本差异 | 将说明、表格、代码和独有段落整理到一份正文 |
 | 原生双工具 | 仅注册搜索和提取 provider，不新增模型工具，也不需要额外 MCP 服务、浏览器自动化或外部 CLI | 沿用 DSH 的 `web_search`、`web_fetch` 调用方式 |
 | 可选免费重排 | 调用硅基流动免费模型 `BAAI/bge-reranker-v2-m3`；不可用时保留融合顺序 | 对融合候选进行相关性排序，仍需配置 API Key |
@@ -60,7 +60,7 @@ dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/re
 | 硅基流动 | 重排 | — | 融合结果相关性排序 |
 | 直接 HTTP 抓取 | — | 静态资源 | 复用 DSH HTTP 组件，无需服务凭证 |
 
-默认配置最多可调用 15 个搜索服务，AIHOT 默认关闭；启用 AIHOT 后最多 16 路。普通动态提取最多 10 路，适用的 GitHub URL 最多 11 路。Kimi Basic / Pro 二选一，只计一路。AIHOT 专用 API 直接读取，重排和 HTTP 抓取均不计入动态提取路数。实际参与调用的服务取决于配置、凭证、URL 适用范围及熔断状态。
+新安装默认开启 AnySearch、Firecrawl、Tavily 三家推荐服务，其余远程服务与硅基流动重排作为可选增强，默认关闭。直接 HTTP 抓取保留为静态资源的基础提取能力。已保存的显式开关设置优先于安装默认；旧版未设置开关的服务采用新版默认。按需开启增强后，搜索最多 16 路；普通动态提取最多 10 路，适用的 GitHub URL 最多 11 路。Kimi Basic / Pro 二选一，只计一路。AIHOT 专用 API 直接读取，重排和 HTTP 抓取均不计入动态提取路数。实际参与调用的服务取决于配置、凭证、URL 适用范围及熔断状态。
 
 智谱仅支持搜索，不包含阅读器。GitHub 提取限定仓库根 URL 和 `/blob/<ref>/<path>`。Bing RSS 使用公开搜索 feed，无需密钥；其可用性和格式可能变化。
 
@@ -77,7 +77,17 @@ AIHOT 搜索覆盖近 7 天 AI 资讯；启用后，原生 `web_fetch` 可读取
 | 提供免费额度 | AnySearch、知乎、Firecrawl、Tavily、Exa、Keenable、Crawl4AI Cloud、Serply | 免费额度的有效期、重置周期和超额计费以服务方及账号为准 |
 | 按次计费或付费订阅 | 智谱当前搜索通道、Kimi REST 搜索与提取 | Coding Plan 为付费订阅；`tools-api` 使用按次计费的 `search_pro`，套餐额度不属于免费额度；Kimi REST 接口按次计费，账号赠送额度需另行确认 |
 
-Firecrawl 官方 Search / Scrape 支持 Keyless：未填密钥时不发送 Authorization；官方公布每月 1,000 免费 credits，实际使用仍受匿名限流及服务规则约束。填写密钥后使用对应账户额度，不因开启插件而保证免费；自定义端点仍需密钥。依据见 [Firecrawl Keyless 官方说明](https://www.firecrawl.dev/blog/firecrawl-keyless-launch)。免费接口预设仍排除 Firecrawl 等额度型服务。
+推荐服务支持匿名访问，匿名额度仍受 IP、请求频率及服务方额度限制：
+
+| 推荐服务 | 未配置密钥时 | 配置密钥后 |
+| --- | --- | --- |
+| AnySearch | 官方 `/v1/search`、`/v1/extract` 使用公共额度，按 IP 限流 | 使用对应账户的权限与额度 |
+| Firecrawl | 官方 `/v2/search`、`/v2/scrape` 使用匿名额度 | 使用对应账户的权限与额度 |
+| Tavily | 官方 `/search`、`/extract` 使用 keyless 模式，携带 `x-tavily-access-mode: keyless`，受共享限流约束 | 使用账户鉴权，不再发送 keyless 头 |
+
+自定义端点仍需配置密钥；已有密钥失效时不自动降级为匿名请求。匿名模式不表示无限免费，也不保证结果质量或可用性。AnySearch 匿名额度耗尽的响应可能包含自动生成的账号信息，插件不记录、不保存，也不自动使用。接口依据：[AnySearch Search](https://anysearch.com/docs/api-endpoints/v1-search)、[AnySearch Extract](https://anysearch.com/docs/api-endpoints/v1-extract)、[Firecrawl 官方 Keyless 说明](https://www.firecrawl.dev/blog/firecrawl-keyless-launch)、[Tavily 官方 SDK](https://github.com/tavily-ai/tavily-python#keyless-mode)。
+
+免费接口预设仍排除 AnySearch、Firecrawl、Tavily 等额度型服务；推荐默认组合使用自定义预设。
 
 百度千帆和豆包 Custom 的免费额度、赠送额度及开通条件需按对应账号确认。选择服务时，同时检查搜索与提取接口是否都在免费范围内。插件按配置并发调用，不自动按价格排序，也不保证只使用免费额度。
 
@@ -94,7 +104,7 @@ Firecrawl 官方 Search / Scrape 支持 Keyless：未填密钥时不发送 Autho
 | Node.js | `^22.19.0 \|\| >=24.0.0`，不包含 Node.js 23 |
 | DSH | 已安装，并具有 `web` 和 `credentials` 服务 |
 | 开发工具 | pnpm 12.10.1 |
-| 外部服务 | 网络连通性；官方 Firecrawl 匿名模式与 Bing RSS 无需凭证，其他服务按需配置 |
+| 外部服务 | 网络连通性；推荐的 AnySearch、Firecrawl、Tavily 官方匿名模式无需凭证，增强服务按需启用 |
 
 已在 Windows、Node.js 24.20.0、DSH `0.2.1-alpha.2` 的正式环境及隔离 profile 中验证安装、原生搜索和网页提取。CI 覆盖 Windows／Ubuntu、Node.js 22.19／24 的构建、类型检查与测试；CI 通过不表示这些组合均完成 DSH 实机验收。
 
@@ -111,7 +121,7 @@ Firecrawl 官方 Search / Scrape 支持 Keyless：未填密钥时不发送 Autho
 在已配置 DSH 的环境中执行：
 
 ```sh
-dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.4/dsh-web-search-fetch-0.2.4.tgz
+dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.5/dsh-web-search-fetch-0.2.5.tgz
 ```
 
 将 `web` 替换为实际使用的 profile，安装后重启宿主。本项目通过 GitHub Release 分发固定版本包；此命令不需要 npm 包发布账号或 GitHub 登录。
@@ -163,7 +173,7 @@ dsh --profile <profile> --dump-config
 | `MOONSHOT_API_KEY` | Kimi 搜索与提取 |
 | `SILICONFLOW_API_KEY` | 硅基流动重排 |
 
-Bing RSS、AIHOT 和直接 HTTP 抓取无需凭证。豆包搜索与提取分别填写；Firecrawl 总开关同时控制搜索与提取。官方网页提取在未配置密钥时使用匿名额度，配置密钥后使用账户额度。服务列表支持名称搜索、能力筛选和配置状态筛选；隐藏或折叠的草稿仍会保留。配置状态表示凭证存在，不证明服务健康。
+推荐的 AnySearch、Firecrawl、Tavily 官方搜索与提取无需凭证，状态显示“匿名额度”；配置密钥后使用账户模式。Bing RSS、AIHOT 和直接 HTTP 抓取无需凭证。豆包搜索与提取分别填写；服务总开关同时控制其搜索与提取。服务列表支持名称搜索、能力筛选和配置状态筛选；隐藏或折叠的草稿仍会保留。配置状态表示凭证存在，不证明服务健康。
 
 配置文件只填写引用名。凭证值由 DSH 管理，每次操作重新解析。详细说明见[配置参考](./docs/configuration.md)。
 
@@ -180,7 +190,7 @@ Bing RSS、AIHOT 和直接 HTTP 抓取无需凭证。豆包搜索与提取分别
 
 ## 设置界面
 
-设置页使用 DSH 原生分段选择、输入框、复选框和开关。首屏显示当前调用方式与服务配置；展开“调用设置”可切换预设和正文处理方式，请求数、超时和正文长度在“高级调用限制”中调整。服务列表支持关键词搜索、能力筛选和逐项配置。每行统一显示凭证状态、启用开关和展开箭头。总开关保留凭证与参与范围；关闭直接 HTTP 抓取后，静态 URL 会报错，不会自动调用其他服务。
+设置页使用 DSH 原生分段选择、输入框、复选框和开关。首屏显示当前调用方式与服务配置；展开“调用设置”可切换预设和正文处理方式，请求数、超时和正文长度在“高级调用限制”中调整。服务列表支持关键词搜索、能力筛选和逐项配置。推荐的三家服务置顶，其余标注“可选增强”；每行统一显示配置状态、启用开关和展开箭头。总开关保留凭证与参与范围；关闭直接 HTTP 抓取后，静态 URL 会报错，不会自动调用其他服务。
 
 数值输入允许暂时清空，超出范围时显示提示并阻止保存；搜索框按 Enter 不会提交设置。保存前可以放弃修改，离开设置页会撤销未保存草稿。配置状态仅表示凭证是否存在。
 

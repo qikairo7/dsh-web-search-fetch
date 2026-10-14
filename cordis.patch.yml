@@ -1,5 +1,3 @@
-# Bundle patch: selects aggregated providers and configures extension defaults.
-# Tool budgets are profile configuration; see docs/configuration.md.
 - id: web
   config:
     searchProvider: aggregated
@@ -10,18 +8,38 @@
       config:
         apiKeyEnv: ZHIPU_API_KEY
         engines:
-          tavily: {}
-          exa: {}
-          keenable: {}
-          crawl4ai: {}
-          github: {}
-          qianfan: {}
-          doubao: {}
-          firecrawl: {}
-          tinyfish: {}
-          serply: {}
-          kimi: {}
-          bing: {}
-          # AIHOT is opt-in: review its usage terms before enabling.
+          tavily:
+            enabled: true
+          exa:
+            enabled: false
+          keenable:
+            enabled: false
+          crawl4ai:
+            enabled: false
+          github:
+            enabled: false
+          qianfan:
+            enabled: false
+          doubao:
+            enabled: false
+          firecrawl:
+            enabled: true
+          tinyfish:
+            enabled: false
+          serply:
+            enabled: false
+          kimi:
+            enabled: false
+          bing:
+            enabled: false
           aihot:
             enabled: false
+        controls:
+          serviceEnabled:
+            anysearch: true
+            firecrawl: true
+            tavily: true
+            zhipu: false
+            zhihu: false
+            siliconflow: false
+            http: true

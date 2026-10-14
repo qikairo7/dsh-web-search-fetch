@@ -84,7 +84,7 @@
 
 插件固定使用 `BAAI/bge-reranker-v2-m3`，当前在硅基流动提供免费调用，仍需配置 API Key。可通过[硅基流动邀请链接](https://cloud.siliconflow.cn/i/E3nhNFP4)注册账号并创建密钥，在设置页的「硅基流动」项中保存，默认凭证引用为 `SILICONFLOW_API_KEY`。
 
-`search.rerank` 默认为 `true`，作为重排总开关的兼容初始值。显式设置 `controls.serviceEnabled.siliconflow` 时使用该值。重排不可用时保留 RRF 融合顺序。模型费用以[官方定价](https://siliconflow.cn/pricing)为准。
+`search.rerank` 在 schema 中默认为 `true`，作为旧配置的兼容初始值；新安装 bundle 显式设置 `controls.serviceEnabled.siliconflow: false`，默认不调用重排。显式设置 `controls.serviceEnabled.siliconflow` 时使用该值。重排不可用时保留 RRF 融合顺序。模型费用以[官方定价](https://siliconflow.cn/pricing)为准。
 
 ## 服务总开关
 
@@ -146,7 +146,7 @@
 | `bing` | 无 | `https://cn.bing.com` | — |
 | `aihot` | 无 | `https://aihot.news` | 仅专用 API |
 
-扩展项字段：`enabled`（布尔值，条目内默认 `true`）、`apiKeyEnv`（字符串引用名）、`fetchApiKeyEnv`（豆包专用字符串引用名）、`baseURL` 和 `fetchBaseURL`（字符串基础地址）。Kimi 的 `searchMode` 为 `basic` 或 `pro`，省略时使用 `pro`。省略整个条目不会创建该扩展；默认 bundle 列出 12 个启用扩展及关闭的 AIHOT。
+扩展项字段：`enabled`（布尔值，条目内默认 `true`）、`apiKeyEnv`（字符串引用名）、`fetchApiKeyEnv`（豆包专用字符串引用名）、`baseURL` 和 `fetchBaseURL`（字符串基础地址）。Kimi 的 `searchMode` 为 `basic` 或 `pro`，省略时使用 `pro`。省略整个条目不会创建该扩展；新安装 bundle 仅启用 Firecrawl、Tavily 两个扩展及 AnySearch 服务；其他远程服务与重排默认关闭。直接 HTTP 抓取作为静态资源基础能力保留。已保存的显式开关设置优先于安装默认。
 
 智谱 `anthropic` 通道通过 HTTP Messages API 请求服务端 `web_search_20250305`，结果块完整后结束流读取。备用 `tools-api` 调用 `search_pro`，查询截断至 70 字符。本插件接入的两条智谱搜索通道均为付费使用：Coding Plan 消耗付费订阅额度，`search_pro` 按次计费。套餐额度不等于免费额度，账号资格和计费以服务商为准；两条通道均无需 MCP。
 
@@ -199,7 +199,9 @@ GitHub 提取只识别仓库根 URL 与 `/blob/<ref>/<path>`，不提供任意 G
 
 ## Web 设置卡片
 
-首次使用可保留 Firecrawl 官方默认端点并留空密钥，使用匿名额度搜索和提取；Bing RSS 也无需凭证。匿名额度与免费接口预设分别处理：`free` 不调用额度型服务，普通／均衡／深度预设可调用匿名 Firecrawl。密钥配置后优先使用账户凭证，不自动回退到匿名模式。自定义 Firecrawl 端点缺少密钥时不派发请求。
+新安装默认启用 AnySearch、Firecrawl、Tavily，无需填写密钥。AnySearch 官方 `/v1/search` 和 `/v1/extract` 使用公共匿名额度；Firecrawl 官方 `/v2/search` 和 `/v2/scrape` 使用匿名额度；Tavily 官方 `/search` 和 `/extract` 携带 `x-tavily-access-mode: keyless`。匿名访问有限流和额度限制，密钥配置后使用账户模式，不自动回退。自定义端点仍需密钥。AnySearch 域名发现接口仍需密钥，匿名错误正文不输出，额度耗尽时不自动使用上游生成的账号。
+
+匿名额度与免费接口预设分别处理：`free` 排除额度型服务；推荐默认组合使用 `custom` 预设。其他服务作为增强按需开启，已保存的显式开关与凭证保持不变；旧版未设置开关的服务采用新版默认。依据见 [README 匿名访问说明](../README.md#服务费用)。
 
 打开「设置 → 内置插件 → 网络搜索与提取」。卡片与 README 的完整接入清单一致，覆盖 18 项服务、16 个凭证位，包括无需凭证的 Bing RSS、AIHOT 和直接 HTTP 抓取。豆包搜索与提取分别填写密钥；智谱只保留搜索。
 

@@ -867,4 +867,26 @@ describe('card controller', () => {
     expect(face.hooks.webSearchFetch.getSnapshot().controls.searchServices).toEqual(['firecrawl', 'tavily']);
   });
 
+  it('两面不同引用仅配置一面时保留部分配置状态', async () => {
+    const { face, page } = mount({ value: { search: { anysearchApiKeyEnv: 'AS_SEARCH' }, fetch: { anysearchApiKeyEnv: 'AS_FETCH', firecrawlApiKeyEnv: 'FC_FETCH' }, engines: { firecrawl: { apiKeyEnv: 'FC_SEARCH' } } },
+      describe: refs => ({ ok: true, value: Object.fromEntries(refs.map(ref => [ref, { configured: ['AS_SEARCH', 'FC_SEARCH'].includes(ref), writable: true }])) }),
+    });
+    await face.refresh();
+    for (const id of ['anysearch', 'firecrawl']) {
+      const row = face.hooks.webSearchFetch.getSnapshot().keys.find((row: { id: string }) => row.id === id);
+      expect(row.configured).toBe(false);
+      expect(row.partial).toBe(true);
+    }
+    const entry = page.registrations.find(entry => entry.options.name === 'settings.plugins.tab')!;
+    const card = (entry.component as (props: unknown) => unknown)({ ...face, t: (key: string) => key, useWebSearchFetch: (select: (value: unknown) => unknown) => select(face.hooks.webSearchFetch.getSnapshot()) });
+    const statuses: string[] = [];
+    function visit(value: any): void {
+      if (!value || typeof value !== 'object') return;
+      if (value.props?.className === 'wsf-state') statuses.push(value.props.children);
+      for (const child of Object.values(value)) if (typeof child === 'object') Array.isArray(child) ? child.forEach(visit) : visit(child);
+    }
+    visit(card);
+    expect(statuses.filter(status => status === 'partial')).toHaveLength(2);
+  });
+
 });

@@ -1,3 +1,4 @@
+import { isAnySearchKeylessEndpoint, isTavilyKeylessEndpoint } from './keyless.js';
 /**
  * dsh-web-search-fetch — registers the aggregated web search and fetch
  * providers on DSH's `ctx.web` seam, which the built-in `web_search` /
@@ -448,7 +449,7 @@ export const Config = z.object({
     .description('提取编排（URL 感知分流与动态页多来源正文整理）的参数与服务凭证引用。'),
 }).description(
   '聚合搜索与提取插件：web_search / web_fetch 背后的多来源聚合。' +
-    '首次使用：把各服务 key 值写入 ~/.dsh/.credentials.yaml 的 refs 段（键名见各凭证字段说明），无需改动本页默认值。',
+    '推荐使用 AnySearch、Firecrawl、Tavily 的官方匿名额度；需要增强服务时，把 key 值写入 ~/.dsh/.credentials.yaml 的 refs 段（键名见各凭证字段说明），无需改动本页默认值。',
 );
 
 /** Register aggregated providers behind the native tools. */
@@ -473,6 +474,8 @@ export function apply(ctx: Context, config: Config): void {
       }
     }
     if (id === 'bing' || id === 'aihot') return true;
+    if (id === 'anysearch' && isAnySearchKeylessEndpoint(((face === 'fetch' ? fetchConfig.anysearchBaseURL : search.anysearchBaseURL) ?? ANYSEARCH_DEFAULT_BASE_URL)?.replace(/\/+$/, '') + (face === 'fetch' ? '/v1/extract' : '/v1/search'))) return true;
+    if (id === 'tavily' && isTavilyKeylessEndpoint(((face === 'fetch' ? settings?.fetchBaseURL ?? settings?.baseURL : settings?.baseURL) ?? 'https://api.tavily.com')?.replace(/\/+$/, '') + (face === 'fetch' ? '/extract' : '/search'))) return true;
     if (id === 'firecrawl' && isFirecrawlKeylessEndpoint(face === 'fetch'
       ? fetchConfig.firecrawlBaseURL ?? FIRECRAWL_SCRAPE_URL
       : (settings?.baseURL ?? 'https://api.firecrawl.dev').replace(/\/+$/, '') + '/v2/search')) return true;

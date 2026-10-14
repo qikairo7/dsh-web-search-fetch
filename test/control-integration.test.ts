@@ -1,4 +1,6 @@
-import { expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { parse } from 'yaml';
+import { expect, it, vi } from 'vitest';
 import { Context, Service } from '@deepseek-ai/cordis';
 import { ToolCallId } from '@deepseek-ai/dsh-llm';
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt';
@@ -138,4 +140,46 @@ it('统一服务开关经原生工具生效，关闭不请求，重排关闭后�
     expect((await execute()).isError).toBeFalsy();
     expect(server.requests.filter(request => request.url.includes('rerank'))).toHaveLength(1);
   } finally { for (const fiber of fibers.reverse()) await fiber.dispose(); await server.close(); }
+});
+
+class AnonymousCredentials extends Service {
+  constructor(ctx: Context) { super(ctx, 'credentials'); }
+  async resolve() { return undefined; }
+  async describe() { return { configured: false, writable: true }; }
+}
+
+it('新安装原生搜索与提取在无凭证时派发三家推荐服务', async () => {
+  const calls: { url: string; headers: Headers }[] = [];
+  const mock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+    const url = String(input); calls.push({ url, headers: new Headers(init?.headers) });
+    const target = 'https://example.com/guide';
+    const body = '# Guide\n\nShared.\n\nFrom ' + new URL(url).hostname;
+    if (url.includes('anysearch')) return Response.json({ code: 0, message: 'success', data: url.endsWith('/search')
+      ? { results: [{ url: target, title: 'Guide' }], metadata: { total_results: 1, search_time_ms: 1 } }
+      : { url: target, title: 'Guide', content: body } });
+    if (url.includes('firecrawl')) return Response.json(url.endsWith('/search')
+      ? { success: true, data: { web: [{ url: target, title: 'Guide' }] } }
+      : { success: true, data: { markdown: body, metadata: { sourceURL: target, title: 'Guide' } } });
+    if (url.includes('tavily')) return Response.json({ results: [{ url: target, title: 'Guide', content: 'Snippet', raw_content: body }] });
+    throw new Error('Unexpected service');
+  });
+  const ctx = new Context(), fibers = [];
+  try {
+    for (const component of [SystemPrompt, ToolRuntime, WebRuntime, AnonymousCredentials]) fibers.push(await ctx.plugin(component));
+    fibers.push(await ctx.plugin(ToolWeb, { search: true, fetch: true }));
+    const bundle = parse(readFileSync(new URL('../cordis.patch.yml', import.meta.url), 'utf8'));
+    const config = plugin.Config(bundle[1].insert[0].config);
+    fibers.push(await ctx.plugin({ name: 'anonymous-starter', inject: ['web', 'credentials'], apply: (host: Context) => plugin.apply(host, config) }));
+    const execute = (name: string, args: Record<string, unknown>) => ctx.tools.execute({ name, arguments: args, callId: ToolCallId(name), signal: AbortSignal.timeout(5000) });
+    expect((await execute('web_search', { queries: ['Example'] })).isError).toBeFalsy();
+    expect(calls).toHaveLength(3);
+    const fetched = await execute('web_fetch', { url: 'https://example.com/guide' });
+    expect(fetched.isError).toBeFalsy();
+    for (const name of ['anysearch', 'firecrawl', 'tavily']) expect(JSON.stringify(fetched)).toContain(name);
+    expect(calls).toHaveLength(6);
+    for (const call of calls) {
+      expect(call.headers.has('authorization')).toBe(false);
+      expect(call.headers.get('x-tavily-access-mode')).toBe(call.url.includes('tavily') ? 'keyless' : null);
+    }
+  } finally { for (const fiber of fibers.reverse()) await fiber.dispose(); mock.mockRestore(); }
 });

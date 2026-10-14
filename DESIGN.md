@@ -101,7 +101,9 @@ HTTP 路径复用 `@deepseek-ai/dsh-web-fetch-http` 的校验与限制：默认�
 
 ## 凭证与设置
 
-Firecrawl 官方 `/v2/search` 与 `/v2/scrape` 在缺少凭证时允许匿名额度请求，不发送 Authorization；自定义端点仍要求凭证。服务就绪过滤允许这两条官方匿名路径参与派发。匿名额度仍属于额度型服务，不加入免费接口预设；已有密钥使用原账户，不自动切换到匿名请求。
+AnySearch 官方 `/v1/search` 与 `/v1/extract`、Firecrawl 官方 `/v2/search` 与 `/v2/scrape`、Tavily 官方 `/search` 与 `/extract` 在缺少凭证时允许匿名额度请求，不发送 Authorization；Tavily 另发送 `x-tavily-access-mode: keyless`。自定义端点仍要求凭证。服务就绪过滤允许官方匿名路径参与派发。匿名额度属于额度型服务，不加入免费接口预设；已有密钥使用原账户，不自动切换匿名请求。AnySearch 匿名错误正文可能含自动生成凭证，不进入错误消息、日志或自动重试。
+
+新安装 bundle 默认只开启上述三家远程服务，其他远程服务与重排均关闭，静态 HTTP 抓取保留。schema 未改变旧配置的兼容初始值，已保存的显式开关设置优先于安装默认；旧版未设置开关的服务采用新版默认。
 
 配置只持有引用名，实际值由 `ctx.credentials.resolve()` 按操作解析。搜索引用以及提取的回落引用也按操作读取，避免设置保存后继续使用旧名称。
 

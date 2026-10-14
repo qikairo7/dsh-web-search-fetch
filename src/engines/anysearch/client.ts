@@ -16,6 +16,7 @@
  * MIT. Copyright (c) 2026 AnySearch Team.
  * @module engines/anysearch/client
  */
+import { isAnySearchKeylessEndpoint } from '../../keyless.js';
 import {
   ANYSEARCH_API_KEY_PLACEHOLDERS,
   ANYSEARCH_CLIENT_ID,
@@ -56,8 +57,8 @@ export interface AnySearchClientOptions {
   /**
    * Resolve the API key for one operation. Called afresh on every operation and
    * never cached. `undefined` or an empty string means "unconfigured": the
-   * engine reports that as a config failure rather than sending anonymously,
-   * because DESIGN.md lists a credential for this engine.
+   * official search/extract endpoints use anonymous quota; custom endpoints and
+   * domain discovery still require a credential.
    */
   resolveApiKey: () => Promise<string | undefined>;
   /** Credential reference name used in error messages. The value never appears. */
@@ -185,7 +186,7 @@ export class AnySearchClient {
       });
     }
 
-    const apiKey = await this.resolveCredential(request.operation, signal);
+    const apiKey = await this.resolveCredential(request.operation, signal, isAnySearchKeylessEndpoint(url));
     const target = new URL(url);
     if (request.query !== undefined) target.search = request.query.toString();
     const authentication: AnySearchAuthentication = apiKey === undefined ? 'anonymous' : 'credential';
@@ -220,17 +221,20 @@ export class AnySearchClient {
     try {
       value = await response.json();
     } catch (error) {
+      if (authentication === 'anonymous') {
+        throw this.transportFailure(request.operation, new Error('unreadable anonymous response'), signal, deadline, response.status, retryAfter);
+      }
       throw this.transportFailure(request.operation, error, signal, deadline, response.status, retryAfter);
     }
 
     // A non-2xx response is still an envelope when it parses as one; read it
     // for the stable error code before falling back to the HTTP status.
     const envelope = tryReadEnvelope(value);
-    const errorCode = envelope?.errorCode;
-    const requestId = envelope?.requestId;
+    const errorCode = authentication === 'anonymous' && !/^(extract_canceled|invalid_extract_url|extract_target_blocked|extract_content_too_large|extract_unsupported_content|extract_timeout|quota_exhausted|rate_limit_exceeded|insufficient_credits)$/.test(envelope?.errorCode ?? '') ? undefined : envelope?.errorCode;
+    const requestId = authentication === 'anonymous' && !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(envelope?.requestId ?? '') ? undefined : envelope?.requestId;
     if (!response.ok) {
       throw new AnySearchClientError(
-        upstreamFailureMessage(request.operation, detailFor(response, envelope), factsFor(response, authentication, requestId, errorCode, retryAfter)),
+        upstreamFailureMessage(request.operation, authentication === 'anonymous' ? 'anonymous request rejected' : detailFor(response, envelope), factsFor(response, authentication, requestId, errorCode, retryAfter)),
         {
           operation: request.operation,
           httpStatus: response.status,
@@ -259,7 +263,7 @@ export class AnySearchClient {
       throw new AnySearchClientError(
         upstreamFailureMessage(
           request.operation,
-          envelope.message.length > 0 ? envelope.message : `API error ${String(envelope.code)}`,
+          authentication === 'anonymous' ? 'anonymous request rejected' : envelope.message.length > 0 ? envelope.message : `API error ${String(envelope.code)}`,
           factsFor(response, authentication, requestId, errorCode, retryAfter),
         ),
         {
@@ -283,6 +287,7 @@ export class AnySearchClient {
   private async resolveCredential(
     operation: AnySearchOperation,
     signal?: AbortSignal,
+    allowAnonymous = false,
   ): Promise<string | undefined> {
     let value: string | undefined;
     try {
@@ -302,6 +307,7 @@ export class AnySearchClient {
     }
     const trimmed = value?.trim();
     if (trimmed === undefined || trimmed.length === 0) {
+      if (allowAnonymous) return undefined;
       throw new AnySearchClientError(
         `web search credential "${this.credentialName}" is not configured`,
         { kind: 'config', operation },
