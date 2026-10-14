@@ -37,7 +37,7 @@ window.__ModuleLoader__.load({
             all: '全部', search: '搜索', fetch: '提取', rerank: '重排', searchFetch: '搜索 · 提取',
             githubCapabilities: '仓库搜索 · README / 文件提取', staticFetch: '静态资源提取', aiNews: 'AI 资讯搜索 · API 读取',
             configured: '已配置', unconfigured: '未配密钥', partial: '部分配置', staged: '待保存', readOnly: '只读',
-            checking: '读取中…', statusFailed: '状态未知', noKey: '无需密钥', base: '按配置使用', configure: '配置',
+            checking: '读取中…', statusFailed: '状态未知', noKey: '无需密钥', configure: '配置',
             enable: '启用', firecrawlEnable: '启用 Firecrawl 搜索',
             searchLabel: '查找服务', searchPlaceholder: '搜索服务名称或用途', clearSearch: '清空搜索',
             statusFilter: '筛选配置状态', allStatus: '全部状态', needsKey: '未配置凭证', pending: '有未保存修改',
@@ -94,7 +94,7 @@ window.__ModuleLoader__.load({
             all: 'All', search: 'Search', fetch: 'Extraction', rerank: 'Reranking', searchFetch: 'Search · Extraction',
             githubCapabilities: 'Repository search · README / Files', staticFetch: 'Static resources', aiNews: 'AI news search · API reading',
             configured: 'Configured', unconfigured: 'Needs key', partial: 'Partially configured', staged: 'Unsaved', readOnly: 'Read-only',
-            checking: 'Checking…', statusFailed: 'Status unknown', noKey: 'No key needed', base: 'Configured use', configure: 'Configure',
+            checking: 'Checking…', statusFailed: 'Status unknown', noKey: 'No key needed', configure: 'Configure',
             enable: 'Enable', firecrawlEnable: 'Enable Firecrawl search',
             searchLabel: 'Find a service', searchPlaceholder: 'Search by service or purpose', clearSearch: 'Clear search',
             statusFilter: 'Filter configuration status', allStatus: 'All statuses', needsKey: 'Needs credentials', pending: 'Unsaved changes',
@@ -632,14 +632,13 @@ window.__ModuleLoader__.load({
             .wsf-results-count{margin-inline-start:auto;color:var(--dsw-alias-label-tertiary);font-size:12px;white-space:nowrap}
             .wsf-list{border-block-start:.5px solid var(--dsw-alias-border-l2)}
             .wsf-service{border-block-end:.5px solid var(--dsw-alias-border-l2);min-inline-size:0}
-            .wsf-row{display:flex;align-items:center;gap:12px;min-block-size:58px}
+            .wsf-row{display:grid;grid-template-columns:minmax(0,1fr) 36px;align-items:center;gap:12px;min-block-size:58px}
             .wsf-open{display:flex;align-items:center;gap:12px;flex:1;min-inline-size:0;text-align:start;border:0;border-radius:var(--dsw-radius-sm);color:inherit;background:transparent;padding-block:10px;padding-inline:4px;cursor:pointer;font:inherit}
             .wsf-name{flex:1;min-inline-size:0}
             .wsf-name strong{display:block;font-size:13px;font-weight:500;overflow-wrap:anywhere}
             .wsf-name small{display:block;margin-block-start:2px;color:var(--dsw-alias-label-tertiary);font-size:11px}
             .wsf-state{color:var(--dsw-alias-label-tertiary);font-size:11px;white-space:nowrap}
             .wsf-state[data-dirty=true]{color:var(--dsw-alias-label-secondary);font-weight:500}
-            .wsf-base{white-space:nowrap;text-align:end;color:var(--dsw-alias-label-tertiary);font-size:11px}
             .wsf-detail{padding-block:2px 14px;padding-inline:4px;display:grid;gap:10px}
             .wsf-participation{display:flex;flex-wrap:wrap;gap:12px 20px}
             .wsf-notice{color:var(--dsw-alias-label-secondary);font-size:12px;line-height:1.6;padding-block:8px}
@@ -778,7 +777,7 @@ window.__ModuleLoader__.load({
                                     ] }),
                                 service.extension ? jsx(ui.Switch, { label: service.id === 'firecrawl' ? t('firecrawlEnable') : t('enable') + ' ' + name,
                                     checked: state.engines[service.id], disabled, onChange: checked => editEngine(service.id, checked) })
-                                    : jsx('span', { className: 'wsf-base', children: service.id === 'siliconflow' ? t('rerank') : t('base') }),
+                                    : null,
                             ] }),
                             jsx('div', { id: detailId, hidden: !expanded, children: expanded && jsxs('div', { className: 'wsf-detail', children: [
                                 jsx('p', { className: 'wsf-muted', children: t(specificHint) }),

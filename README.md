@@ -10,7 +10,7 @@
 [快速开始](#快速开始) · [正文整理演示](./docs/content-organization.md#输入与输出演示) · [真实对比](./docs/modsearch-comparison.md) · [配置参考](./docs/configuration.md) · [参与贡献](./CONTRIBUTING.md)
 
 ```sh
-dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.1/dsh-web-search-fetch-0.2.1.tgz
+dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.2/dsh-web-search-fetch-0.2.2.tgz
 ```
 
 安装后重启 DSH，直接请求搜索或读取公开网页。匿名模式受服务方额度与限流约束，不能保证无限使用。未安装 DSH 的环境需先完成[宿主安装](https://github.com/deepseek-ai/deepseek-harness)。
@@ -104,14 +104,14 @@ Firecrawl 官方 Search / Scrape 支持 Keyless：未填密钥时不发送 Autho
 | `0.2.1-alpha.1` | unknown | 尚未执行该版本运行验收 |
 | `0.2.0-rc.2` | unknown | 尚未执行该版本运行验收 |
 
-默认分支的 `package.json` 提供 `dsh.compatibility.dshReleases` 精确版本声明；未验证版本保持 `unknown`。`v0.2.1` 发布包包含这项兼容元数据。这里不声明所有版本的卸载或回滚已通过验收。
+默认分支的 `package.json` 提供 `dsh.compatibility.dshReleases` 精确版本声明；未验证版本保持 `unknown`。发布包包含这项兼容元数据。这里不声明所有版本的卸载或回滚已通过验收。
 
 ### 使用发布包安装
 
 在已配置 DSH 的环境中执行：
 
 ```sh
-dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.1/dsh-web-search-fetch-0.2.1.tgz
+dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.2/dsh-web-search-fetch-0.2.2.tgz
 ```
 
 将 `web` 替换为实际使用的 profile，安装后重启宿主。本项目通过 GitHub Release 分发固定版本包；此命令不需要 npm 包发布账号或 GitHub 登录。
