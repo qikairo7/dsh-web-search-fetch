@@ -5,13 +5,19 @@ window.__ModuleLoader__.load({
 		var exports = module.exports;
 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 		let react_jsx_runtime = require("react/jsx-runtime");
+        const React = require("react");
 		let _deepseek_ai_dsh_client_store = require("@deepseek-ai/dsh-client-store");
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
         //#region locales
         const zh = {
+            servicesTitle: '服务与凭证', settingsTitle: '调用设置', advanced: '高级调用限制', advancedHint: '请求数、超时与正文长度',
+            startGuide: '免密钥使用说明', organizeHint: '合并多份正文，去重与互补，保留来源与差异。', selectHint: '兼容旧版，仅返回一份提取正文。',
+            customPresetHint: '按服务开关、参与范围与调用限制执行。', balancedPresetHint: '每次最多调用三路服务，兼顾覆盖范围与调用用量。', deepPresetHint: '调用已选择且可用的服务，仍受调用限制约束。',
+            invalidNumber: '请输入范围内的整数：', invalidControls: '请先修正调用限制', resetField: '撤销此项', range: '范围',
+
             title: '网络搜索与提取', intro: '首次使用无需填写密钥：可先用 Firecrawl 官方匿名额度搜索和提取，并使用 Bing RSS 搜索；后续按需配置更多服务。',
-            controlsTitle: '正文整理与调用控制', modeLabel: '网页正文处理', organizeMode: '整理：去重、互补、保留差异', selectMode: '旧版：返回单份正文',
-            presetLabel: '调用预设', customPreset: '自定义', freePreset: '免费接口', balancedPreset: '均衡（最多三路）', deepPreset: '深度检索',
+            controlsTitle: '正文整理与调用控制', modeLabel: '网页正文处理', organizeMode: '整理正文', selectMode: '单份正文',
+            presetLabel: '调用预设', customPreset: '自定义', freePreset: '免费接口', balancedPreset: '均衡', deepPreset: '深度',
             maxSearchServices: '每个查询的搜索服务上限', maxFetchServices: '每个 URL 的提取服务上限', maxRequests: '每次操作的 HTTP 请求上限',
             searchDeadlineMs: '搜索总限时（毫秒）', fetchDeadlineMs: '提取总限时（毫秒）', maxOutputChars: '整理输出上限（字符）',
             participateSearch: '参与搜索', participateFetch: '参与提取',
@@ -30,11 +36,11 @@ window.__ModuleLoader__.load({
             'bing-service': 'Bing RSS', 'aihot-service': 'AIHOT', 'siliconflow-service': '硅基流动', 'http-service': '直接 HTTP 抓取',
             all: '全部', search: '搜索', fetch: '提取', rerank: '重排', searchFetch: '搜索 · 提取',
             githubCapabilities: '仓库搜索 · README / 文件提取', staticFetch: '静态资源提取', aiNews: 'AI 资讯搜索 · API 读取',
-            configured: '已配置', unconfigured: '待配置', partial: '部分配置', staged: '待保存', readOnly: '只读',
+            configured: '已配置', unconfigured: '未配密钥', partial: '部分配置', staged: '待保存', readOnly: '只读',
             checking: '读取中…', statusFailed: '状态未知', noKey: '无需密钥', base: '按配置使用', configure: '配置',
             enable: '启用', firecrawlEnable: '启用 Firecrawl 搜索',
             searchLabel: '查找服务', searchPlaceholder: '搜索服务名称或用途', clearSearch: '清空搜索',
-            statusFilter: '筛选配置状态', allStatus: '全部状态', needsKey: '待配置凭证', pending: '有未保存修改',
+            statusFilter: '筛选配置状态', allStatus: '全部状态', needsKey: '未配置凭证', pending: '有未保存修改',
             servicesCount: '个服务', keysCount: '个凭证位', matches: '项匹配', noMatches: '没有匹配的服务',
             noMatchesHint: '试试其他关键词，或清除筛选条件。', resetFilters: '清除筛选',
             transportLabel: '智谱搜索通道', transportAnthropic: '套餐额度', transportToolsApi: '按次计费',
@@ -61,9 +67,14 @@ window.__ModuleLoader__.load({
             clean: '暂无待保存更改', dirty: '项未保存', refresh: '刷新凭证状态',
         };
         const en = {
+            servicesTitle: 'Services & credentials', settingsTitle: 'Call settings', advanced: 'Advanced limits', advancedHint: 'Requests, deadlines and content length',
+            startGuide: 'Start without credentials', organizeHint: 'Combine extracts, remove duplicates and retain sources and differences.', selectHint: 'Legacy behavior: return one extract.',
+            customPresetHint: 'Use service switches, participation and call limits.', balancedPresetHint: 'Use up to three services per operation to balance coverage and usage.', deepPresetHint: 'Use selected, available services within the call limits.',
+            invalidNumber: 'Enter an integer within ', invalidControls: 'Correct the call limits first', resetField: 'Undo this field', range: 'Range',
+
             title: 'Web search & fetch', intro: 'Start without a key using official Firecrawl anonymous credits and Bing RSS search. Configure more services when needed.',
-            controlsTitle: 'Content organization and call limits', modeLabel: 'Page content', organizeMode: 'Organize: deduplicate, complement, retain variants', selectMode: 'Legacy: select one extract',
-            presetLabel: 'Call preset', customPreset: 'Custom', freePreset: 'Free APIs', balancedPreset: 'Balanced (up to three services)', deepPreset: 'Deep search',
+            controlsTitle: 'Content organization and call limits', modeLabel: 'Page content', organizeMode: 'Organize', selectMode: 'Single extract',
+            presetLabel: 'Call preset', customPreset: 'Custom', freePreset: 'Free APIs', balancedPreset: 'Balanced', deepPreset: 'Deep',
             maxSearchServices: 'Search services per query', maxFetchServices: 'Extraction services per URL', maxRequests: 'HTTP requests per operation',
             searchDeadlineMs: 'Search deadline (ms)', fetchDeadlineMs: 'Extraction deadline (ms)', maxOutputChars: 'Organized output limit (characters)',
             participateSearch: 'Participate in search', participateFetch: 'Participate in extraction',
@@ -123,6 +134,14 @@ window.__ModuleLoader__.load({
 		const NS = "settings.webSearchFetch";
 		/** Config path of the one control this card edits through the settings form. */
 		const TRANSPORT_PATH = ["search", "zhipuTransport"];
+        const NUMBER_CONTROLS = {
+            maxSearchServices: { initial: 16, min: 1, max: 16 },
+            maxFetchServices: { initial: 11, min: 1, max: 11 },
+            maxRequests: { initial: 32, min: 1, max: 256 },
+            searchDeadlineMs: { initial: 15000, min: 1, max: 3600000 },
+            fetchDeadlineMs: { initial: 50000, min: 1, max: 3600000 },
+            maxOutputChars: { initial: 100000, min: 1000, max: 1000000 },
+        };
         const EXTENSIONS = ["tavily", "exa", "keenable", "crawl4ai", "github", "qianfan", "doubao", "firecrawl", "tinyfish", "serply", "kimi", "bing", "aihot"];
 		/**
 		* The complete credential slots, mirroring `src/settings-surface.ts`.
@@ -201,20 +220,44 @@ window.__ModuleLoader__.load({
 			transportDraft;
             engineDrafts = new Map();
             controlDrafts = new Map();
+            numberDrafts = new Map();
             controls() {
-                return { mode: 'organize', preset: 'custom', maxSearchServices: 16, maxFetchServices: 11, maxRequests: 32,
-                    searchDeadlineMs: 15000, fetchDeadlineMs: 50000, maxOutputChars: 100000,
+                return { mode: 'organize', preset: 'custom', ...Object.fromEntries(Object.entries(NUMBER_CONTROLS).map(([name, spec]) => [name, spec.initial])),
                     searchServices: SERVICES.filter(service => service.capabilities.includes('search')).map(service => service.id),
                     fetchServices: SERVICES.filter(service => service.capabilities.includes('fetch') && service.id !== 'http').map(service => service.id),
                     ...this.section()?.controls, ...Object.fromEntries(this.controlDrafts) };
             }
+            numberField(name) {
+                const spec = NUMBER_CONTROLS[name];
+                const served = this.section()?.controls?.[name] ?? spec.initial;
+                const text = this.numberDrafts.get(name) ?? String(this.controlDrafts.get(name) ?? served);
+                const value = Number(text);
+                return { text, servedText: String(served), min: spec.min, max: spec.max,
+                    dirty: this.numberDrafts.has(name) || this.controlDrafts.has(name),
+                    invalid: !/^\d+$/.test(text.trim()) || !Number.isSafeInteger(value) || value < spec.min || value > spec.max };
+            }
+            editNumber(name, text) {
+                if (this.saving || !Object.hasOwn(NUMBER_CONTROLS, name)) return;
+                this.baselineRevision ??= this.scope.getSnapshot().revision;
+                this.numberDrafts.set(name, text);
+                const field = this.numberField(name);
+                if (field.invalid) this.controlDrafts.delete(name);
+                else if (Number(text) === Number(field.servedText)) {
+                    this.numberDrafts.delete(name);
+                    this.controlDrafts.delete(name);
+                } else this.controlDrafts.set(name, Number(text));
+                this.failed = false;
+                this.saved = false;
+                this.publish();
+            }
             editControl(name, value) {
                 if (this.saving) return;
-                const ranges = { maxSearchServices: 16, maxFetchServices: 11, maxRequests: 256, searchDeadlineMs: 3600000, fetchDeadlineMs: 3600000, maxOutputChars: 1000000 };
+                const ranges = Object.fromEntries(Object.entries(NUMBER_CONTROLS).map(([name, spec]) => [name, spec.max]));
                 if (name in ranges && (!Number.isInteger(value) || value < (name === 'maxOutputChars' ? 1000 : 1) || value > ranges[name])) return;
                 if (name === 'mode' && !['organize', 'select'].includes(value) || name === 'preset' && !['custom', 'free', 'balanced', 'deep'].includes(value)) return;
                 if (['searchServices', 'fetchServices'].includes(name) && (!Array.isArray(value) || value.some(id => !SERVICES.some(service => service.id === id)))) return;
                 if (!['mode', 'preset', 'searchServices', 'fetchServices', ...Object.keys(ranges)].includes(name)) return;
+                this.numberDrafts.delete(name);
                 this.baselineRevision ??= this.scope.getSnapshot().revision;
                 const served = this.section()?.controls?.[name];
                 if (JSON.stringify(served) === JSON.stringify(value)) this.controlDrafts.delete(name); else this.controlDrafts.set(name, value);
@@ -242,6 +285,7 @@ window.__ModuleLoader__.load({
 			/** Reference each slot resolves to, as last read. */
 			slotRefs = resolveSlotRefs(void 0);
 			saving = false;
+            discardAfterSave = false;
             failed = false;
             saved = false;
             view = { query: '', capability: 'all', status: 'all', expandedId: null };
@@ -326,10 +370,11 @@ window.__ModuleLoader__.load({
                 if ((served !== undefined && served.enabled !== false) === enabled) this.engineDrafts.delete(id);
                 else this.engineDrafts.set(id, enabled);
                 this.failed = false;
+                this.saved = false;
                 this.publish();
             }
 			dirty() {
-				return this.transportDraft !== void 0 || this.engineDrafts.size > 0 || this.keyDrafts.size > 0 || this.controlDrafts.size > 0;
+				return this.transportDraft !== void 0 || this.engineDrafts.size > 0 || this.keyDrafts.size > 0 || this.controlDrafts.size > 0 || this.numberDrafts.size > 0;
 			}
 			/**
 			* Ask the credentials domain about the reference each slot resolves to.
@@ -381,7 +426,7 @@ window.__ModuleLoader__.load({
 			* @returns settlement after every write and the read-back.
 			*/
 			async save() {
-				if (this.saving) return;
+				if (this.saving || this.shell().invalid) return;
 				const snapshot = this.scope.getSnapshot();
 				if (snapshot.writable !== true) return;
 				const ops = this.transportDraft === void 0
@@ -389,7 +434,8 @@ window.__ModuleLoader__.load({
 					: [{ op: "set", path: [...TRANSPORT_PATH], value: this.transportDraft }];
 				ops.push(...[...this.engineDrafts].map(([id, enabled]) => ({ op: "set", path: ["engines", id, "enabled"], value: enabled })));
                 ops.push(...[...this.controlDrafts].map(([name, value]) => ({ op: 'set', path: ['controls', name], value })));
-                const keys = [...this.keyDrafts];
+                // Keep the submitted references independent of a page closing during the write.
+                const keys = [...this.keyDrafts].map(([id, text]) => [id, text, this.keyRefs.get(id)]);
 				if (ops.length === 0 && keys.length === 0) return;
 				this.saving = true;
 				this.failed = false;
@@ -404,13 +450,14 @@ window.__ModuleLoader__.load({
                                 this.transportDraft = undefined;
                                 this.engineDrafts.clear();
                                 this.controlDrafts.clear();
+                                this.numberDrafts.clear();
                                 this.baselineRevision = this.scope.getSnapshot().revision;
                             }
                         }
 					if (landed) {
-						for (const [id, text] of keys) {
+						for (const [id, text, stagedRefs] of keys) {
                             const refs = resolveSlotRefs(this.section()).find(slot => slot.id === id)?.refs ?? [];
-                            if (JSON.stringify(refs) !== JSON.stringify(this.keyRefs.get(id))) { landed = false; continue; }
+                            if (JSON.stringify(refs) !== JSON.stringify(stagedRefs)) { landed = false; continue; }
                             for (const ref of refs) {
                                 const response = await this.ctx.remote.credentials.set(ref, text);
                                 if (response?.ok !== true) landed = false;
@@ -426,16 +473,38 @@ window.__ModuleLoader__.load({
                         this.keyRefs.clear();
                         this.engineDrafts.clear();
                         this.controlDrafts.clear();
+                         this.numberDrafts.clear();
 						this.baselineRevision = void 0;
 					}
 					this.failed = !landed;
                     this.saved = landed;
 					this.saving = false;
+                    if (this.discardAfterSave) {
+                        this.clearDrafts();
+                        this.discardAfterSave = false;
+                        this.failed = false;
+                        this.saved = false;
+                    }
 				}
 				await this.readCredentials();
 				this.publish();
 			}
 			/** Drop every staged edit. */
+            clearDrafts() {
+                this.transportDraft = undefined;
+                this.keyDrafts.clear();
+                this.keyRefs.clear();
+                this.engineDrafts.clear();
+                this.controlDrafts.clear();
+                this.numberDrafts.clear();
+                this.baselineRevision = undefined;
+            }
+            leave() {
+                if (!this.saving) { this.discard(); return; }
+                this.discardAfterSave = true;
+                this.clearDrafts();
+                this.publish();
+            }
 			discard() {
                 if (this.saving) return;
 				if (!this.dirty() && !this.failed) return;
@@ -444,6 +513,7 @@ window.__ModuleLoader__.load({
                         this.keyRefs.clear();
                         this.engineDrafts.clear();
                         this.controlDrafts.clear();
+                         this.numberDrafts.clear();
 				this.baselineRevision = void 0;
 				this.failed = false;
                 this.saved = false;
@@ -456,7 +526,7 @@ window.__ModuleLoader__.load({
 					available: snapshot.status === "ready",
 					writable: snapshot.writable === true,
 					dirty: this.dirty(),
-					invalid: false,
+					invalid: Object.keys(NUMBER_CONTROLS).some(name => this.numberField(name).invalid),
 					saving: this.saving,
 					failed: this.failed
 				};
@@ -468,10 +538,11 @@ window.__ModuleLoader__.load({
 					...this.shell(),
                     saved: this.saved,
                     controls: this.controls(),
+                    numberFields: Object.fromEntries(Object.keys(NUMBER_CONTROLS).map(name => [name, this.numberField(name)])),
                     view: { ...this.view },
                     visibleServiceIds: SERVICES.filter(service => this.matchesService(service)).map(service => service.id),
                     changedServiceIds: SERVICES.filter(service => this.serviceDirty(service)).map(service => service.id),
-                    changeCount: this.keyDrafts.size + this.engineDrafts.size + this.controlDrafts.size + (this.transportDraft === undefined ? 0 : 1),
+                    changeCount: this.keyDrafts.size + this.engineDrafts.size + new Set([...this.controlDrafts.keys(), ...this.numberDrafts.keys()]).size + (this.transportDraft === undefined ? 0 : 1),
 					transport: this.transport(),
 					transportDirty: this.transportDraft !== void 0,
                     engines: Object.fromEntries(EXTENSIONS.map(id => [id, this.engineDrafts.get(id) ?? (this.section()?.engines?.[id] !== undefined && this.section().engines[id].enabled !== false)])),
@@ -524,57 +595,65 @@ window.__ModuleLoader__.load({
             { id: 'http', mark: '↗', capability: 'staticFetch', capabilities: ['fetch'], keys: [] },
         ];
         const SETTINGS_CSS = `
-            .wsf-controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:12px;border:1px solid var(--dsw-alias-border-secondary,#ddd);padding:12px;margin-block-end:16px}
-            .wsf-controls label{display:grid;gap:6px;min-inline-size:0}.wsf-controls input,.wsf-controls select{max-inline-size:100%;min-inline-size:0;padding:6px;font:inherit}
-            .wsf-controls .wsf-muted{grid-column:1/-1}.wsf-participation{display:flex;flex-wrap:wrap;gap:16px}.wsf-participation label{display:flex;align-items:center;gap:6px}
-            .wsf-settings{color:var(--dsw-alias-label-primary);font-size:13px;line-height:1.5;min-inline-size:0;container-type:inline-size;display:flex;flex-direction:column}
-            .wsf-settings>:not(.wsf-list){flex:none}
-            .wsf-settings p,.wsf-settings h3{margin:0}
-            .wsf-settings button,.wsf-settings input,.wsf-settings select{font:inherit}
-            .wsf-settings button:focus-visible,.wsf-settings input:focus-visible,.wsf-settings select:focus-visible{outline:2px solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:2px}
-            .wsf-summary,.wsf-tools,.wsf-footer,.wsf-row{display:flex;align-items:center;gap:12px}
-            .wsf-summary{justify-content:space-between;margin-block-end:14px;flex-wrap:wrap;gap:4px 12px}
-            .wsf-muted{color:var(--dsw-alias-label-secondary,var(--dsw-alias-label-tertiary));font-size:12px;overflow-wrap:anywhere}
-            .wsf-count{font-variant-numeric:tabular-nums;font-size:12px;color:var(--dsw-alias-label-secondary,var(--dsw-alias-label-tertiary))}
-            .wsf-tools{gap:8px;margin-block-end:10px;flex-wrap:wrap}
-            .wsf-search{position:relative;flex:1 1 180px;min-inline-size:0}
-            .wsf-search input,.wsf-tools select{box-sizing:border-box;min-block-size:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-layer-2);color:inherit}
-            .wsf-search input{inline-size:100%;padding-block:7px;padding-inline:12px 40px}
+            .wsf-settings{color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;line-height:1.5;min-inline-size:0;container-type:inline-size;display:flex;flex-direction:column}
+            .wsf-settings p,.wsf-settings h3{margin-block:0}
+            .wsf-settings :is(button,input,select,summary,a):focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:2px}
+            .wsf-muted{color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+            .wsf-heading{display:flex;align-items:center;gap:12px;padding-block:12px 4px}
+            .wsf-heading h3{font-size:13px;font-weight:600;flex:1;min-inline-size:0}
+            .wsf-count{font-size:12px;color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums}
+            .wsf-preference{display:grid;gap:6px;padding-block:12px;border-block-end:.5px solid var(--dsw-alias-border-l2)}
+            .wsf-setting-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px 16px}
+            .wsf-setting-label{font-weight:500;flex:1 1 70px}
+            .wsf-setting-row [role=tablist]{max-inline-size:100%}
+            .wsf-setting-row [role=tab]{padding-inline:12px}
+            .wsf-call-settings>summary strong{font-weight:500}.wsf-current-settings{margin-inline-start:auto;color:var(--dsw-alias-label-tertiary);font-size:12px}.wsf-call-settings{border-block-end:.5px solid var(--dsw-alias-border-l2)}
+            .wsf-advanced{border-block-end:.5px solid var(--dsw-alias-border-l2)}
+            .wsf-call-settings>summary,.wsf-advanced>summary,.wsf-guide>summary{display:flex;align-items:center;gap:8px;list-style:none;cursor:pointer;border-radius:var(--dsw-radius-sm);padding-block:12px;user-select:none}
+            .wsf-advanced>summary::-webkit-details-marker,.wsf-guide>summary::-webkit-details-marker{display:none}
+            .wsf-disclosure-copy{display:grid;gap:2px;flex:1;min-inline-size:0}
+            .wsf-disclosure-copy strong{font-weight:500}
+            .wsf-chevron{flex:none;inline-size:16px;block-size:16px;display:grid;place-items:center;color:var(--dsw-alias-label-tertiary);font-size:17px;line-height:1}
+            details[open]>summary .wsf-chevron{rotate:90deg}
+            .wsf-control-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:0 16px}
+            .wsf-controls-hint{padding-block:4px 12px}
+            .wsf-guide{margin-block-end:10px;color:var(--dsw-alias-label-tertiary);font-size:12px}
+            .wsf-guide>summary{padding-block:6px;justify-content:flex-start}
+            .wsf-guide p{padding-block:4px 8px}
+            .wsf-tools{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-block-end:8px}
+            .wsf-search{position:relative;flex:1 1 190px;min-inline-size:0}
+            .wsf-search-field{box-sizing:border-box;inline-size:100%;padding-inline-end:36px}
             .wsf-search input::-webkit-search-cancel-button{display:none}
-            .wsf-tools select{padding-inline:10px;max-inline-size:100%}
-            .wsf-clear{position:absolute;inset-inline-end:3px;inset-block-start:3px;inline-size:30px;block-size:30px;border:0;background:transparent;color:inherit;border-radius:5px;cursor:pointer}
-            .wsf-filters{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-block-end:12px}
-            .wsf-filter{background:transparent;border:1px solid transparent;border-radius:7px;min-block-size:32px;padding-inline:10px;cursor:pointer;color:var(--dsw-alias-label-secondary,var(--dsw-alias-label-tertiary))}
-            .wsf-filter[aria-pressed=true]{border-color:var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary);font-weight:600}
-            .wsf-filter-count{font-size:11px;margin-inline-start:6px;font-variant-numeric:tabular-nums;opacity:.7}
-            .wsf-results-count{margin-inline-start:auto;font-size:12px;color:var(--dsw-alias-label-secondary,var(--dsw-alias-label-tertiary))}
-            .wsf-list{flex:none;block-size:min(42dvh,420px);min-block-size:180px;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;border-block:1px solid var(--dsw-alias-border-l2);padding-inline-end:2px}
-            .wsf-service{border-block-end:1px solid var(--dsw-alias-border-l2);min-inline-size:0}
-            .wsf-service:last-child{border-block-end:0}
-            .wsf-row{gap:10px;min-block-size:66px;padding-inline:2px 8px}
-            .wsf-open{display:flex;align-items:center;gap:10px;flex:1;min-inline-size:0;text-align:start;border:0;border-radius:8px;color:inherit;background:transparent;padding:9px 6px;cursor:pointer}
-            .wsf-mark{display:grid;place-items:center;flex:none;inline-size:32px;block-size:32px;background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l2);border-radius:9px;font-size:11px;font-weight:650;color:var(--dsw-alias-label-secondary,var(--dsw-alias-label-tertiary))}
+            .wsf-clear{position:absolute;inset-inline-end:2px;inset-block-start:2px;inline-size:28px;min-inline-size:28px;padding-inline:0!important}
+            .wsf-status-filter{box-sizing:border-box;block-size:32px;max-inline-size:100%;padding-inline:10px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:inherit;font-size:12px}
+            .wsf-filters{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-block-end:8px}
+            .wsf-filter{padding-inline:10px!important}
+            .wsf-filter-count{margin-inline-start:6px;color:var(--dsw-alias-label-tertiary);font-size:11px;font-variant-numeric:tabular-nums}
+            .wsf-results-count{margin-inline-start:auto;color:var(--dsw-alias-label-tertiary);font-size:12px;white-space:nowrap}
+            .wsf-list{border-block-start:.5px solid var(--dsw-alias-border-l2)}
+            .wsf-service{border-block-end:.5px solid var(--dsw-alias-border-l2);min-inline-size:0}
+            .wsf-row{display:flex;align-items:center;gap:12px;min-block-size:58px}
+            .wsf-open{display:flex;align-items:center;gap:12px;flex:1;min-inline-size:0;text-align:start;border:0;border-radius:var(--dsw-radius-sm);color:inherit;background:transparent;padding-block:10px;padding-inline:4px;cursor:pointer;font:inherit}
             .wsf-name{flex:1;min-inline-size:0}
-            .wsf-name strong{font-weight:600;display:block;overflow-wrap:anywhere}
-            .wsf-name small{display:block;font-size:11px;color:var(--dsw-alias-label-secondary,var(--dsw-alias-label-tertiary));margin-block-start:2px}
-            .wsf-state{font-size:11px;color:var(--dsw-alias-label-secondary,var(--dsw-alias-label-tertiary));white-space:nowrap}
-            .wsf-state[data-dirty=true]{color:var(--dsw-alias-state-business-primary);font-weight:600}
-            .wsf-chevron{font-size:17px;inline-size:14px;flex:none;text-align:center;color:var(--dsw-alias-label-tertiary)}
-            .wsf-base{inline-size:36px;text-align:center;font-size:11px;color:var(--dsw-alias-label-secondary,var(--dsw-alias-label-tertiary))}
-            .wsf-detail{padding-block:2px 16px;padding-inline:48px 10px;display:grid;gap:14px}
-            .wsf-detail .wsf-muted{line-height:1.6}
-            .wsf-detail label{overflow-wrap:anywhere}
-            .wsf-notice{padding:8px 10px;border-inline-start:2px solid var(--dsw-alias-state-business-primary);background:var(--dsw-alias-bg-layer-2);border-radius:0 6px 6px 0;font-size:12px}
-            .wsf-transport{display:grid;gap:8px}
-            .wsf-empty{text-align:center;padding-block:40px;display:grid;justify-items:center;gap:8px}
-            .wsf-footer{justify-content:space-between;flex-wrap:wrap;padding-block:14px 4px;gap:10px}
-            .wsf-footer-status{flex:1 1 130px;min-inline-size:0;font-size:12px}
-            .wsf-footer-actions{display:flex;gap:8px;flex:none;margin-inline-start:auto}
-            .wsf-error{color:var(--dsw-alias-label-error);margin-block-start:8px!important;font-size:12px}
-            .wsf-link{padding:0;border:0;background:transparent;color:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer;min-block-size:28px}
-            .wsf-filter:active,.wsf-open:active,.wsf-clear:active,.wsf-link:active{background:var(--dsw-alias-bg-layer-2)}
-            @media(hover:hover) and (pointer:fine){.wsf-open:hover,.wsf-filter:hover,.wsf-clear:hover{background:var(--dsw-alias-bg-layer-2)}}
-            @container(max-width:390px){.wsf-detail{padding-inline:8px}.wsf-filter{padding-inline:6px;flex:1}.wsf-filter-count{display:none}.wsf-mark{display:none}.wsf-row{gap:4px}.wsf-state{font-size:11px}.wsf-open{gap:6px}.wsf-name small{font-size:11px}.wsf-summary{margin-block-end:10px}.wsf-results-count{inline-size:100%;margin-inline-start:10px}}
+            .wsf-name strong{display:block;font-size:13px;font-weight:500;overflow-wrap:anywhere}
+            .wsf-name small{display:block;margin-block-start:2px;color:var(--dsw-alias-label-tertiary);font-size:11px}
+            .wsf-state{color:var(--dsw-alias-label-tertiary);font-size:11px;white-space:nowrap}
+            .wsf-state[data-dirty=true]{color:var(--dsw-alias-label-secondary);font-weight:500}
+            .wsf-base{white-space:nowrap;text-align:end;color:var(--dsw-alias-label-tertiary);font-size:11px}
+            .wsf-detail{padding-block:2px 14px;padding-inline:4px;display:grid;gap:10px}
+            .wsf-participation{display:flex;flex-wrap:wrap;gap:12px 20px}
+            .wsf-notice{color:var(--dsw-alias-label-secondary);font-size:12px;line-height:1.6;padding-block:8px}
+            .wsf-transport{display:grid;gap:6px}
+            .wsf-empty{display:grid;justify-items:center;gap:8px;padding-block:32px;text-align:center}
+            .wsf-empty h3{font-size:13px;font-weight:500}
+            .wsf-footer{position:sticky;inset-block-end:0;z-index:1;display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding-block:12px;border-block-start:.5px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2)}
+            .wsf-footer-status{flex:1 1 140px;min-inline-size:0;color:var(--dsw-alias-label-tertiary);font-size:12px}
+            .wsf-footer-actions{display:flex;gap:8px;margin-inline-start:auto}
+            .wsf-error{color:var(--dsw-alias-state-error-primary);font-size:12px;padding-block:8px}
+            .wsf-link{min-block-size:28px;border:0;border-radius:var(--dsw-radius-sm);background:transparent;color:var(--dsw-alias-label-secondary);padding-inline:0;cursor:pointer;font:inherit;font-size:12px;text-decoration:underline;text-underline-offset:3px}
+            .wsf-open:active,.wsf-call-settings>summary:active,.wsf-advanced>summary:active,.wsf-guide>summary:active,.wsf-link:active{background:var(--dsw-alias-interactive-bg-hover)}
+            @media(hover:hover) and (pointer:fine){.wsf-open:hover,.wsf-call-settings>summary:hover,.wsf-advanced>summary:hover,.wsf-guide>summary:hover{background:var(--dsw-alias-interactive-bg-hover)}.wsf-link:hover{color:var(--dsw-alias-label-primary)}}
+            @container(max-width:360px){.wsf-row,.wsf-open{gap:6px}.wsf-filters{gap:2px}.wsf-filter{padding-inline:8px!important}.wsf-filter-count{margin-inline-start:4px}.wsf-setting-row [role=tab]{padding-inline:8px}}
         `;
         function KeyField({ t, row, disabled, onEdit }) {
             const status = row.ready === undefined ? 'checking' : !row.ready ? 'statusFailed' : row.configured ? 'configured' : 'unconfigured';
@@ -594,65 +673,110 @@ window.__ModuleLoader__.load({
             return rows.some(row => row.configured) ? 'partial' : 'unconfigured';
         }
         function WebSearchFetchCard(props) {
-            const { t, editKey, editTransport, editEngine, editControl, editParticipation, editView, toggleService, refresh, save, discard } = props;
+            const { t, editKey, editTransport, editEngine, editControl, editNumber, editParticipation, editView, toggleService, refresh, save, discard } = props;
             const state = props.useWebSearchFetch(snapshot => snapshot);
+            const onDiscard = React.useRef(props.leave);
+            onDiscard.current = props.leave;
+            React.useEffect(() => () => onDiscard.current(), []);
             const disabled = !state.available || !state.writable || state.saving;
             const jsx = react_jsx_runtime.jsx, jsxs = react_jsx_runtime.jsxs;
             const ui = _deepseek_ai_dsh_client_ui_primitives;
             const visible = SERVICES.filter(service => state.visibleServiceIds.includes(service.id));
+            const modeId = 'wsf-mode-' + state.controls.mode;
+            const presetId = 'wsf-preset-' + state.controls.preset;
             return jsxs('form', { className: 'wsf-settings', 'aria-label': t('title'), 'aria-busy': state.saving,
-                onSubmit: event => { event.preventDefault(); save(); }, children: [
+                onSubmit: event => event.preventDefault(), children: [
                     jsx('style', { children: SETTINGS_CSS }),
-                    jsxs('div', { className: 'wsf-summary', children: [
-                        jsx('p', { className: 'wsf-muted', children: t('intro') }),
-                        jsx('span', { className: 'wsf-count', children: `${SERVICES.length} ${t('servicesCount')} · ${CREDENTIAL_SLOTS.length} ${t('keysCount')}` }),
-                    ] }),
                     !state.available && jsx('p', { role: 'status', className: 'wsf-notice', children: t('unavailable') }),
                     !state.writable && state.available && jsx('p', { className: 'wsf-notice', children: t('readOnlyHint') }),
-                    jsxs('fieldset', { className: 'wsf-controls', disabled, children: [
-                        jsx('legend', { children: t('controlsTitle') }),
-                        jsxs('label', { children: [t('modeLabel'), jsx('select', { value: state.controls.mode, onChange: event => editControl('mode', event.target.value), children: ['organize', 'select'].map(value => jsx('option', { value, children: t(value + 'Mode') }, value)) })] }),
-                        jsxs('label', { children: [t('presetLabel'), jsx('select', { value: state.controls.preset, onChange: event => editControl('preset', event.target.value), children: ['custom', 'free', 'balanced', 'deep'].map(value => jsx('option', { value, children: t(value + 'Preset') }, value)) })] }),
-                        ...['maxSearchServices', 'maxFetchServices', 'maxRequests', 'searchDeadlineMs', 'fetchDeadlineMs', 'maxOutputChars'].map(name => jsxs('label', { children: [t(name), jsx('input', { type: 'number', min: name === 'maxOutputChars' ? 1000 : 1, max: ({ maxSearchServices: 16, maxFetchServices: 11, maxRequests: 256, searchDeadlineMs: 3600000, fetchDeadlineMs: 3600000, maxOutputChars: 1000000 })[name], step: 1, value: state.controls[name], onChange: event => editControl(name, Number(event.target.value)) })] }, name)),
-                        jsx('p', { className: 'wsf-muted', children: t('controlsHint') }),
-                        state.controls.preset === 'free' && jsx('p', { className: 'wsf-muted', children: t('freeHint') }),
+                    jsxs('details', { className: 'wsf-call-settings', children: [
+                        jsxs('summary', { children: [
+                            jsx('strong', { children: t('settingsTitle') }),
+                            jsx('span', { className: state.invalid ? 'wsf-current-settings wsf-error' : 'wsf-current-settings', children: state.invalid ? t('invalidControls') : t(state.controls.preset + 'Preset') + ' · ' + t(state.controls.mode + 'Mode') }),
+                            jsx('span', { className: 'wsf-chevron', 'aria-hidden': true, children: '›' }),
+                        ] }),
+                    jsxs('div', { className: 'wsf-preference', children: [
+                        jsxs('div', { className: 'wsf-setting-row', children: [
+                            jsx('span', { className: 'wsf-setting-label', children: t('presetLabel') }),
+                            jsx(ui.SegmentedControl, { id: 'wsf-preset', value: state.controls.preset,
+                                label: t('presetLabel'), disabled, onChange: value => editControl('preset', value),
+                                options: ['free', 'balanced', 'deep', 'custom'].map(value => ({ value, label: t(value + 'Preset') })) }),
+                        ] }),
+                        jsx('p', { id: presetId + '-panel', role: 'tabpanel', 'aria-labelledby': presetId, className: 'wsf-muted',
+                            children: t(state.controls.preset === 'free' ? 'freeHint' : state.controls.preset + 'PresetHint') }),
+                    ] }),
+                    jsxs('div', { className: 'wsf-preference', children: [
+                        jsxs('div', { className: 'wsf-setting-row', children: [
+                            jsx('span', { className: 'wsf-setting-label', children: t('modeLabel') }),
+                            jsx(ui.SegmentedControl, { id: 'wsf-mode', value: state.controls.mode,
+                                label: t('modeLabel'), disabled, onChange: value => editControl('mode', value),
+                                options: ['organize', 'select'].map(value => ({ value, label: t(value + 'Mode') })) }),
+                        ] }),
+                        jsx('p', { id: modeId + '-panel', role: 'tabpanel', 'aria-labelledby': modeId, className: 'wsf-muted', children: t(state.controls.mode + 'Hint') }),
+                    ] }),
+                    jsxs('details', { className: 'wsf-advanced', children: [
+                        jsxs('summary', { children: [
+                            jsxs('span', { className: 'wsf-disclosure-copy', children: [jsx('strong', { children: t('advanced') }), jsx('span', { className: state.invalid ? 'wsf-error' : 'wsf-muted', children: t(state.invalid ? 'invalidControls' : 'advancedHint') })] }),
+                            jsx('span', { className: 'wsf-chevron', 'aria-hidden': true, children: '›' }),
+                        ] }),
+                        jsx('div', { className: 'wsf-control-grid', children: Object.keys(NUMBER_CONTROLS).map(name => {
+                            const field = state.numberFields[name];
+                            return jsx('div', { children: jsx(ui.SettingsValueField, {
+                                id: 'wsf-limit-' + name, label: t(name), numeric: true, disabled,
+                                text: field.text, invalid: field.invalid, overridden: field.dirty,
+                                overriddenLabel: t('staged'), resetLabel: t('resetField'),
+                                invalidLabel: t('invalidNumber') + field.min + '–' + field.max,
+                                hint: t('range') + ': ' + field.min + '–' + field.max,
+                                onEdit: text => editNumber(name, text), onReset: () => editNumber(name, field.servedText),
+                            }) }, name);
+                        }) }),
+                        jsx('p', { className: 'wsf-muted wsf-controls-hint', children: t('controlsHint') }),
+                    ] }),
+                    ] }),
+                    jsxs('div', { className: 'wsf-heading', children: [
+                        jsx('h3', { children: t('servicesTitle') }),
+                        jsx('span', { className: 'wsf-count', children: SERVICES.length + ' ' + t('servicesCount') }),
+                        jsx(ui.Button, { type: 'button', variant: 'ghost', size: 'sm', onClick: refresh, disabled: state.saving, children: t('refresh') }),
+                    ] }),
+                    jsxs('details', { className: 'wsf-guide', children: [
+                        jsxs('summary', { children: [jsx('span', { className: 'wsf-chevron', 'aria-hidden': true, children: '›' }), t('startGuide')] }),
+                        jsx('p', { children: t('intro') }),
                     ] }),
                     jsxs('div', { className: 'wsf-tools', children: [
                         jsxs('div', { className: 'wsf-search', children: [
-                            jsx('input', { type: 'search', 'aria-label': t('searchLabel'), placeholder: t('searchPlaceholder'), value: state.view.query,
+                            jsx(ui.Input, { className: 'wsf-search-field', type: 'search', 'aria-label': t('searchLabel'), placeholder: t('searchPlaceholder'), value: state.view.query,
                                 onChange: event => editView({ query: event.target.value }) }),
-                            state.view.query && jsx('button', { type: 'button', className: 'wsf-clear', 'aria-label': t('clearSearch'),
-                                onClick: event => { editView({ query: '' }); event.currentTarget.parentElement.querySelector('input').focus(); }, children: '×' }),
+                            state.view.query && jsx(ui.Button, { type: 'button', variant: 'ghost', size: 'sm', className: 'wsf-clear', 'aria-label': t('clearSearch'),
+                                onClick: event => { editView({ query: '' }); event.currentTarget.closest('.wsf-search').querySelector('input').focus(); }, children: '×' }),
                         ] }),
-                        jsx('select', { 'aria-label': t('statusFilter'), value: state.view.status, onChange: event => editView({ status: event.target.value }),
+                        jsx('select', { className: 'wsf-status-filter', 'aria-label': t('statusFilter'), value: state.view.status, onChange: event => editView({ status: event.target.value }),
                             children: ['all', 'needsKey', 'pending', 'noKey'].map(value => jsx('option', { value, children: t(value === 'all' ? 'allStatus' : value) }, value)) }),
                     ] }),
-                    jsxs('div', { className: 'wsf-filters', 'aria-label': t('title'), children: [
-                        ...['all', 'search', 'fetch', 'rerank'].map(capability => jsxs('button', { type: 'button', className: 'wsf-filter',
+                    jsxs('div', { className: 'wsf-filters', role: 'group', 'aria-label': t('searchLabel'), children: [
+                        ...['all', 'search', 'fetch', 'rerank'].map(capability => jsxs(ui.Button, { type: 'button', size: 'sm', variant: state.view.capability === capability ? 'outline' : 'ghost', className: 'wsf-filter',
                             'aria-pressed': state.view.capability === capability, onClick: () => editView({ capability }), children: [
                                 t(capability), jsx('span', { className: 'wsf-filter-count', 'aria-hidden': true,
                                     children: SERVICES.filter(service => capability === 'all' || service.capabilities.includes(capability)).length }),
                             ] }, capability)),
-                        jsx('span', { className: 'wsf-results-count', role: 'status', children: `${visible.length} ${t('matches')}` }),
+                        jsx('span', { className: 'wsf-results-count', role: 'status', children: visible.length + ' ' + t('matches') }),
                     ] }),
                     jsx('div', { className: 'wsf-list', children: visible.length ? visible.map(service => {
                         const expanded = state.view.expandedId === service.id;
                         const status = serviceStatus(service, state);
                         const missingKey = service.keys.some(id => { const row = state.keys.find(row => row.id === id); return row.ready && !row.configured && !row.staged; });
                         const name = t(service.id + '-service');
-                        const detailId = `wsf-detail-${service.id}`;
+                        const detailId = 'wsf-detail-' + service.id;
                         const specificHint = ['http', 'siliconflow', 'firecrawl', 'github', 'doubao', 'tinyfish', 'serply', 'kimi', 'bing', 'aihot'].includes(service.id)
                             ? (service.id === 'siliconflow' ? 'rerankHint' : service.id + 'Hint') : service.extension ? 'extensionHint' : 'baseHint';
                         return jsxs('section', { className: 'wsf-service', 'aria-label': name, children: [
                             jsxs('div', { className: 'wsf-row', children: [
                                 jsxs('button', { type: 'button', className: 'wsf-open', 'aria-expanded': expanded,
-                                    'aria-controls': detailId, 'aria-label': `${t('configure')} ${name}`, onClick: () => toggleService(service.id), children: [
-                                        jsx('span', { className: 'wsf-mark', 'aria-hidden': true, children: service.mark }),
+                                    'aria-controls': detailId, 'aria-label': t('configure') + ' ' + name, onClick: () => toggleService(service.id), children: [
                                         jsxs('span', { className: 'wsf-name', children: [jsx('strong', { children: name }), jsx('small', { children: t(service.capability) })] }),
                                         jsx('span', { className: 'wsf-state', 'data-dirty': status === 'staged', children: t(status) }),
                                         jsx('span', { className: 'wsf-chevron', 'aria-hidden': true, children: expanded ? '⌄' : '›' }),
                                     ] }),
-                                service.extension ? jsx(ui.Switch, { label: service.id === 'firecrawl' ? t('firecrawlEnable') : `${t('enable')} ${name}`,
+                                service.extension ? jsx(ui.Switch, { label: service.id === 'firecrawl' ? t('firecrawlEnable') : t('enable') + ' ' + name,
                                     checked: state.engines[service.id], disabled, onChange: checked => editEngine(service.id, checked) })
                                     : jsx('span', { className: 'wsf-base', children: service.id === 'siliconflow' ? t('rerank') : t('base') }),
                             ] }),
@@ -660,14 +784,13 @@ window.__ModuleLoader__.load({
                                 jsx('p', { className: 'wsf-muted', children: t(specificHint) }),
                                 service.id !== 'http' && service.id !== 'siliconflow' && jsx('div', { className: 'wsf-participation', children: service.capabilities.filter(face => face === 'search' || face === 'fetch').map(face => {
                                     const allowed = state.controls.preset !== 'free' || ['tinyfish', 'bing', 'github', 'aihot'].includes(service.id);
-                                    return jsxs('label', { children: [jsx('input', { type: 'checkbox', disabled: disabled || !allowed,
+                                    return jsx(ui.Checkbox, { disabled: disabled || !allowed, label: t(face === 'search' ? 'participateSearch' : 'participateFetch'),
                                         checked: allowed && state.controls[face === 'search' ? 'searchServices' : 'fetchServices'].includes(service.id),
-                                        onChange: event => editParticipation(service.id, face, event.target.checked) }), t(face === 'search' ? 'participateSearch' : 'participateFetch')] }, face);
+                                        onChange: checked => editParticipation(service.id, face, checked) }, face);
                                 }) }),
                                 service.id === 'aihot' && jsx('p', { className: 'wsf-muted', children: t('aihotTerms') }),
                                 service.id === 'siliconflow' && jsx('p', { className: 'wsf-muted', children: jsx('a', {
-                                    href: 'https://cloud.siliconflow.cn/i/E3nhNFP4', target: '_blank', rel: 'noopener noreferrer',
-                                    children: t('siliconflowInvite'),
+                                    href: 'https://cloud.siliconflow.cn/i/E3nhNFP4', target: '_blank', rel: 'noopener noreferrer', children: t('siliconflowInvite'),
                                 }) }),
                                 ...service.keys.map(id => jsx(KeyField, { t, row: state.keys.find(row => row.id === id), disabled, onEdit: text => editKey(id, text) }, id)),
                                 service.id === 'zhipu' && jsxs('div', { className: 'wsf-transport', children: [
@@ -676,24 +799,23 @@ window.__ModuleLoader__.load({
                                         label: t('transportLabel'), disabled, onChange: editTransport }),
                                     jsx('p', { className: 'wsf-muted', children: t('transportHint') }),
                                 ] }),
-                                service.extension && service.keys.length > 0 && (!state.engines[service.id] || missingKey)
-                                    && jsx('p', { className: 'wsf-notice', children: t(!state.engines[service.id] ? 'enableWarning' : service.id === 'firecrawl' ? 'firecrawlHint' : 'missingWarning') }),
+                                service.extension && service.keys.length > 0 && (!state.engines[service.id] || missingKey && service.id !== 'firecrawl')
+                                    && jsx('p', { className: 'wsf-notice', children: t(!state.engines[service.id] ? 'enableWarning' : 'missingWarning') }),
                                 service.keys.length > 0 && status === 'statusFailed' && jsx('button', { type: 'button', className: 'wsf-link', onClick: refresh, children: t('refresh') }),
                             ] }) }),
                         ] }, service.id);
                     }) : jsxs('div', { className: 'wsf-empty', children: [
                         jsx('h3', { children: t('noMatches') }), jsx('p', { className: 'wsf-muted', children: t('noMatchesHint') }),
-                        jsx(ui.Button, { type: 'button', variant: 'outline', onClick: () => editView({ query: '', capability: 'all', status: 'all' }), children: t('resetFilters') }),
+                        jsx(ui.Button, { type: 'button', variant: 'outline', size: 'sm', onClick: () => editView({ query: '', capability: 'all', status: 'all' }), children: t('resetFilters') }),
                     ] }) }),
                     state.failed && jsx('p', { role: 'alert', className: 'wsf-error', children: t('saveFailed') }),
                     jsxs('div', { className: 'wsf-footer', children: [
-                        jsx('p', { className: 'wsf-footer-status', role: 'status', children: state.saving ? t('saving') : state.dirty ? `${state.changeCount} ${t('dirty')}` : state.saved ? t('saved') : t('clean') }),
+                        jsx('p', { className: state.invalid ? 'wsf-footer-status wsf-error' : 'wsf-footer-status', role: 'status', children: state.invalid ? t('invalidControls') : state.saving ? t('saving') : state.dirty ? state.changeCount + ' ' + t('dirty') : state.saved ? t('saved') : t('clean') }),
                         jsxs('div', { className: 'wsf-footer-actions', children: [
-                            jsx(ui.Button, { type: 'button', variant: 'outline', disabled: state.saving || !state.dirty, onClick: discard, children: t('discard') }),
-                            jsx(ui.Button, { type: 'submit', variant: 'primary', disabled: disabled || !state.dirty, children: t(state.saving ? 'saving' : 'save') }),
+                            jsx(ui.Button, { type: 'button', variant: 'ghost', size: 'sm', disabled: state.saving || !state.dirty, onClick: discard, children: t('discard') }),
+                            jsx(ui.Button, { type: 'button', variant: 'primary', size: 'sm', disabled: disabled || !state.dirty || state.invalid, onClick: save, children: t(state.saving ? 'saving' : 'save') }),
                         ] }),
                     ] }),
-                    jsx('p', { className: 'wsf-muted', children: t('keysHint') }),
                 ] });
         }
         //#endregion
@@ -733,6 +855,8 @@ window.__ModuleLoader__.load({
                     refresh: () => card.readCredentials(),
 					editEngine: (id, enabled) => card.editEngine(id, enabled),
                     editControl: (name, value) => card.editControl(name, value),
+                    editNumber: (name, text) => card.editNumber(name, text),
+                    leave: () => card.leave(),
                     editParticipation: (id, face, enabled) => card.editParticipation(id, face, enabled),
                     editTransport: (next) => {
 						card.editTransport(next);

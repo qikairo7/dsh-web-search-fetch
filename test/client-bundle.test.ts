@@ -14,6 +14,7 @@ import { ADDITIONAL_ENGINE_DEFAULTS } from '../src/engines/additional/index.js';
  */
 
 /** React stand-ins: the bundle only builds elements, it never renders here. */
+const effectCleanups: (() => void)[] = [];
 const reactStub = {
   createElement: (type: unknown, props: unknown, ...children: unknown[]) => ({
     type,
@@ -21,6 +22,11 @@ const reactStub = {
     children,
   }),
   useId: () => 'test-id',
+  useRef: (value: unknown) => ({ current: value }),
+  useEffect: (effect: () => unknown) => {
+    const cleanup = effect();
+    if (typeof cleanup === 'function') effectCleanups.push(cleanup as () => void);
+  },
 };
 const jsxRuntimeStub = {
   jsx: (type: unknown, props: unknown) => ({ type, props }),
@@ -52,6 +58,9 @@ const primitivesStub = {
   Tag: 'Tag',
   Button: 'Button',
   Switch: 'Switch',
+  Input: 'Input',
+  Checkbox: 'Checkbox',
+  SettingsValueField: 'SettingsValueField',
 };
 
 /** The modules the bundle is allowed to require, mirroring the platform seeds. */
@@ -692,5 +701,89 @@ describe('card controller', () => {
     face.editControl('mode', 'select');
     face.discard();
     expect(face.hooks.webSearchFetch.getSnapshot().controls.mode).toBe('organize');
+  });
+
+  /** Drive the rendered input, including the old bare number input. */
+  function editRequestInput(face: Record<string, any>, page: ReturnType<typeof createPageContext>, text: string) {
+    const tab = page.registrations.find(entry => entry.options.id === 'web-search-fetch')!;
+    const component = tab.component as (props: Record<string, any>) => any;
+    const tree = component({ ...face, t: (key: string) => key,
+      useWebSearchFetch: (select: (state: any) => any) => select(face.hooks.webSearchFetch.getSnapshot()) });
+    const nodes: any[] = [];
+    function visit(node: any) {
+      if (Array.isArray(node)) { node.forEach(visit); return; }
+      if (!node || typeof node !== 'object') return;
+      nodes.push(node);
+      visit(node.props?.children);
+    }
+    visit(tree);
+    const input = nodes.find(node => node.props?.id === 'wsf-limit-maxRequests')
+      ?? nodes.find(node => node.type === 'input' && node.props.type === 'number' && node.props.value === 32);
+    expect(input, 'request limit must be editable').toBeDefined();
+    if (input.props.onEdit) input.props.onEdit(text);
+    else input.props.onChange({ target: { value: text } });
+  }
+
+  it('清空数值输入保留草稿并阻止写入，而不是立即恢复原数字', async () => {
+    const { face, page, scope } = mount({ value: { controls: { maxRequests: 32 } } });
+    editRequestInput(face, page, '');
+    const state = face.hooks.webSearchFetch.getSnapshot();
+    expect(state.dirty).toBe(true);
+    expect(state.invalid).toBe(true);
+    expect(state.numberFields.maxRequests.text).toBe('');
+    await face.save();
+    expect(scope.mutations).toHaveLength(0);
+    editRequestInput(face, page, '32');
+    expect(face.hooks.webSearchFetch.getSnapshot().dirty).toBe(false);
+  });
+
+  it('超出范围的输入保留错误，连同凭证草稿一起阻止保存', async () => {
+    const writes: string[] = [];
+    const { face, page, scope } = mount({ value: { controls: { maxRequests: 32 } },
+      set: ref => { writes.push(ref); return { ok: true }; } });
+    editRequestInput(face, page, '0');
+    face.editKey('tavily', 'test-fixture');
+    expect(face.hooks.webSearchFetch.getSnapshot().invalid).toBe(true);
+    await face.save();
+    expect(scope.mutations).toHaveLength(0);
+    expect(writes).toHaveLength(0);
+    face.discard();
+    expect(face.hooks.webSearchFetch.getSnapshot().invalid).toBe(false);
+    expect(face.hooks.webSearchFetch.getSnapshot().dirty).toBe(false);
+  });
+
+  it('修正数值后只保存对应字段，筛选服务不会丢掉数字草稿', async () => {
+    const { face, page, scope } = mount({ value: { controls: { maxRequests: 32 } }, revision: 7 });
+    editRequestInput(face, page, '24');
+    face.editView({ query: 'Kimi' });
+    expect(face.hooks.webSearchFetch.getSnapshot().numberFields.maxRequests.text).toBe('24');
+    expect(face.hooks.webSearchFetch.getSnapshot().changeCount).toBe(1);
+    await face.save();
+    expect(scope.mutations).toEqual([[{ op: 'set', path: ['controls', 'maxRequests'], value: 24 }]]);
+    expect(scope.revisions).toEqual([7]);
+  });
+
+  it('保存中关闭立即清除可见草稿，延迟部分失败不恢复密钥，也不撤销已接受的写入', async () => {
+    let finish!: (value: { ok: boolean }) => void;
+    const pending = new Promise<{ ok: boolean }>(resolve => { finish = resolve; });
+    const writes: string[] = [];
+    const { face, page, scope } = mount({ value: { controls: { maxRequests: 32 } },
+      set: ref => { writes.push(ref); return ref === 'TAVILY_API_KEY' ? pending : { ok: false }; } });
+    face.editKey('tavily', 'test-fixture-1');
+    face.editKey('exa', 'test-fixture-2');
+    editRequestInput(face, page, '24');
+    const saving = face.save();
+    await Promise.resolve();
+    expect(writes).toEqual(['TAVILY_API_KEY']);
+    effectCleanups.at(-1)!();
+    expect(face.hooks.webSearchFetch.getSnapshot().keys.every((row: { text: string }) => row.text === '')).toBe(true);
+    finish({ ok: true });
+    await saving;
+    expect(writes).toEqual(['TAVILY_API_KEY', 'EXA_API_KEY']);
+    const state = face.hooks.webSearchFetch.getSnapshot();
+    expect(state.dirty).toBe(false);
+    expect(state.numberFields.maxRequests.dirty).toBe(false);
+    expect(state.saved).toBe(false);
+    expect(scope.mutations).toEqual([[{ op: 'set', path: ['controls', 'maxRequests'], value: 24 }]]);
   });
 });
