@@ -30,6 +30,6 @@ AIHOT 默认关闭，启用前应阅读 [AIHOT 使用规则](https://aihot.news/
 
 ## 漏洞报告
 
-发现安全问题时，请优先使用仓库的 [GitHub 私密漏洞报告入口](https://github.com/qikairo7/dsh-web-search-fetch/security/advisories/new)。此入口需要维护者启用 Private vulnerability reporting。
+仓库已启用 GitHub Private vulnerability reporting。发现安全问题时，请使用[私密漏洞报告入口](https://github.com/qikairo7/dsh-web-search-fetch/security/advisories/new)，报告内容不公开。
 
 若入口不可用，不要把可利用细节或私密数据放入公开 Issue；可提交不含这些细节的联系请求，待维护者提供私密沟通方式。报告应包含受影响版本、可复现条件、影响和脱敏复现材料。本项目暂未承诺固定安全响应时限。
