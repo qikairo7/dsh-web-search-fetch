@@ -11,6 +11,14 @@ import { MAX_UPSTREAM_ERROR_CHARS } from '../../limits.js';
 /** Firecrawl v2 scrape endpoint (DESIGN.md). */
 export const FIRECRAWL_SCRAPE_URL = 'https://api.firecrawl.dev/v2/scrape';
 
+/** Anonymous credits apply only to the official Search and Scrape endpoints. */
+export function isFirecrawlKeylessEndpoint(raw: string): boolean {
+  try {
+    const url = new URL(raw);
+    return url.href === 'https://api.firecrawl.dev/v2/search' || url.href === FIRECRAWL_SCRAPE_URL;
+  } catch { return false; }
+}
+
 /** Default credential reference for the Firecrawl engine (the config default). */
 export const FIRECRAWL_DEFAULT_API_KEY_ENV = 'FIRECRAWL_API_KEY';
 

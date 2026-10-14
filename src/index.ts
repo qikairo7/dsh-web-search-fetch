@@ -40,7 +40,7 @@ import type { SearchEngineOverrides } from './search-pipeline.js';
 import { AggregatedFetchProvider, createExtractionLegs } from './fetch-pipeline.js';
 import { CircuitBreaker, formatBreakerEvent } from './breaker/index.js';
 import { FirecrawlClient } from './engines/firecrawl/client.js';
-import { FIRECRAWL_DEFAULT_API_KEY_ENV, FIRECRAWL_SCRAPE_URL } from './engines/firecrawl/wire.js';
+import { FIRECRAWL_DEFAULT_API_KEY_ENV, FIRECRAWL_SCRAPE_URL, isFirecrawlKeylessEndpoint } from './engines/firecrawl/wire.js';
 import { AnySearchEngine } from './engines/anysearch/engine.js';
 import { ANYSEARCH_DEFAULT_BASE_URL } from './engines/anysearch/limits.js';
 import { RERANK_TIMEOUT_MS, SILICONFLOW_RERANK_URL } from './engines/rerank/limits.js';
@@ -467,6 +467,9 @@ export function apply(ctx: Context, config: Config): void {
       }
     }
     if (id === 'bing' || id === 'aihot') return true;
+    if (id === 'firecrawl' && isFirecrawlKeylessEndpoint(face === 'fetch'
+      ? fetchConfig.firecrawlBaseURL ?? FIRECRAWL_SCRAPE_URL
+      : (settings?.baseURL ?? 'https://api.firecrawl.dev').replace(/\/+$/, '') + '/v2/search')) return true;
     if (typeof ctx.credentials.describe !== 'function') return true;
     const slot = id === 'doubao' ? face === 'fetch' ? 'doubao-fetch' : 'doubao-search' : id;
     const reference = face === 'fetch' && id === 'anysearch' ? config.fetch?.anysearchApiKeyEnv?.get() || resolveCredentialRef(config, 'anysearch')

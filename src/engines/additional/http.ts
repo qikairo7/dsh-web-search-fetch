@@ -1,6 +1,7 @@
 import { WebError } from '@deepseek-ai/dsh-web';
 import type { BreakerSignal } from '../../breaker/index.js';
 import { parseRetryAfterMs } from '../anysearch/error.js';
+import { isFirecrawlKeylessEndpoint } from '../firecrawl/wire.js';
 
 export interface EngineHttpOptions {
   id: string;
@@ -60,7 +61,6 @@ export class EngineHttp {
       if (composed.aborted) throw new WebError(`${this.options.id}: aborted`, 'WEB_ABORTED');
       if (this.cooldown && this.cooldown.until > Date.now()) throw this.cooldown.error;
       const key = this.options.auth === 'none' ? undefined : (await abortable(this.options.resolveApiKey(), composed))?.trim();
-      if (this.options.auth !== 'none' && !key) throw new WebError(`${this.options.id}: credential is not configured`, 'WEB_PROVIDER_ERROR');
       const url = new URL(this.options.baseURL);
       if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) {
         throw new WebError(`${this.options.id}: invalid API endpoint`, 'WEB_PROVIDER_ERROR');
@@ -68,10 +68,13 @@ export class EngineHttp {
       url.pathname = url.pathname.replace(/\/+$/, '') + path;
       url.search = query?.toString() ?? '';
       url.hash = '';
+      if (this.options.auth !== 'none' && !key && !(this.options.id === 'firecrawl' && isFirecrawlKeylessEndpoint(url.href))) {
+        throw new WebError(`${this.options.id}: credential is not configured`, 'WEB_PROVIDER_ERROR');
+      }
       const headers: Record<string, string> = {
         accept: this.options.accept ?? 'application/json', 'content-type': 'application/json',
         'user-agent': 'dsh-web-search-fetch', 'accept-encoding': 'gzip, br',
-        ...(this.options.auth === 'none' ? {} : this.options.auth === 'bearer' ? { authorization: `Bearer ${key}` } : { 'x-api-key': key! }),
+        ...(!key || this.options.auth === 'none' ? {} : this.options.auth === 'bearer' ? { authorization: `Bearer ${key}` } : { 'x-api-key': key }),
         ...extraHeaders,
       };
       if (this.options.id === 'github') {

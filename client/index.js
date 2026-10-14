@@ -9,7 +9,7 @@ window.__ModuleLoader__.load({
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
         //#region locales
         const zh = {
-            title: '网络搜索与提取', intro: '管理搜索来源、网页提取与结果重排。',
+            title: '网络搜索与提取', intro: '首次使用无需填写密钥：可先用 Firecrawl 官方匿名额度搜索和提取，并使用 Bing RSS 搜索；后续按需配置更多服务。',
             controlsTitle: '正文整理与调用控制', modeLabel: '网页正文处理', organizeMode: '整理：去重、互补、保留差异', selectMode: '旧版：返回单份正文',
             presetLabel: '调用预设', customPreset: '自定义', freePreset: '免费接口', balancedPreset: '均衡（最多三路）', deepPreset: '深度检索',
             maxSearchServices: '每个查询的搜索服务上限', maxFetchServices: '每个 URL 的提取服务上限', maxRequests: '每次操作的 HTTP 请求上限',
@@ -41,7 +41,7 @@ window.__ModuleLoader__.load({
             transportHint: 'GLM Coding Plan 为付费订阅；tools-api 使用按次计费的 search_pro。套餐额度不属于免费额度，两条通道共用此密钥。',
             baseHint: '配置凭证后参与调用；未配置时，其他可用服务继续工作。',
             extensionHint: '启用并保存后，参与下一次搜索或适用网页的提取。',
-            firecrawlHint: '开关只控制搜索。Firecrawl 网页提取仍按凭证配置使用。',
+            firecrawlHint: '官方端点未配置密钥时使用匿名免费额度，可直接搜索和提取；受服务方额度及限流约束。填写密钥后使用账户额度，自定义端点仍需密钥。开关只控制搜索。',
             githubHint: '搜索公开仓库；提取仅适用于仓库 README 和 blob 文件 URL。',
             doubaoHint: '搜索和提取分别使用密钥，可独立配置。',
             tinyfishHint: 'Search 与 Fetch 使用独立 API 地址，共用此密钥。',
@@ -61,7 +61,7 @@ window.__ModuleLoader__.load({
             clean: '暂无待保存更改', dirty: '项未保存', refresh: '刷新凭证状态',
         };
         const en = {
-            title: 'Web search & fetch', intro: 'Manage search sources, extraction and reranking.',
+            title: 'Web search & fetch', intro: 'Start without a key using official Firecrawl anonymous credits and Bing RSS search. Configure more services when needed.',
             controlsTitle: 'Content organization and call limits', modeLabel: 'Page content', organizeMode: 'Organize: deduplicate, complement, retain variants', selectMode: 'Legacy: select one extract',
             presetLabel: 'Call preset', customPreset: 'Custom', freePreset: 'Free APIs', balancedPreset: 'Balanced (up to three services)', deepPreset: 'Deep search',
             maxSearchServices: 'Search services per query', maxFetchServices: 'Extraction services per URL', maxRequests: 'HTTP requests per operation',
@@ -93,7 +93,7 @@ window.__ModuleLoader__.load({
             transportHint: 'Coding Plan is a paid subscription; tools-api uses pay-per-call search_pro. Plan credits are not free credits. Both share this key.',
             baseHint: 'Uses configured credentials. Other available services still work without this key.',
             extensionHint: 'Enable and save to join the next search or supported page extraction.',
-            firecrawlHint: 'This switch controls search. Extraction still uses its configured credentials.',
+            firecrawlHint: 'Official endpoints use anonymous free credits without a key, subject to quota and rate limits. A configured key uses account credits; custom endpoints still require a key. This switch controls search only.',
             githubHint: 'Search public repositories; extract only repository README and blob file URLs.',
             doubaoHint: 'Search and extraction use separate credentials.',
             tinyfishHint: 'Separate Search and Fetch API endpoints share this key.',
@@ -677,7 +677,7 @@ window.__ModuleLoader__.load({
                                     jsx('p', { className: 'wsf-muted', children: t('transportHint') }),
                                 ] }),
                                 service.extension && service.keys.length > 0 && (!state.engines[service.id] || missingKey)
-                                    && jsx('p', { className: 'wsf-notice', children: t(state.engines[service.id] ? 'missingWarning' : 'enableWarning') }),
+                                    && jsx('p', { className: 'wsf-notice', children: t(!state.engines[service.id] ? 'enableWarning' : service.id === 'firecrawl' ? 'firecrawlHint' : 'missingWarning') }),
                                 service.keys.length > 0 && status === 'statusFailed' && jsx('button', { type: 'button', className: 'wsf-link', onClick: refresh, children: t('refresh') }),
                             ] }) }),
                         ] }, service.id);

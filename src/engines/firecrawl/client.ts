@@ -14,6 +14,7 @@ import type { WebFetchResult } from '@deepseek-ai/dsh-web';
 import {
   FIRECRAWL_SCRAPE_TIMEOUT_MS,
   FIRECRAWL_SCRAPE_URL,
+  isFirecrawlKeylessEndpoint,
   buildFirecrawlScrapeRequest,
   classifyFirecrawlHttpFailure,
   extractFirecrawlErrorCode,
@@ -26,7 +27,7 @@ import {
 import type { FirecrawlFailure } from './wire.js';
 
 export interface FirecrawlClientOptions {
-  /** Resolve the API key once per operation; `undefined` means unconfigured. Never cached. */
+  /** Resolve per operation; absent keys use anonymous credits on the official endpoint. */
   resolveApiKey: () => Promise<string | undefined>;
   /** Credential reference name used in error messages (the value never appears). */
   credentialName: string;
@@ -75,8 +76,8 @@ export class FirecrawlClient {
     if (signal?.aborted === true) {
       throw new WebError('Firecrawl scrape aborted', 'WEB_ABORTED', { cause: signal.reason });
     }
-    const apiKey = await this.resolveApiKey();
-    if (apiKey === undefined || apiKey.length === 0) {
+    const apiKey = (await this.resolveApiKey())?.trim();
+    if (!apiKey && !isFirecrawlKeylessEndpoint(this.baseURL)) {
       throw new WebError(
         `scrape credential "${this.credentialName}" is not configured`,
         'WEB_PROVIDER_ERROR',
@@ -88,8 +89,9 @@ export class FirecrawlClient {
     try {
       response = await this.fetchImpl(this.baseURL, {
         method: 'POST',
+        redirect: 'error',
         headers: {
-          authorization: `Bearer ${apiKey}`,
+          ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {}),
           'content-type': 'application/json',
           accept: 'application/json',
         },

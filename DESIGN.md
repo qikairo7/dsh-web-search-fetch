@@ -101,6 +101,8 @@ HTTP 路径复用 `@deepseek-ai/dsh-web-fetch-http` 的校验与限制：默认�
 
 ## 凭证与设置
 
+Firecrawl 官方 `/v2/search` 与 `/v2/scrape` 在缺少凭证时允许匿名额度请求，不发送 Authorization；自定义端点仍要求凭证。服务就绪过滤允许这两条官方匿名路径参与派发。匿名额度仍属于额度型服务，不加入免费接口预设；已有密钥使用原账户，不自动切换到匿名请求。
+
 配置只持有引用名，实际值由 `ctx.credentials.resolve()` 按操作解析。搜索引用以及提取的回落引用也按操作读取，避免设置保存后继续使用旧名称。
 
 Web 设置域的命名空间为 Loader entry ID `web-search-fetch`。schema 的 `.volatile()` 标记决定可服务字段；保存将新值提交到运行中的引用，不重新挂载插件。端点和调优参数由配置文件管理。

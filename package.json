@@ -1,6 +1,6 @@
 {
   "name": "dsh-web-search-fetch",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "DeepSeek Harness 多来源网络搜索与网页提取插件",
   "packageManager": "pnpm@12.10.1",
   "keywords": [
@@ -35,6 +35,9 @@
     "cordis.patch.yml",
     "docs/*.md",
     "docs/assets/*.jpg",
+    "docs/assets/*.png",
+    "docs/assets/*.html",
+    "docs/assets/*.json",
     "DESIGN.md",
     "GLOSSARY.md",
     "CONTRIBUTING.md",
@@ -50,6 +53,7 @@
     "prepack": "pnpm run build",
     "check": "pnpm run build && vitest run && pnpm run typecheck && pnpm run check:repository",
     "benchmark:content": "pnpm run build && node scripts/benchmark-content.mjs",
+    "benchmark:modsearch": "pnpm run build && node --experimental-transform-types scripts/compare-modsearch.mjs",
     "smoke:live": "pnpm run build && node scripts/smoke-engines.mjs --live"
   },
   "engines": {

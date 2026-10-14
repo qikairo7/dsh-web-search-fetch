@@ -3,17 +3,24 @@
 [![MIT 许可](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-22.19%20%7C%2024%2B-green.svg)](./package.json)
 
-**多来源融合搜索，统一网页提取，保持 DSH 原生工具体验。**
+**面向资料研究的 DSH 插件：融合多来源搜索，整理网页正文，保留来源与差异。**
 
-面向 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）的网络搜索与网页提取插件。通过原生 `web_search` 合并多个服务的搜索结果，通过原生 `web_fetch` 统一接入网页提取服务。适合已配置多家服务、希望统一完成技术检索与资料研究的 DSH 用户。
+面向 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）的网络搜索与网页提取插件。首次使用可通过 Firecrawl 官方匿名额度与 Bing RSS 开始，无需注册或填写 API Key；配置更多服务后，通过原生 `web_search` 融合搜索结果，通过原生 `web_fetch` 整理多份正文。适合技术检索与资料研究。
 
-[快速开始](#快速开始) · [配置参考](./docs/configuration.md) · [架构说明](./DESIGN.md) · [常见问题](./docs/troubleshooting.md) · [参与贡献](./CONTRIBUTING.md)
+[快速开始](#快速开始) · [正文整理演示](./docs/content-organization.md#输入与输出演示) · [真实对比](./docs/modsearch-comparison.md) · [配置参考](./docs/configuration.md) · [参与贡献](./CONTRIBUTING.md)
+
+```sh
+dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.0/dsh-web-search-fetch-0.2.0.tgz
+```
+
+安装后重启 DSH，直接请求搜索或读取公开网页。匿名模式受服务方额度与限流约束，不能保证无限使用。未安装 DSH 的环境需先完成[宿主安装](https://github.com/deepseek-ai/deepseek-harness)。
 
 ## 项目特点
 
 | 特点 | 当前实现 | 使用价值 |
 | --- | --- | --- |
 | 多来源搜索融合 | 最多 16 个搜索服务并发调用，按 URL 去重，使用 RRF（Reciprocal Rank Fusion）融合排名 | 将多路可用结果整理为统一来源列表 |
+| 无需密钥首次体验 | 官方 Firecrawl Search / Scrape 未填密钥时使用匿名额度，Bing RSS 无需凭证 | 先完成一次搜索与提取，再按需增加服务 |
 | 多来源正文整理 | 动态提取按章节和共同内容块去重、互补，保留提取来源及文本差异 | 将说明、表格、代码和独有段落整理到一份正文 |
 | 原生双工具 | 仅注册搜索和提取 provider，不新增模型工具，也不需要额外 MCP 服务、浏览器自动化或外部 CLI | 沿用 DSH 的 `web_search`、`web_fetch` 调用方式 |
 | 可选免费重排 | 调用硅基流动免费模型 `BAAI/bge-reranker-v2-m3`；不可用时保留融合顺序 | 对融合候选进行相关性排序，仍需配置 API Key |
@@ -26,7 +33,9 @@
 
 设置页可配置免费接口、均衡、深度检索和自定义预设，独立选择搜索／提取服务，并限制服务数量、HTTP 请求数、操作总限时和正文输出长度。保存后下一次调用生效；免费额度与付费服务不会自动纳入免费接口预设。
 
-搜索融合和正文整理不构成事实交叉验证。当前尚无与同类插件的真实效果、延迟或费用对照评测；多路并发会消耗对应服务额度。参数与使用边界见[配置参考](./docs/configuration.md)，离线验证方法见[正文整理](./docs/content-organization.md)。
+搜索融合和正文整理不构成事实交叉验证。多路并发会消耗对应服务额度。参数与使用边界见[配置参考](./docs/configuration.md)，离线验证方法见[正文整理](./docs/content-organization.md)。
+
+与 ModSearch 5.10.6 的 48 次真实调用均成功。多服务搜索中，ModSearch 的耗时与请求次数更低；本插件融合来源并整理多份提取，适合需要来源与差异记录的资料研究。样本与限制见[真实对比](./docs/modsearch-comparison.md)。
 
 ## 完整接入清单
 
@@ -68,6 +77,8 @@ AIHOT 搜索覆盖近 7 天 AI 资讯；启用后，原生 `web_fetch` 可读取
 | 提供免费额度 | AnySearch、知乎、Firecrawl、Tavily、Exa、Keenable、Crawl4AI Cloud、Serply | 免费额度的有效期、重置周期和超额计费以服务方及账号为准 |
 | 按次计费或付费订阅 | 智谱当前搜索通道、Kimi REST 搜索与提取 | Coding Plan 为付费订阅；`tools-api` 使用按次计费的 `search_pro`，套餐额度不属于免费额度；Kimi REST 接口按次计费，账号赠送额度需另行确认 |
 
+Firecrawl 官方 Search / Scrape 支持 Keyless：未填密钥时不发送 Authorization；官方公布每月 1,000 免费 credits，实际使用仍受匿名限流及服务规则约束。填写密钥后使用对应账户额度，不因开启插件而保证免费；自定义端点仍需密钥。依据见 [Firecrawl Keyless 官方说明](https://www.firecrawl.dev/blog/firecrawl-keyless-launch)。免费接口预设仍排除 Firecrawl 等额度型服务。
+
 百度千帆和豆包 Custom 的免费额度、赠送额度及开通条件需按对应账号确认。选择服务时，同时检查搜索与提取接口是否都在免费范围内。插件按配置并发调用，不自动按价格排序，也不保证只使用免费额度。
 
 硅基流动重排使用免费模型 `BAAI/bge-reranker-v2-m3`，需要注册账号并配置 `SILICONFLOW_API_KEY`。注册入口：[硅基流动（邀请链接）](https://cloud.siliconflow.cn/i/E3nhNFP4)。模型费用以[硅基流动官方定价](https://siliconflow.cn/pricing)为准。
@@ -83,9 +94,19 @@ AIHOT 搜索覆盖近 7 天 AI 资讯；启用后，原生 `web_fetch` 可读取
 | Node.js | `^22.19.0 \|\| >=24.0.0`，不包含 Node.js 23 |
 | DSH | 已安装，并具有 `web` 和 `credentials` 服务 |
 | 开发工具 | pnpm 12.10.1 |
-| 外部服务 | 对应服务的访问凭证与网络连通性 |
+| 外部服务 | 网络连通性；官方 Firecrawl 匿名模式与 Bing RSS 无需凭证，其他服务按需配置 |
 
 开发依赖使用 DSH `0.2.1-alpha.2`。其他 DSH 版本的兼容性需实际验证。
+
+### 使用发布包安装
+
+在已配置 DSH 的环境中执行：
+
+```sh
+dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.0/dsh-web-search-fetch-0.2.0.tgz
+```
+
+将 `web` 替换为实际使用的 profile，安装后重启宿主。本项目通过 GitHub Release 分发固定版本包；此命令不需要 npm 包发布账号或 GitHub 登录。
 
 ### 从源码安装
 
@@ -134,7 +155,7 @@ dsh --profile <profile> --dump-config
 | `MOONSHOT_API_KEY` | Kimi 搜索与提取 |
 | `SILICONFLOW_API_KEY` | 硅基流动重排 |
 
-Bing RSS、AIHOT 和直接 HTTP 抓取无需凭证。豆包搜索与提取分别填写；Firecrawl 开关只控制搜索，网页提取继续按凭证配置使用。服务列表支持名称搜索、能力筛选和配置状态筛选；隐藏或折叠的草稿仍会保留。配置状态表示凭证存在，不证明服务健康。
+Bing RSS、AIHOT 和直接 HTTP 抓取无需凭证。豆包搜索与提取分别填写；Firecrawl 开关只控制搜索，官方网页提取在未配置密钥时使用匿名额度，配置密钥后使用账户额度。服务列表支持名称搜索、能力筛选和配置状态筛选；隐藏或折叠的草稿仍会保留。配置状态表示凭证存在，不证明服务健康。
 
 配置文件只填写引用名。凭证值由 DSH 管理，每次操作重新解析。详细说明见[配置参考](./docs/configuration.md)。
 
@@ -180,6 +201,7 @@ flowchart LR
 | --- | --- |
 | [配置参考](./docs/configuration.md) | 参数、端点、凭证回落关系和工具预算 |
 | [网页正文整理](./docs/content-organization.md) | 整理规则、来源标记、差异处理和限制 |
+| [与 ModSearch 的真实对比](./docs/modsearch-comparison.md) | 方法、逐次指标、请求成本与证据边界 |
 | [AIHOT 接入](./docs/aihot.md) | 原生工具读取 Markdown、结构化报告及精选 API |
 | [架构说明](./DESIGN.md) | 模块职责、数据流、错误处理和扩展方式 |
 | [术语表](./GLOSSARY.md) | 项目术语与接口含义 |

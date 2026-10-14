@@ -1,0 +1,1180 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-14T10:58:24.317Z",
+  "node": "v24.20.0",
+  "modsearchVersion": "5.10.6",
+  "modsearchCommit": "beb34982406438fe2473a9db0450fdd03a8ca826",
+  "settings": {
+    "maxResults": 5,
+    "maxOutputChars": 50000,
+    "searchDeadlineMs": 15000,
+    "fetchDeadlineMs": 50000,
+    "rerank": false
+  },
+  "scope": "live core API pipelines; no model, CLI startup or UI overhead; fetch invocations exclude transparent redirects and vendor-internal fetches",
+  "repeats": 2,
+  "cases": [
+    {
+      "id": "node-esm",
+      "query": "Node.js ECMAScript modules official documentation",
+      "domains": [
+        "nodejs.org"
+      ]
+    },
+    {
+      "id": "python-taskgroup",
+      "query": "Python asyncio TaskGroup official documentation",
+      "domains": [
+        "docs.python.org"
+      ]
+    },
+    {
+      "id": "typescript-satisfies",
+      "query": "TypeScript satisfies operator official documentation",
+      "domains": [
+        "typescriptlang.org"
+      ]
+    },
+    {
+      "id": "node-page",
+      "url": "https://nodejs.org/en/learn/getting-started/introduction-to-nodejs",
+      "markers": [
+        "JavaScript",
+        "V8",
+        "asynchronous"
+      ]
+    },
+    {
+      "id": "python-page",
+      "url": "https://docs.python.org/3/library/asyncio-task.html",
+      "markers": [
+        "TaskGroup",
+        "create_task",
+        "timeout"
+      ]
+    },
+    {
+      "id": "typescript-page",
+      "url": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html",
+      "markers": [
+        "Union Types",
+        "Type Aliases",
+        "Interfaces"
+      ]
+    }
+  ],
+  "rows": [
+    {
+      "product": "ours",
+      "cohort": "anonymous",
+      "case": "node-esm",
+      "repeat": 1,
+      "ok": true,
+      "outputChars": 1541,
+      "sourceCount": 5,
+      "domainCount": 3,
+      "expectedDomainHits": 3,
+      "urls": [
+        "https://nodejs.org/api/esm.html",
+        "https://nodejs.org/zh-cn",
+        "https://nodejs.org/api/modules.html",
+        "https://node.org.cn/",
+        "https://www.typescriptlang.org/docs/handbook/modules/reference.html"
+      ],
+      "ms": 1175,
+      "requests": 2
+    },
+    {
+      "product": "modsearch",
+      "cohort": "anonymous",
+      "case": "node-esm",
+      "repeat": 1,
+      "ok": true,
+      "outputChars": 2251,
+      "sourceCount": 5,
+      "domainCount": 3,
+      "expectedDomainHits": 3,
+      "urls": [
+        "https://nodejs.org/api/esm.html",
+        "https://nodejs.org/api/modules.html",
+        "https://www.typescriptlang.org/docs/handbook/modules/reference.html",
+        "https://nodejs.org/api/packages.html",
+        "https://www.w3schools.com/nodejs/nodejs_modules_esm.asp"
+      ],
+      "attempts": [
+        {
+          "engine": "firecrawl",
+          "ok": true,
+          "durationSeconds": 0.616,
+          "credits": 2
+        }
+      ],
+      "ms": 617,
+      "requests": 1
+    },
+    {
+      "product": "ours",
+      "cohort": "anonymous",
+      "case": "python-taskgroup",
+      "repeat": 1,
+      "ok": true,
+      "outputChars": 1628,
+      "sourceCount": 5,
+      "domainCount": 3,
+      "expectedDomainHits": 2,
+      "urls": [
+        "https://docs.python.org/3/library/asyncio-task.html",
+        "https://www.python.org/",
+        "https://docs.python.org/3/library/asyncio.html",
+        "https://www.python.org/downloads/",
+        "https://stackoverflow.com/questions/42231161/asyncio-gather-vs-asyncio-wait-vs-asyncio-taskgroup"
+      ],
+      "ms": 743,
+      "requests": 2
+    },
+    {
+      "product": "modsearch",
+      "cohort": "anonymous",
+      "case": "python-taskgroup",
+      "repeat": 1,
+      "ok": true,
+      "outputChars": 6032,
+      "sourceCount": 5,
+      "domainCount": 4,
+      "expectedDomainHits": 2,
+      "urls": [
+        "https://docs.python.org/3/library/asyncio-task.html",
+        "https://docs.python.org/3/library/asyncio.html",
+        "https://stackoverflow.com/questions/42231161/asyncio-gather-vs-asyncio-wait-vs-asyncio-taskgroup",
+        "https://bruceeckel.substack.com/p/python-311-asynciotaskgroup",
+        "https://anyio.readthedocs.io/en/latest/tasks.html"
+      ],
+      "attempts": [
+        {
+          "engine": "firecrawl",
+          "ok": true,
+          "durationSeconds": 0.656,
+          "credits": 2
+        }
+      ],
+      "ms": 656,
+      "requests": 1
+    },
+    {
+      "product": "ours",
+      "cohort": "anonymous",
+      "case": "typescript-satisfies",
+      "repeat": 1,
+      "ok": true,
+      "outputChars": 7408,
+      "sourceCount": 5,
+      "domainCount": 4,
+      "expectedDomainHits": 2,
+      "urls": [
+        "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html",
+        "https://www.typescriptlang.org/",
+        "https://www.totaltypescript.com/clarifying-the-satisfies-operator",
+        "https://www.runoob.com/typescript/ts-tutorial.html",
+        "https://stackoverflow.com/questions/78636946/what-are-the-differences-between-typescript-s-satisfies-operator-and-type-assert"
+      ],
+      "ms": 452,
+      "requests": 2
+    },
+    {
+      "product": "modsearch",
+      "cohort": "anonymous",
+      "case": "typescript-satisfies",
+      "repeat": 1,
+      "ok": true,
+      "outputChars": 8227,
+      "sourceCount": 5,
+      "domainCount": 5,
+      "expectedDomainHits": 1,
+      "urls": [
+        "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html",
+        "https://www.totaltypescript.com/clarifying-the-satisfies-operator",
+        "https://stackoverflow.com/questions/78636946/what-are-the-differences-between-typescript-s-satisfies-operator-and-type-assert",
+        "https://www.reddit.com/r/webdev/comments/zrt1rb/the_satisfies_operator_in_typescript_49_is_a_game/",
+        "https://coddy.tech/docs/typescript/satisfies"
+      ],
+      "attempts": [
+        {
+          "engine": "firecrawl",
+          "ok": true,
+          "durationSeconds": 0.686,
+          "credits": 2
+        }
+      ],
+      "ms": 687,
+      "requests": 1
+    },
+    {
+      "product": "ours",
+      "cohort": "anonymous",
+      "case": "node-page",
+      "repeat": 1,
+      "ok": true,
+      "outputChars": 5808,
+      "bodyChars": 5474,
+      "markerHits": 3,
+      "markerTotal": 3,
+      "truncated": false,
+      "ms": 1228,
+      "requests": 1
+    },
+    {
+      "product": "modsearch",
+      "cohort": "anonymous",
+      "case": "node-page",
+      "repeat": 1,
+      "ok": true,
+      "outputChars": 6720,
+      "bodyChars": 4817,
+      "markerHits": 3,
+      "markerTotal": 3,
+      "truncated": null,
+      "attempts": [
+        {
+          "engine": "firecrawl",
+          "ok": true,
+          "durationSeconds": 1.276
+        }
+      ],
+      "ms": 1277,
+      "requests": 1
+    },
+    {
+      "product": "ours",
+      "cohort": "anonymous",
+      "case": "python-page",
+      "repeat": 1,
+      "ok": true,
+      "outputChars": 52087,
+      "bodyChars": 49918,
+      "markerHits": 3,
+      "markerTotal": 3,
+      "truncated": true,
+      "ms": 2061,
+      "requests": 1
+    },
+    {
+      "product": "modsearch",
+      "cohort": "anonymous",
+      "case": "python-page",
+      "repeat": 1,
+      "ok": true,
+      "outputChars": 54846,
+      "bodyChars": 50000,
+      "markerHits": 3,
+      "markerTotal": 3,
+      "truncated": null,
+      "attempts": [
+        {
+          "engine": "firecrawl",
+          "ok": true,
+          "durationSeconds": 2.182
+        }
+      ],
+      "ms": 2182,
+      "requests": 1
+    },
+    {
+      "product": "ours",
+      "cohort": "anonymous",
+      "case": "typescript-page",
+      "repeat": 1,
+      "ok": true,
+      "outputChars": 38756,
+      "bodyChars": 37285,
+      "markerHits": 3,
+      "markerTotal": 3,
+      "truncated": false,
+      "ms": 1687,
+      "requests": 1
+    },
+    {
+      "product": "modsearch",
+      "cohort": "anonymous",
+      "case": "typescript-page",
+      "repeat": 1,
+      "ok": true,
+      "outputChars": 40882,
+      "bodyChars": 34722,
+      "markerHits": 3,
+      "markerTotal": 3,
+      "truncated": null,
+      "attempts": [
+        {
+          "engine": "firecrawl",
+          "ok": true,
+          "durationSeconds": 2.182
+        }
+      ],
+      "ms": 2183,
+      "requests": 1
+    },
+    {
+      "product": "modsearch",
+      "cohort": "anonymous",
+      "case": "node-esm",
+      "repeat": 2,
+      "ok": true,
+      "outputChars": 2251,
+      "sourceCount": 5,
+      "domainCount": 3,
+      "expectedDomainHits": 3,
+      "urls": [
+        "https://nodejs.org/api/esm.html",
+        "https://nodejs.org/api/modules.html",
+        "https://www.typescriptlang.org/docs/handbook/modules/reference.html",
+        "https://nodejs.org/api/packages.html",
+        "https://www.w3schools.com/nodejs/nodejs_modules_esm.asp"
+      ],
+      "attempts": [
+        {
+          "engine": "firecrawl",
+          "ok": true,
+          "durationSeconds": 0.598,
+          "credits": 2
+        }
+      ],
+      "ms": 599,
+      "requests": 1
+    },
+    {
+      "product": "ours",
+      "cohort": "anonymous",
+      "case": "node-esm",
+      "repeat": 2,
+      "ok": true,
+      "outputChars": 1541,
+      "sourceCount": 5,
+      "domainCount": 3,
+      "expectedDomainHits": 3,
+      "urls": [
+        "https://nodejs.org/api/esm.html",
+        "https://nodejs.org/zh-cn",
+        "https://nodejs.org/api/modules.html",
+        "https://node.org.cn/",
+        "https://www.typescriptlang.org/docs/handbook/modules/reference.html"
+      ],
+      "ms": 666,
+      "requests": 2
+    },
+    {
+      "product": "modsearch",
+      "cohort": "anonymous",
+      "case": "python-taskgroup",
+      "repeat": 2,
+      "ok": true,
+      "outputChars": 6032,
+      "sourceCount": 5,
+      "domainCount": 4,
+      "expectedDomainHits": 2,
+      "urls": [
+        "https://docs.python.org/3/library/asyncio-task.html",
+        "https://docs.python.org/3/library/asyncio.html",
+        "https://stackoverflow.com/questions/42231161/asyncio-gather-vs-asyncio-wait-vs-asyncio-taskgroup",
+        "https://bruceeckel.substack.com/p/python-311-asynciotaskgroup",
+        "https://anyio.readthedocs.io/en/latest/tasks.html"
+      ],
+      "attempts": [
+        {
+          "engine": "firecrawl",
+          "ok": true,
+          "durationSeconds": 0.706,
+          "credits": 2
+        }
+      ],
+      "ms": 706,
+      "requests": 1
+    },
+    {
+      "product": "ours",
+      "cohort": "anonymous",
+      "case": "python-taskgroup",
+      "repeat": 2,
+      "ok": true,
+      "outputChars": 1628,
+      "sourceCount": 5,
+      "domainCount": 3,
+      "expectedDomainHits": 2,
+      "urls": [
+        "https://docs.python.org/3/library/asyncio-task.html",
+        "https://www.python.org/",
+        "https://docs.python.org/3/library/asyncio.html",
+        "https://www.python.org/downloads/",
+        "https://stackoverflow.com/questions/42231161/asyncio-gather-vs-asyncio-wait-vs-asyncio-taskgroup"
+      ],
+      "ms": 584,
+      "requests": 2
+    },
+    {
+      "product": "modsearch",
+      "cohort": "anonymous",
+      "case": "typescript-satisfies",
+      "repeat": 2,
+      "ok": true,
+      "outputChars": 8227,
+      "sourceCount": 5,
+      "domainCount": 5,
+      "expectedDomainHits": 1,
+      "urls": [
+        "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html",
+        "https://www.totaltypescript.com/clarifying-the-satisfies-operator",
+        "https://stackoverflow.com/questions/78636946/what-are-the-differences-between-typescript-s-satisfies-operator-and-type-assert",
+        "https://www.reddit.com/r/webdev/comments/zrt1rb/the_satisfies_operator_in_typescript_49_is_a_game/",
+        "https://coddy.tech/docs/typescript/satisfies"
+      ],
+      "attempts": [
+        {
+          "engine": "firecrawl",
+          "ok": true,
+          "durationSeconds": 0.457,
+          "credits": 2
+        }
+      ],
+      "ms": 457,
+      "requests": 1
+    },
+    {
+      "product": "ours",
+      "cohort": "anonymous",
+      "case": "typescript-satisfies",
+      "repeat": 2,
+      "ok": true,
+      "outputChars": 7408,
+      "sourceCount": 5,
+      "domainCount": 4,
+      "expectedDomainHits": 2,
+      "urls": [
+        "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html",
+        "https://www.typescriptlang.org/",
+        "https://www.totaltypescript.com/clarifying-the-satisfies-operator",
+        "https://www.runoob.com/typescript/ts-tutorial.html",
+        "https://stackoverflow.com/questions/78636946/what-are-the-differences-between-typescript-s-satisfies-operator-and-type-assert"
+      ],
+      "ms": 459,
+      "requests": 2
+    },
+    {
+      "product": "modsearch",
+      "cohort": "anonymous",
+      "case": "node-page",
+      "repeat": 2,
+      "ok": true,
+      "outputChars": 6718,
+      "bodyChars": 4817,
+      "markerHits": 3,
+      "markerTotal": 3,
+      "truncated": null,
+      "attempts": [
+        {
+          "engine": "firecrawl",
+          "ok": true,
+          "durationSeconds": 1.28
+        }
+      ],
+      "ms": 1281,
+      "requests": 1
+    },
+    {
+      "product": "ours",
+      "cohort": "anonymous",
+      "case": "node-page",
+      "repeat": 2,
+      "ok": true,
+      "outputChars": 5808,
+      "bodyChars": 5474,
+      "markerHits": 3,
+      "markerTotal": 3,
+      "truncated": false,
+      "ms": 1891,
+      "requests": 1
+    },
+    {
+      "product": "modsearch",
+      "cohort": "anonymous",
+      "case": "python-page",
+      "repeat": 2,
+      "ok": true,
+      "outputChars": 54846,
+      "bodyChars": 50000,
+      "markerHits": 3,
+      "markerTotal": 3,
+      "truncated": null,
+      "attempts": [
+        {
+          "engine": "firecrawl",
+          "ok": true,
+          "durationSeconds": 4.085
+        }
+      ],
+      "ms": 4086,
+      "requests": 1
+    },
+    {
+      "product": "ours",
+      "cohort": "anonymous",
+      "case": "python-page",
+      "repeat": 2,
+      "ok": true,
+      "outputChars": 52087,
+      "bodyChars": 49918,
+      "markerHits": 3,
+      "markerTotal": 3,
+      "truncated": true,
+      "ms": 2730,
+      "requests": 1
+    },
+    {
+      "product": "modsearch",
+      "cohort": "anonymous",
+      "case": "typescript-page",
+      "repeat": 2,
+      "ok": true,
+      "outputChars": 40879,
+      "bodyChars": 34722,
+      "markerHits": 3,
+      "markerTotal": 3,
+      "truncated": null,
+      "attempts": [
+        {
+          "engine": "firecrawl",
+          "ok": true,
+          "durationSeconds": 2.24
+        }
+      ],
+      "ms": 2242,
+      "requests": 1
+    },
+    {
+      "product": "ours",
+      "cohort": "anonymous",
+      "case": "typescript-page",
+      "repeat": 2,
+      "ok": true,
+      "outputChars": 38756,
+      "bodyChars": 37285,
+      "markerHits": 3,
+      "markerTotal": 3,
+      "truncated": false,
+      "ms": 1926,
+      "requests": 1
+    },
+    {
+      "product": "ours",
+      "cohort": "research",
+      "case": "node-esm",
+      "repeat": 1,
+      "ok": true,
+      "outputChars": 15047,
+      "sourceCount": 5,
+      "domainCount": 2,
+      "expectedDomainHits": 4,
+      "urls": [
+        "https://nodejs.org/api/packages.html",
+        "https://nodejs.org/api/esm.html",
+        "https://nodejs.org/api/modules.html",
+        "https://www.typescriptlang.org/docs/handbook/modules/reference.html",
+        "https://nodejs.org/docs/latest/api/esm.md"
+      ],
+      "ms": 2470,
+      "requests": 3
+    },
+    {
+      "product": "modsearch",
+      "cohort": "research",
+      "case": "node-esm",
+      "repeat": 1,
+      "ok": true,
+      "outputChars": 2249,
+      "sourceCount": 5,
+      "domainCount": 3,
+      "expectedDomainHits": 3,
+      "urls": [
+        "https://nodejs.org/api/esm.html",
+        "https://nodejs.org/api/modules.html",
+        "https://www.typescriptlang.org/docs/handbook/modules/reference.html",
+        "https://nodejs.org/api/packages.html",
+        "https://www.w3schools.com/nodejs/nodejs_modules_esm.asp"
+      ],
+      "attempts": [
+        {
+          "engine": "firecrawl",
+          "ok": true,
+          "durationSeconds": 0.63,
+          "credits": 2
+        }
+      ],
+      "ms": 632,
+      "requests": 1
+    },
+    {
+      "product": "ours",
+      "cohort": "research",
+      "case": "python-taskgroup",
+      "repeat": 1,
+      "ok": true,
+      "outputChars": 12795,
+      "sourceCount": 5,
+      "domainCount": 4,
+      "expectedDomainHits": 2,
+      "urls": [
+        "https://docs.python.org/3/library/asyncio-task.html",
+        "https://docs.python.org/3/library/asyncio.html",
+        "https://anyio.readthedocs.io/en/latest/tasks.html",
+        "https://bruceeckel.substack.com/p/python-311-asynciotaskgroup",
+        "https://stackoverflow.com/questions/42231161/asyncio-gather-vs-asyncio-wait-vs-asyncio-taskgroup"
+      ],
+      "ms": 1748,
+      "requests": 3
+    },
+    {
+      "product": "modsearch",
+      "cohort": "research",
+      "case": "python-taskgroup",
+      "repeat": 1,
+      "ok": true,
+      "outputChars": 6032,
+      "sourceCount": 5,
+      "domainCount": 4,
+      "expectedDomainHits": 2,
+      "urls": [
+        "https://docs.python.org/3/library/asyncio-task.html",
+        "https://docs.python.org/3/library/asyncio.html",
+        "https://stackoverflow.com/questions/42231161/asyncio-gather-vs-asyncio-wait-vs-asyncio-taskgroup",
+        "https://bruceeckel.substack.com/p/python-311-asynciotaskgroup",
+        "https://anyio.readthedocs.io/en/latest/tasks.html"
+      ],
+      "attempts": [
+        {
+          "engine": "firecrawl",
+          "ok": true,
+          "durationSeconds": 0.597,
+          "credits": 2
+        }
+      ],
+      "ms": 597,
+      "requests": 1
+    },
+    {
+      "product": "ours",
+      "cohort": "research",
+      "case": "typescript-satisfies",
+      "repeat": 1,
+      "ok": true,
+      "outputChars": 10600,
+      "sourceCount": 5,
+      "domainCount": 5,
+      "expectedDomainHits": 1,
+      "urls": [
+        "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html",
+        "https://www.totaltypescript.com/clarifying-the-satisfies-operator",
+        "https://coddy.tech/docs/typescript/satisfies",
+        "https://devblogs.microsoft.com/typescript/announcing-typescript-4-9-beta/",
+        "https://stackoverflow.com/questions/78636946/what-are-the-differences-between-typescript-s-satisfies-operator-and-type-assert"
+      ],
+      "ms": 1954,
+      "requests": 3
+    },
+    {
+      "product": "modsearch",
+      "cohort": "research",
+      "case": "typescript-satisfies",
+      "repeat": 1,
+      "ok": true,
+      "outputChars": 8227,
+      "sourceCount": 5,
+      "domainCount": 5,
+      "expectedDomainHits": 1,
+      "urls": [
+        "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html",
+        "https://www.totaltypescript.com/clarifying-the-satisfies-operator",
+        "https://stackoverflow.com/questions/78636946/what-are-the-differences-between-typescript-s-satisfies-operator-and-type-assert",
+        "https://www.reddit.com/r/webdev/comments/zrt1rb/the_satisfies_operator_in_typescript_49_is_a_game/",
+        "https://coddy.tech/docs/typescript/satisfies"
+      ],
+      "attempts": [
+        {
+          "engine": "firecrawl",
+          "ok": true,
+          "durationSeconds": 0.499,
+          "credits": 2
+        }
+      ],
+      "ms": 499,
+      "requests": 1
+    },
+    {
+      "product": "ours",
+      "cohort": "research",
+      "case": "node-page",
+      "repeat": 1,
+      "ok": true,
+      "outputChars": 18740,
+      "bodyChars": 17921,
+      "markerHits": 3,
+      "markerTotal": 3,
+      "truncated": false,
+      "ms": 1420,
+      "requests": 3
+    },
+    {
+      "product": "modsearch",
+      "cohort": "research",
+      "case": "node-page",
+      "repeat": 1,
+      "ok": true,
+      "outputChars": 6720,
+      "bodyChars": 4817,
+      "markerHits": 3,
+      "markerTotal": 3,
+      "truncated": null,
+      "attempts": [
+        {
+          "engine": "firecrawl",
+          "ok": true,
+          "durationSeconds": 1.042
+        }
+      ],
+      "ms": 1042,
+      "requests": 1
+    },
+    {
+      "product": "ours",
+      "cohort": "research",
+      "case": "python-page",
+      "repeat": 1,
+      "ok": true,
+      "outputChars": 52073,
+      "bodyChars": 49918,
+      "markerHits": 3,
+      "markerTotal": 3,
+      "truncated": true,
+      "ms": 2668,
+      "requests": 3
+    },
+    {
+      "product": "modsearch",
+      "cohort": "research",
+      "case": "python-page",
+      "repeat": 1,
+      "ok": true,
+      "outputChars": 54846,
+      "bodyChars": 50000,
+      "markerHits": 3,
+      "markerTotal": 3,
+      "truncated": null,
+      "attempts": [
+        {
+          "engine": "firecrawl",
+          "ok": true,
+          "durationSeconds": 2.508
+        }
+      ],
+      "ms": 2508,
+      "requests": 1
+    },
+    {
+      "product": "ours",
+      "cohort": "research",
+      "case": "typescript-page",
+      "repeat": 1,
+      "ok": true,
+      "outputChars": 52162,
+      "bodyChars": 49924,
+      "markerHits": 3,
+      "markerTotal": 3,
+      "truncated": true,
+      "ms": 2001,
+      "requests": 3
+    },
+    {
+      "product": "modsearch",
+      "cohort": "research",
+      "case": "typescript-page",
+      "repeat": 1,
+      "ok": true,
+      "outputChars": 40879,
+      "bodyChars": 34722,
+      "markerHits": 3,
+      "markerTotal": 3,
+      "truncated": null,
+      "attempts": [
+        {
+          "engine": "firecrawl",
+          "ok": true,
+          "durationSeconds": 1.79
+        }
+      ],
+      "ms": 1790,
+      "requests": 1
+    },
+    {
+      "product": "modsearch",
+      "cohort": "research",
+      "case": "node-esm",
+      "repeat": 2,
+      "ok": true,
+      "outputChars": 2251,
+      "sourceCount": 5,
+      "domainCount": 3,
+      "expectedDomainHits": 3,
+      "urls": [
+        "https://nodejs.org/api/esm.html",
+        "https://nodejs.org/api/modules.html",
+        "https://www.typescriptlang.org/docs/handbook/modules/reference.html",
+        "https://nodejs.org/api/packages.html",
+        "https://www.w3schools.com/nodejs/nodejs_modules_esm.asp"
+      ],
+      "attempts": [
+        {
+          "engine": "firecrawl",
+          "ok": true,
+          "durationSeconds": 0.754,
+          "credits": 2
+        }
+      ],
+      "ms": 754,
+      "requests": 1
+    },
+    {
+      "product": "ours",
+      "cohort": "research",
+      "case": "node-esm",
+      "repeat": 2,
+      "ok": true,
+      "outputChars": 15047,
+      "sourceCount": 5,
+      "domainCount": 2,
+      "expectedDomainHits": 4,
+      "urls": [
+        "https://nodejs.org/api/packages.html",
+        "https://nodejs.org/api/esm.html",
+        "https://nodejs.org/api/modules.html",
+        "https://www.typescriptlang.org/docs/handbook/modules/reference.html",
+        "https://nodejs.org/docs/latest/api/esm.md"
+      ],
+      "ms": 1263,
+      "requests": 3
+    },
+    {
+      "product": "modsearch",
+      "cohort": "research",
+      "case": "python-taskgroup",
+      "repeat": 2,
+      "ok": true,
+      "outputChars": 6032,
+      "sourceCount": 5,
+      "domainCount": 4,
+      "expectedDomainHits": 2,
+      "urls": [
+        "https://docs.python.org/3/library/asyncio-task.html",
+        "https://docs.python.org/3/library/asyncio.html",
+        "https://stackoverflow.com/questions/42231161/asyncio-gather-vs-asyncio-wait-vs-asyncio-taskgroup",
+        "https://bruceeckel.substack.com/p/python-311-asynciotaskgroup",
+        "https://anyio.readthedocs.io/en/latest/tasks.html"
+      ],
+      "attempts": [
+        {
+          "engine": "firecrawl",
+          "ok": true,
+          "durationSeconds": 0.687,
+          "credits": 2
+        }
+      ],
+      "ms": 687,
+      "requests": 1
+    },
+    {
+      "product": "ours",
+      "cohort": "research",
+      "case": "python-taskgroup",
+      "repeat": 2,
+      "ok": true,
+      "outputChars": 11340,
+      "sourceCount": 5,
+      "domainCount": 4,
+      "expectedDomainHits": 2,
+      "urls": [
+        "https://docs.python.org/3/library/asyncio-task.html",
+        "https://docs.python.org/3/library/asyncio.html",
+        "https://bruceeckel.substack.com/p/python-311-asynciotaskgroup",
+        "https://stackoverflow.com/questions/42231161/asyncio-gather-vs-asyncio-wait-vs-asyncio-taskgroup",
+        "https://www.geeksforgeeks.org/python/python-taskgroups-with-asyncio"
+      ],
+      "ms": 1803,
+      "requests": 3
+    },
+    {
+      "product": "modsearch",
+      "cohort": "research",
+      "case": "typescript-satisfies",
+      "repeat": 2,
+      "ok": true,
+      "outputChars": 8362,
+      "sourceCount": 5,
+      "domainCount": 5,
+      "expectedDomainHits": 1,
+      "urls": [
+        "https://coddy.tech/docs/typescript/satisfies",
+        "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html",
+        "https://mimo.org/glossary/typescript/satisfies",
+        "https://www.freecodecamp.org/news/typescript-satisfies-operator",
+        "https://refine.dev/blog/typescript-satisfies-operator"
+      ],
+      "attempts": [
+        {
+          "engine": "firecrawl",
+          "ok": false,
+          "durationSeconds": 0.279
+        },
+        {
+          "engine": "tavily",
+          "ok": true,
+          "durationSeconds": 1.886
+        }
+      ],
+      "ms": 2165,
+      "requests": 2
+    },
+    {
+      "product": "ours",
+      "cohort": "research",
+      "case": "typescript-satisfies",
+      "repeat": 2,
+      "ok": true,
+      "outputChars": 8764,
+      "sourceCount": 5,
+      "domainCount": 5,
+      "expectedDomainHits": 1,
+      "urls": [
+        "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html",
+        "https://coddy.tech/docs/typescript/satisfies",
+        "https://devblogs.microsoft.com/typescript/announcing-typescript-4-9-beta/",
+        "https://mimo.org/glossary/typescript/satisfies",
+        "https://www.totaltypescript.com/clarifying-the-satisfies-operator"
+      ],
+      "ms": 2007,
+      "requests": 3
+    },
+    {
+      "product": "modsearch",
+      "cohort": "research",
+      "case": "node-page",
+      "repeat": 2,
+      "ok": true,
+      "outputChars": 6720,
+      "bodyChars": 4817,
+      "markerHits": 3,
+      "markerTotal": 3,
+      "truncated": null,
+      "attempts": [
+        {
+          "engine": "firecrawl",
+          "ok": true,
+          "durationSeconds": 1.667
+        }
+      ],
+      "ms": 1667,
+      "requests": 1
+    },
+    {
+      "product": "ours",
+      "cohort": "research",
+      "case": "node-page",
+      "repeat": 2,
+      "ok": true,
+      "outputChars": 18740,
+      "bodyChars": 17921,
+      "markerHits": 3,
+      "markerTotal": 3,
+      "truncated": false,
+      "ms": 1534,
+      "requests": 3
+    },
+    {
+      "product": "modsearch",
+      "cohort": "research",
+      "case": "python-page",
+      "repeat": 2,
+      "ok": true,
+      "outputChars": 54846,
+      "bodyChars": 50000,
+      "markerHits": 3,
+      "markerTotal": 3,
+      "truncated": null,
+      "attempts": [
+        {
+          "engine": "firecrawl",
+          "ok": true,
+          "durationSeconds": 3.852
+        }
+      ],
+      "ms": 3853,
+      "requests": 1
+    },
+    {
+      "product": "ours",
+      "cohort": "research",
+      "case": "python-page",
+      "repeat": 2,
+      "ok": true,
+      "outputChars": 52073,
+      "bodyChars": 49918,
+      "markerHits": 3,
+      "markerTotal": 3,
+      "truncated": true,
+      "ms": 3633,
+      "requests": 3
+    },
+    {
+      "product": "modsearch",
+      "cohort": "research",
+      "case": "typescript-page",
+      "repeat": 2,
+      "ok": true,
+      "outputChars": 35404,
+      "bodyChars": 30925,
+      "markerHits": 3,
+      "markerTotal": 3,
+      "truncated": null,
+      "attempts": [
+        {
+          "engine": "firecrawl",
+          "ok": false,
+          "durationSeconds": 0.272
+        },
+        {
+          "engine": "local",
+          "ok": true,
+          "durationSeconds": 2.18
+        }
+      ],
+      "ms": 2454,
+      "requests": 2
+    },
+    {
+      "product": "ours",
+      "cohort": "research",
+      "case": "typescript-page",
+      "repeat": 2,
+      "ok": true,
+      "outputChars": 53335,
+      "bodyChars": 49908,
+      "markerHits": 3,
+      "markerTotal": 3,
+      "truncated": true,
+      "ms": 1574,
+      "requests": 3
+    }
+  ],
+  "credentialNames": [
+    "FIRECRAWL_API_KEY",
+    "TAVILY_API_KEY",
+    "EXA_API_KEY"
+  ],
+  "aggregates": [
+    {
+      "cohort": "anonymous",
+      "kind": "search",
+      "product": "ours",
+      "runs": 6,
+      "success": 6,
+      "medianMs": 625,
+      "requests": 12,
+      "medianOutputChars": 1628,
+      "sources": 30,
+      "expectedDomainHits": 14
+    },
+    {
+      "cohort": "anonymous",
+      "kind": "search",
+      "product": "modsearch",
+      "runs": 6,
+      "success": 6,
+      "medianMs": 636.5,
+      "requests": 6,
+      "medianOutputChars": 6032,
+      "sources": 30,
+      "expectedDomainHits": 12
+    },
+    {
+      "cohort": "anonymous",
+      "kind": "fetch",
+      "product": "ours",
+      "runs": 6,
+      "success": 6,
+      "medianMs": 1908.5,
+      "requests": 6,
+      "medianOutputChars": 38756,
+      "markerHits": 18,
+      "markerTotal": 18,
+      "truncated": 2
+    },
+    {
+      "cohort": "anonymous",
+      "kind": "fetch",
+      "product": "modsearch",
+      "runs": 6,
+      "success": 6,
+      "medianMs": 2182.5,
+      "requests": 6,
+      "medianOutputChars": 40880.5,
+      "markerHits": 18,
+      "markerTotal": 18,
+      "truncated": null
+    },
+    {
+      "cohort": "research",
+      "kind": "search",
+      "product": "ours",
+      "runs": 6,
+      "success": 6,
+      "medianMs": 1878.5,
+      "requests": 18,
+      "medianOutputChars": 12067.5,
+      "sources": 30,
+      "expectedDomainHits": 14
+    },
+    {
+      "cohort": "research",
+      "kind": "search",
+      "product": "modsearch",
+      "runs": 6,
+      "success": 6,
+      "medianMs": 659.5,
+      "requests": 7,
+      "medianOutputChars": 6032,
+      "sources": 30,
+      "expectedDomainHits": 12
+    },
+    {
+      "cohort": "research",
+      "kind": "fetch",
+      "product": "ours",
+      "runs": 6,
+      "success": 6,
+      "medianMs": 1787.5,
+      "requests": 18,
+      "medianOutputChars": 52073,
+      "markerHits": 18,
+      "markerTotal": 18,
+      "truncated": 4
+    },
+    {
+      "cohort": "research",
+      "kind": "fetch",
+      "product": "modsearch",
+      "runs": 6,
+      "success": 6,
+      "medianMs": 2122,
+      "requests": 7,
+      "medianOutputChars": 38141.5,
+      "markerHits": 18,
+      "markerTotal": 18,
+      "truncated": null
+    }
+  ]
+}
