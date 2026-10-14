@@ -1,0 +1,27 @@
+# Bundle patch: selects aggregated providers and configures extension defaults.
+# Tool budgets are profile configuration; see docs/configuration.md.
+- id: web
+  config:
+    searchProvider: aggregated
+    fetchProvider: aggregated
+- insert:
+    - id: web-search-fetch
+      name: dsh-web-search-fetch
+      config:
+        apiKeyEnv: ZHIPU_API_KEY
+        engines:
+          tavily: {}
+          exa: {}
+          keenable: {}
+          crawl4ai: {}
+          github: {}
+          qianfan: {}
+          doubao: {}
+          firecrawl: {}
+          tinyfish: {}
+          serply: {}
+          kimi: {}
+          bing: {}
+          # AIHOT is opt-in: review its usage terms before enabling.
+          aihot:
+            enabled: false

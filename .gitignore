@@ -1,0 +1,17 @@
+.scratch/
+node_modules/
+lib/
+.env
+.env.*
+!.env.example
+.credentials.yaml
+.credentials.yml
+*.log
+*.tgz
+coverage/
+.DS_Store
+Thumbs.db
+AGENTS.md
+CLAUDE.md
+docs/agents/
+docs/adr/

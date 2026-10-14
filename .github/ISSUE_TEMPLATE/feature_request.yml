@@ -1,0 +1,18 @@
+name: 功能建议
+description: 说明使用场景和希望获得的行为
+title: '[Feature] '
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 使用场景
+      description: 当前行为有哪些限制？
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 预期行为
+      description: 描述所需结果和可接受的替代方案。
+    validations:
+      required: true

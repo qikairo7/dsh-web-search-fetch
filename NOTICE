@@ -1,0 +1,95 @@
+dsh-web-search-fetch
+Copyright (c) 2026 qikairo7
+
+本软件以 MIT 许可发布，见 LICENSE。
+
+---
+
+本软件包含吸收自下列项目的代码（文件级吸收，按原许可使用），
+并参考了另一个 MIT 项目的方法与常量取值（见文末「参考实现」节）：
+
+anysearch-dsh
+https://github.com/anysearch-team/anysearch-dsh
+版本 v0.1.8，commit d20ab97
+Copyright (c) 2026 AnySearch Team
+许可：MIT
+
+吸收范围（代码在 src/engines/anysearch/，测试列出仓库内完整路径）：
+
+  client.ts   ← 上游 src/client.ts
+  wire.ts     ← 上游 src/client.ts（信封校验与窄化辅助）、src/types.ts
+  error.ts    ← 上游 src/client.ts（错误分类）、src/fetch-provider.ts（错误码映射）
+  engine.ts   ← 上游 src/provider.ts、src/fetch-provider.ts
+  limits.ts   ← 上游 src/limits.ts
+  types.ts    ← 上游 src/types.ts（动态能力目录与垂直参数）
+
+吸收时按本仓库结构改造：拆出纯 wire 层与错误分类层、baseURL 与超时改为可注入
+选项、合并 search 与 extract 为单一服务类、新增面向熔断模块的可分类失败信号。
+保留垂直搜索参数与动态能力目录客户端；模型通过原生 web_search 与 web_fetch 使用本插件。
+
+上游许可全文：
+
+  MIT License
+
+  Copyright (c) 2026 AnySearch Team
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+
+---
+
+dsh-web-search-zhipu
+https://github.com/PartinGQAQ/dsh-web-search-zhipu
+main @ 374b6c3，取用于 2026-10-13
+Copyright (c) 2026 PartinGQAQ
+许可：MIT
+
+参考范围（anthropic 传输通道）：
+
+  lib/repr.js  ← 响应格式翻译层的方法参照：两种块布局的识别、
+                 `link` → `url` 映射、Python-repr 字面量的转义还原、按 URL 去重
+  lib/core.js  ← Anthropic Messages 请求形状与配置默认值的对照（端点、model、
+                 maxTokens / maxUses、anthropic-version 头）
+
+本仓库按自身结构独立实现（TypeScript、纯 wire 层与 HTTP 层分离、接入既有
+seam 与熔断链路），未复制上游代码；方法与常量取值来自上述文件，源文件头注释
+已注明。上游的 provider 注册、settings 节与启动日志未吸收。本项目使用 DSH 原生工具，插件仅注册 provider。
+
+上游许可全文：
+
+  MIT License
+
+  Copyright (c) 2026 PartinGQAQ
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.

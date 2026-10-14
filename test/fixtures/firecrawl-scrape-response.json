@@ -1,0 +1,14 @@
+{
+  "success": true,
+  "data": {
+    "markdown": "# Example Domain\n\nThis domain is for use in illustrative examples in documents. You may use this domain in literature without prior coordination or asking for permission.\n",
+    "metadata": {
+      "title": "Example Domain",
+      "sourceURL": "https://example.com/",
+      "statusCode": 200,
+      "contentType": "text/html; charset=UTF-8",
+      "scrapeId": "fixture-scrape-id",
+      "language": "en"
+    }
+  }
+}

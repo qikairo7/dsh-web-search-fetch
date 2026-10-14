@@ -1,0 +1,13 @@
+{
+  "Code": 0,
+  "Message": "success",
+  "Data": [
+    {
+      "APIID": "global_search",
+      "APIName": "全网搜索",
+      "TotalQuota": 5000,
+      "TotalUsed": 1234,
+      "RemainingQuota": 3766
+    }
+  ]
+}

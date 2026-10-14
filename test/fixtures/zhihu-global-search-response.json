@@ -1,0 +1,35 @@
+{
+  "Code": 0,
+  "Message": "success",
+  "Data": {
+    "HasMore": true,
+    "Items": [
+      {
+        "Title": "如何评价 <em>知乎</em> 开放平台？",
+        "ContentType": "answer",
+        "ContentID": "1234567890",
+        "ContentText": "开放平台把<em>搜索</em>能力做成 OpenAPI，按日限额免费调用。",
+        "Url": "https://www.zhihu.com/question/123456/answer/987654321?utm_medium=openapi_platform&utm_source=zhihu_openapi",
+        "CommentCount": 42,
+        "VoteUpCount": 1024,
+        "AuthorName": "某答主",
+        "EditTime": 1748261757,
+        "AuthorityLevel": "3",
+        "CommentInfoList": null
+      },
+      {
+        "Title": "知乎 OpenAPI 使用体验",
+        "ContentType": "article",
+        "ContentID": "2234567890",
+        "ContentText": "文档清晰，但 <em>Count</em> 上限只有 20。",
+        "Url": "https://zhuanlan.zhihu.com/p/2234567890?utm_medium=openapi_platform&utm_source=zhihu_openapi&utm_campaign=search",
+        "CommentCount": 3,
+        "VoteUpCount": 17,
+        "AuthorName": "另一个作者",
+        "EditTime": "1748348157",
+        "AuthorityLevel": "2",
+        "CommentInfoList": []
+      }
+    ]
+  }
+}

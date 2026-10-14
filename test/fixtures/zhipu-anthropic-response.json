@@ -1,0 +1,33 @@
+{
+  "id": "msg_20261013210000abcdef",
+  "type": "message",
+  "role": "assistant",
+  "model": "glm-4.6",
+  "content": [
+    {
+      "type": "thinking",
+      "thinking": "用户想查财经新闻，我需要搜索。"
+    },
+    {
+      "type": "server_tool_use",
+      "id": "srv_1",
+      "name": "web_search",
+      "input": { "query": "2025年4月 财经新闻" }
+    },
+    {
+      "type": "tool_result",
+      "tool_use_id": "srv_1",
+      "content": "[{'text': [{'title': '2025年5月23日财经早资讯', 'link': 'https://www.sohu.com/a/897879632_121123890', 'content': '一、1-4月我国对外直接投资575.4亿美元，同比增长7.5%。', 'date': '2025-05-23', 'refer': 'ref_1'}]}]"
+    },
+    {
+      "type": "thinking",
+      "thinking": "结果拿到了，可以作答。"
+    },
+    {
+      "type": "text",
+      "text": "根据搜索结果，1-4月我国对外直接投资同比增长7.5%。"
+    }
+  ],
+  "stop_reason": "end_turn",
+  "usage": { "input_tokens": 120, "output_tokens": 64 }
+}

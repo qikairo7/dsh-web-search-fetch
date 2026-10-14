@@ -1,0 +1,34 @@
+name: 问题反馈
+description: 报告可复现的问题
+title: '[Bug] '
+body:
+  - type: markdown
+    attributes:
+      value: 请先检查常见问题。不要提交凭证、私密 URL 或未脱敏日志；安全问题使用私密漏洞报告。
+  - type: textarea
+    id: environment
+    attributes:
+      label: 运行环境
+      description: 插件、DSH、Node.js 版本，以及系统和 profile 类型。
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 复现步骤
+      description: 使用公开 URL 和脱敏配置说明步骤。
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期结果
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际结果
+      description: 提供错误码和脱敏日志。
+    validations:
+      required: true

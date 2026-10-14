@@ -1,0 +1,23 @@
+{
+  "created": 1748261757,
+  "id": "20250526201557dda85ca6801b467b",
+  "request_id": "20250526201557dda85ca6801b467b",
+  "search_intent": [
+    {
+      "intent": "SEARCH_ALL",
+      "keywords": "2025年4月 财经新闻",
+      "query": "搜索2025年4月的财经新闻"
+    }
+  ],
+  "search_result": [
+    {
+      "title": "2025年5月23日财经早资讯",
+      "content": "一、1-4月我国对外直接投资575.4亿美元，同比增长7.5%。",
+      "link": "https://www.sohu.com/a/897879632_121123890",
+      "media": "搜狐",
+      "icon": "https://sfile.chatglm.cn/searchImage/sohu_icon_new.jpg",
+      "refer": "ref_1",
+      "publish_date": "2025-05-23"
+    }
+  ]
+}

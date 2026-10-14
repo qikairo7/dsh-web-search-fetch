@@ -1,0 +1,43 @@
+{
+  "id": "msg_20261013210000standard",
+  "type": "message",
+  "role": "assistant",
+  "model": "glm-4.6",
+  "content": [
+    {
+      "type": "server_tool_use",
+      "id": "srv_1",
+      "name": "web_search",
+      "input": { "query": "标准布局样例" }
+    },
+    {
+      "type": "web_search_tool_result",
+      "tool_use_id": "srv_1",
+      "content": [
+        {
+          "type": "web_search_result",
+          "url": "https://example.com/std-a",
+          "title": "标准布局 A",
+          "page_age": "2026-01-02"
+        },
+        {
+          "type": "web_search_result",
+          "url": "https://example.com/std-b",
+          "title": "标准布局 B"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "text": "……",
+      "citations": [
+        {
+          "type": "web_search_result_location",
+          "url": "https://example.com/std-a",
+          "cited_text": "引用正文 A"
+        }
+      ]
+    }
+  ],
+  "stop_reason": "end_turn"
+}

@@ -1,0 +1,113 @@
+{
+  "name": "dsh-web-search-fetch",
+  "version": "0.1.0",
+  "description": "DeepSeek Harness 多来源网络搜索与网页提取插件",
+  "packageManager": "pnpm@12.10.1",
+  "keywords": [
+    "deepseek-harness",
+    "dsh-plugin",
+    "web-search",
+    "web-fetch",
+    "aggregated"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": [
+    "./client/index.js"
+  ],
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "import": "./lib/index.js",
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "default": "./client/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/**/*.js",
+    "lib/**/*.d.ts",
+    "client/**/*.js",
+    "cordis.patch.yml",
+    "docs/*.md",
+    "docs/assets/*.jpg",
+    "DESIGN.md",
+    "GLOSSARY.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "NOTICE",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "node scripts/clean-build.mjs && tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.test.json",
+    "check:repository": "node scripts/check-repository.mjs",
+    "prepack": "pnpm run build",
+    "check": "pnpm run build && vitest run && pnpm run typecheck && pnpm run check:repository",
+    "benchmark:content": "pnpm run build && node scripts/benchmark-content.mjs",
+    "smoke:live": "pnpm run build && node scripts/smoke-engines.mjs --live"
+  },
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-settings-plugins",
+        "@deepseek-ai/dsh-api-remotes"
+      ],
+      "platform": "web"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": ">=4.0.1-rc.1 <5 || 4.0.5-alpha.1",
+    "@deepseek-ai/dsh-credentials": "*",
+    "@deepseek-ai/dsh-tool-web": "*",
+    "@deepseek-ai/dsh-tools": "*",
+    "@deepseek-ai/dsh-web": "*",
+    "@deepseek-ai/dsh-web-fetch-http": "*"
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "3.18.5-alpha.1",
+    "@joplin/turndown-plugin-gfm": "1.0.68",
+    "fast-xml-parser": "5.11.2",
+    "turndown": "7.2.4"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "4.0.5-alpha.1",
+    "@deepseek-ai/cosmokit": "1.8.6-alpha.1",
+    "@deepseek-ai/dsh-brand": "0.2.1-alpha.2",
+    "@deepseek-ai/dsh-credentials": "0.2.1-alpha.2",
+    "@deepseek-ai/dsh-http-proxy": "0.2.1-alpha.2",
+    "@deepseek-ai/dsh-llm": "0.2.1-alpha.2",
+    "@deepseek-ai/dsh-system-prompt": "0.2.1-alpha.2",
+    "@deepseek-ai/dsh-timeout": "0.2.1-alpha.2",
+    "@deepseek-ai/dsh-tool-web": "0.2.1-alpha.2",
+    "@deepseek-ai/dsh-tools": "0.2.1-alpha.2",
+    "@deepseek-ai/dsh-web": "0.2.1-alpha.2",
+    "@deepseek-ai/dsh-web-fetch-http": "0.2.1-alpha.2",
+    "@types/node": "^24.0.0",
+    "@types/turndown": "5.0.6",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8",
+    "yaml": "2.9.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/qikairo7/dsh-web-search-fetch.git"
+  },
+  "bugs": {
+    "url": "https://github.com/qikairo7/dsh-web-search-fetch/issues"
+  },
+  "homepage": "https://github.com/qikairo7/dsh-web-search-fetch#readme"
+}

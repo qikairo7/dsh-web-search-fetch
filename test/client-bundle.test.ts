@@ -1,0 +1,696 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+import { ADDITIONAL_ENGINE_DEFAULTS } from '../src/engines/additional/index.js';
+
+/**
+ * Execution smoke test of the browser half.
+ *
+ * `client/index.js` is a classic script that hands a factory to
+ * `window.__ModuleLoader__`; nothing in the Node build touches it, so without
+ * this test the tab's registration contract and its save path would go
+ * unverified until a real GUI session. The test stubs the two globals the
+ * bundle actually uses (the loader facade and `require`) and the page context
+ * `apply` reaches, then drives the controller through a save.
+ */
+
+/** React stand-ins: the bundle only builds elements, it never renders here. */
+const reactStub = {
+  createElement: (type: unknown, props: unknown, ...children: unknown[]) => ({
+    type,
+    props,
+    children,
+  }),
+  useId: () => 'test-id',
+};
+const jsxRuntimeStub = {
+  jsx: (type: unknown, props: unknown) => ({ type, props }),
+  jsxs: (type: unknown, props: unknown) => ({ type, props }),
+  Fragment: Symbol('Fragment'),
+};
+const storeStub = {
+  createSnapshotStore: (initial: unknown) => {
+    let snapshot = initial;
+    const listeners = new Set<() => void>();
+    return {
+      getSnapshot: () => snapshot,
+      subscribe: (listener: () => void) => {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
+      set: (next: unknown) => {
+        snapshot = next;
+        for (const listener of listeners) listener();
+      },
+    };
+  },
+};
+const primitivesStub = {
+  SettingsForm: 'SettingsForm',
+  SettingsSecretField: 'SettingsSecretField',
+  SegmentedControl: 'SegmentedControl',
+  StateDot: 'StateDot',
+  Tag: 'Tag',
+  Button: 'Button',
+  Switch: 'Switch',
+};
+
+/** The modules the bundle is allowed to require, mirroring the platform seeds. */
+const seedModules: Record<string, unknown> = {
+  react: reactStub,
+  'react/jsx-runtime': jsxRuntimeStub,
+  '@deepseek-ai/dsh-client-store': storeStub,
+  '@deepseek-ai/dsh-client-ui-primitives': primitivesStub,
+};
+
+interface Registered {
+  id: string;
+  factory: (require: (spec: string) => unknown) => Record<string, unknown>;
+}
+
+/** Load the bundle and return the module it registers. */
+function loadBundle(): { registration: Registered; module: Record<string, any> } {
+  const source = readFileSync(new URL('../client/index.js', import.meta.url), 'utf8');
+  const registrations: Registered[] = [];
+  const windowStub = {
+    __ModuleLoader__: {
+      load: (registration: Registered) => {
+        registrations.push(registration);
+      },
+    },
+  };
+  const require = (spec: string): unknown => {
+    if (!(spec in seedModules)) throw new Error(`unexpected require("${spec}")`);
+    return seedModules[spec];
+  };
+  // The bundle is a classic script; evaluate it with only the two globals it
+  // declares a dependency on.
+  new Function('window', 'require', source)(windowStub, require);
+  expect(registrations).toHaveLength(1);
+  const registration = registrations[0]!;
+  return { registration, module: registration.factory(require) };
+}
+
+/** A settings scope stand-in with the staged-value and mutate contract. */
+function createScope(options: {
+  value?: unknown;
+  writable?: boolean;
+  status?: 'loading' | 'ready' | 'unavailable';
+  revision?: number;
+}): {
+  scope: Record<string, unknown>;
+  mutations: { op: string; path: readonly string[]; value?: unknown }[][];
+  revisions: (number | undefined)[];
+  setValue: (next: unknown) => void;
+} {
+  const mutations: { op: string; path: readonly string[]; value?: unknown }[][] = [];
+  const revisions: (number | undefined)[] = [];
+  let snapshot = {
+    status: options.status ?? 'ready',
+    value: options.value,
+    base: {},
+    user: {},
+    writable: options.writable ?? true,
+    revision: options.revision ?? 1,
+  };
+  const listeners = new Set<() => void>();
+  const scope = {
+    getSnapshot: () => snapshot,
+    subscribe: (listener: () => void) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    mutate: async (
+      ops: { op: string; path: readonly string[]; value?: unknown }[],
+      expectedRevision?: number,
+    ) => {
+      mutations.push(ops);
+      revisions.push(expectedRevision);
+      return true;
+    },
+  };
+  return {
+    scope,
+    mutations,
+    revisions,
+    setValue: (next: unknown) => {
+      snapshot = { ...snapshot, value: next, revision: snapshot.revision + 1 };
+      for (const listener of listeners) listener();
+    },
+  };
+}
+
+/** A page context stand-in covering exactly what `apply` and the card touch. */
+function createPageContext(config: {
+  scope: Record<string, unknown>;
+  describe?: (refs: string[]) => unknown;
+  set?: (ref: string, value: string) => unknown;
+}): {
+  ctx: Record<string, any>;
+  registrations: { options: Record<string, any>; component: unknown }[];
+  localeRegistrations: Record<string, unknown>[];
+  effects: string[];
+  eventHandlers: Map<string, (payload: unknown) => void>;
+} {
+  const registrations: { options: Record<string, any>; component: unknown }[] = [];
+  const localeRegistrations: Record<string, unknown>[] = [];
+  const effects: string[] = [];
+  const eventHandlers = new Map<string, (payload: unknown) => void>();
+  const served = new Set(['web-search-fetch']);
+  const describe =
+    config.describe ?? (() => ({ ok: true, value: {} }));
+  const set = config.set ?? (() => ({ ok: true, value: undefined }));
+  const ctx = {
+    logger: { error: () => {}, warn: () => {}, info: () => {}, debug: () => {} },
+    locale: {
+      bind: () => (key: string) => key,
+      register: (ns: string, bundles: unknown) => {
+        localeRegistrations.push({ ns, bundles });
+        return () => {};
+      },
+      getSnapshot: () => ({ revision: 1 }),
+      subscribe: () => () => {},
+    },
+    slots: {
+      inject: (_name: string, register: () => unknown) => {
+        register();
+        return () => {};
+      },
+      register: (options: Record<string, any>, component: unknown) => {
+        registrations.push({ options, component });
+        return () => {};
+      },
+      entries: () => [],
+      subscribe: () => () => {},
+      getVersion: () => 0,
+    },
+    configForms: {
+      get: () => config.scope,
+      whileServed: (namespaces: string[], register: (served: Set<string>) => unknown) => {
+        if (namespaces.some((ns) => served.has(ns))) register(served);
+        return () => {};
+      },
+    },
+    remote: {
+      credentials: { describe, set },
+      $on: (event: string, handler: (payload: unknown) => void) => {
+        eventHandlers.set(event, handler);
+        return () => {};
+      },
+    },
+    effect: (factory: () => unknown, label?: string) => {
+      effects.push(label ?? '');
+      const disposer = factory();
+      return typeof disposer === 'function' ? disposer : () => {};
+    },
+  };
+  return { ctx, registrations, localeRegistrations, effects, eventHandlers };
+}
+
+describe('client bundle', () => {
+  it('package.json 声明了宿主发现客户端半边所需的字段', () => {
+    const manifest = JSON.parse(
+      readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+    ) as {
+      name: string;
+      exports?: Record<string, unknown>;
+      files?: string[];
+      dsh?: { client?: { platform?: string; inject?: string[] } };
+    };
+    // The host scanner reads dsh.client (platform must be "web"), resolves
+    // exports["./client"] to a real file, and requires that file to ship.
+    expect(manifest.dsh?.client?.platform).toBe('web');
+    expect(manifest.dsh?.client?.inject).toContain('@deepseek-ai/dsh-api-remotes');
+    // The package that DECLARES the slot this tab registers into must be
+    // injected: registering into an undeclared slot throws at plugin load, so a
+    // wrong owner here is a blank tab, not a degraded one.
+    expect(manifest.dsh?.client?.inject).toContain('@deepseek-ai/dsh-client-ui-settings-plugins');
+    expect(manifest.dsh?.client?.inject).toContain('@deepseek-ai/dsh-client-ui-settings');
+    const clientExport = manifest.exports?.['./client'];
+    expect(clientExport, 'exports["./client"] 必须存在').toBeDefined();
+    // The scanner accepts a string or an object with a string default.
+    const clientPath =
+      typeof clientExport === 'string'
+        ? clientExport
+        : (clientExport as { default?: string } | undefined)?.default;
+    expect(typeof clientPath).toBe('string');
+    const resolved = new URL(`../${clientPath!.replace(/^\.\//, '')}`, import.meta.url);
+    expect(existsSync(resolved), `client 产物应存在：${clientPath}`).toBe(true);
+    expect(manifest.files).toContain('client/**/*.js');
+    // The bundle registers under its own package name, which is the id the
+    // scanner addresses it by.
+    expect(manifest.name).toBe('dsh-web-search-fetch');
+  });
+
+  it('注册的 id 与包名一致，factory 暴露 apply / inject / NS', () => {
+    const { registration, module } = loadBundle();
+    expect(registration.id).toBe('dsh-web-search-fetch');
+    expect(typeof module.apply).toBe('function');
+    expect(module.NS).toBe('settings.webSearchFetch');
+    expect(module.inject).toEqual([
+      'slots',
+      'locale',
+      'remote',
+      'remote.credentials',
+      'configForms',
+    ]);
+  });
+
+  it('只 require 平台种子模块（构建期外部依赖不漂移）', () => {
+    const { module } = loadBundle();
+    expect(typeof module.apply).toBe('function');
+    // loadBundle's require throws on anything outside the seed table, so
+    // reaching this line proves the bundle asked for nothing else.
+  });
+
+  it('apply 注册 zh/en 双语并把 tab 挂进 settings.plugins.tab', () => {
+    const { module } = loadBundle();
+    const { scope } = createScope({ value: { search: { zhipuTransport: 'anthropic' } } });
+    const page = createPageContext({ scope });
+    module.apply(page.ctx);
+
+    const dictionaries = page.localeRegistrations.find(
+      (entry) => entry.ns === 'settings.webSearchFetch',
+    );
+    expect(dictionaries).toBeDefined();
+    const bundles = dictionaries!.bundles as { zh: Record<string, string>; en: Record<string, string> };
+    expect(Object.keys(bundles.zh).length).toBeGreaterThan(0);
+    // Same key set in both dictionaries, so a locale switch cannot miss copy.
+    expect(Object.keys(bundles.en).sort()).toEqual(Object.keys(bundles.zh).sort());
+
+    const tab = page.registrations.find((entry) => entry.options.name === 'settings.plugins.tab');
+    expect(tab, '应注册 settings.plugins.tab').toBeDefined();
+    expect(tab!.options.id).toBe('web-search-fetch');
+    expect(typeof tab!.options.order).toBe('number');
+    expect(tab!.options.locale).toBe('settings.webSearchFetch');
+    expect(typeof tab!.component).toBe('function');
+  });
+
+  it('未服务该命名空间时不注册任何 tab（部署里无痕）', () => {
+    const { module } = loadBundle();
+    const { scope } = createScope({ value: {} });
+    const page = createPageContext({ scope });
+    // The watched namespace is not served: whileServed must not call back.
+    page.ctx.configForms.whileServed = (namespaces: string[], register: () => unknown) => {
+      if (namespaces.includes('never-served')) register();
+      return () => {};
+    };
+    module.apply(page.ctx);
+    expect(page.registrations.filter((e) => e.options.name === 'settings.plugins.tab')).toHaveLength(0);
+  });
+
+  it('注入面暴露 hook 与四个动作，hook 名符合 use<Name> 约定', () => {
+    const { module } = loadBundle();
+    const { scope } = createScope({ value: { search: { zhipuTransport: 'anthropic' } } });
+    const page = createPageContext({ scope });
+    module.apply(page.ctx);
+    const tab = page.registrations.find((entry) => entry.options.name === 'settings.plugins.tab')!;
+    const face = tab.options.inject() as Record<string, any>;
+    expect(Object.keys(face.hooks)).toEqual(['webSearchFetch']);
+    // The renderer derives the prop name from the hook key; the component reads
+    // props.useWebSearchFetch, so the two must agree.
+    expect(typeof face.hooks.webSearchFetch.getSnapshot).toBe('function');
+    for (const action of ['editKey', 'editTransport', 'save', 'discard']) {
+      expect(typeof face[action], action).toBe('function');
+    }
+  });
+});
+
+describe('card controller', () => {
+  /** Mount the card and hand back the injected face plus the page stubs. */
+  function mount(options: {
+    value?: unknown;
+    writable?: boolean;
+    revision?: number;
+    describe?: (refs: string[]) => unknown;
+    set?: (ref: string, value: string) => unknown;
+  }): {
+    face: Record<string, any>;
+    page: ReturnType<typeof createPageContext>;
+    scope: ReturnType<typeof createScope>;
+  } {
+    const { module } = loadBundle();
+    const scope = createScope({
+      value: options.value,
+      writable: options.writable,
+      revision: options.revision,
+    });
+    const page = createPageContext({ scope: scope.scope, describe: options.describe, set: options.set });
+    module.apply(page.ctx);
+    const tab = page.registrations.find((entry) => entry.options.name === 'settings.plugins.tab')!;
+    const face = tab.options.inject() as Record<string, any>;
+    return { face, page, scope };
+  }
+
+  it('投影出完整十三个凭证位与当前通道', () => {
+    const { face } = mount({ value: { search: { zhipuTransport: 'tools-api' } } });
+    const state = face.hooks.webSearchFetch.getSnapshot();
+    expect(state.transport).toBe('tools-api');
+    expect(state.keys.map((row: { id: string }) => row.id)).toEqual(['anysearch', 'zhipu', 'zhihu', 'firecrawl', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'qianfan', 'doubao-search', 'doubao-fetch', 'tinyfish', 'serply', 'kimi', 'siliconflow']);
+    expect(state.keys.every((row: { text: string }) => row.text === '')).toBe(true);
+    expect(state.writable).toBe(true);
+  });
+
+  it('按已服务的引用名询问凭证状态，且只投影布尔', async () => {
+    const described: string[][] = [];
+    const { face } = mount({
+      value: { search: { zhipuTransport: 'anthropic' } },
+      describe: (refs) => {
+        described.push(refs);
+        return {
+          ok: true,
+          value: {
+            ZHIPU_API_KEY: { configured: true, writable: true, source: 'file', value: 'secret' },
+            ANYSEARCH_API_KEY: { configured: false, writable: true },
+          },
+        };
+      },
+    });
+    await Promise.resolve();
+    expect(described[0]).toContain('ZHIPU_API_KEY');
+    expect(described[0]).toContain('FIRECRAWL_API_KEY');
+    const state = face.hooks.webSearchFetch.getSnapshot();
+    const zhipu = state.keys.find((row: { id: string }) => row.id === 'zhipu');
+    expect(zhipu.configured).toBe(true);
+    // The provider view carried a value; the projection must not.
+    expect(JSON.stringify(state)).not.toContain('secret');
+    expect(state.keys.find((row: { id: string }) => row.id === 'anysearch').configured).toBe(false);
+  });
+
+  it('已配置的引用名来自覆盖链（search.zhipuApiKeyEnv 优先于根）', async () => {
+    const described: string[][] = [];
+    const { face } = mount({
+      value: { apiKeyEnv: 'ROOT_KEY', search: { zhipuApiKeyEnv: 'SEARCH_KEY' } },
+      describe: (refs) => {
+        described.push(refs);
+        return { ok: true, value: {} };
+      },
+    });
+    await Promise.resolve();
+    expect(described[0]).toContain('SEARCH_KEY');
+    expect(described[0]).not.toContain('ROOT_KEY');
+  });
+
+  it('保存通道走一次 path 变更，路径为 search.zhipuTransport', async () => {
+    const { face, scope } = mount({ value: { search: { zhipuTransport: 'anthropic' } } });
+    face.editTransport('tools-api');
+    expect(face.hooks.webSearchFetch.getSnapshot().dirty).toBe(true);
+    await face.save();
+    expect(scope.mutations).toHaveLength(1);
+    expect(scope.mutations[0]).toEqual([
+      { op: 'set', path: ['search', 'zhipuTransport'], value: 'tools-api' },
+    ]);
+    // A landed save clears the draft.
+    expect(face.hooks.webSearchFetch.getSnapshot().dirty).toBe(false);
+  });
+
+  it('把通道切回已服务值时不产生写入', async () => {
+    const { face, scope } = mount({ value: { search: { zhipuTransport: 'anthropic' } } });
+    face.editTransport('tools-api');
+    face.editTransport('anthropic');
+    await face.save();
+    expect(scope.mutations).toHaveLength(0);
+    expect(face.hooks.webSearchFetch.getSnapshot().dirty).toBe(false);
+  });
+
+  it('保存用暂存时的 revision 做冲突栅栏（不是保存时的）', async () => {
+    const { face, scope } = mount({ value: { search: { zhipuTransport: 'anthropic' } }, revision: 7 });
+    face.editTransport('tools-api');
+    await face.save();
+    // The scope's own mutate received the revision the drafts were staged
+    // against, so an edit made elsewhere meanwhile is refused rather than
+    // silently overwritten.
+    expect(scope.mutations).toHaveLength(1);
+    expect(scope.revisions).toEqual([7]);
+  });
+
+  it('填写 key 后按引用名写入凭证域', async () => {
+    const writes: { ref: string; value: string }[] = [];
+    const { face } = mount({
+      value: { search: { zhipuTransport: 'anthropic' } },
+      set: (ref, value) => {
+        writes.push({ ref, value });
+        return { ok: true, value: undefined };
+      },
+    });
+    face.editKey('zhipu', 'sk-live-value');
+    await face.save();
+    expect(writes).toEqual([{ ref: 'ZHIPU_API_KEY', value: 'sk-live-value' }]);
+    // The literal must not survive in the card's own render state.
+    expect(face.hooks.webSearchFetch.getSnapshot().keys.every((r: { text: string }) => r.text === '')).toBe(
+      true,
+    );
+  });
+
+  it('留空保持：空白草稿不写入凭证域，也不清空既有 key', async () => {
+    const writes: { ref: string; value: string }[] = [];
+    const { face } = mount({
+      value: { search: { zhipuTransport: 'anthropic' } },
+      set: (ref, value) => {
+        writes.push({ ref, value });
+        return { ok: true, value: undefined };
+      },
+    });
+    face.editKey('zhipu', '   ');
+    await face.save();
+    expect(writes).toEqual([]);
+    expect(face.hooks.webSearchFetch.getSnapshot().dirty).toBe(false);
+  });
+
+  it('空白草稿不会覆盖此前已暂存的值', async () => {
+    const writes: { ref: string; value: string }[] = [];
+    const { face } = mount({
+      value: { search: { zhipuTransport: 'anthropic' } },
+      set: (ref, value) => {
+        writes.push({ ref, value });
+        return { ok: true, value: undefined };
+      },
+    });
+    face.editKey('zhipu', 'sk-first');
+    face.editKey('zhipu', '');
+    await face.save();
+    expect(writes).toEqual([]);
+  });
+
+  it('只读部署拒绝保存', async () => {
+    const writes: { ref: string; value: string }[] = [];
+    const { face, scope } = mount({
+      value: { search: { zhipuTransport: 'anthropic' } },
+      writable: false,
+      set: (ref, value) => {
+        writes.push({ ref, value });
+        return { ok: true, value: undefined };
+      },
+    });
+    face.editKey('zhipu', 'sk-live');
+    await face.save();
+    expect(writes).toEqual([]);
+    expect(scope.mutations).toHaveLength(0);
+    expect(face.hooks.webSearchFetch.getSnapshot().writable).toBe(false);
+  });
+
+  it('凭证写入被拒时保留草稿并标记失败', async () => {
+    const { face } = mount({
+      value: { search: { zhipuTransport: 'anthropic' } },
+      set: () => ({ ok: false, error: { code: 'credential/rejected', message: 'read-only' } }),
+    });
+    face.editKey('zhipu', 'sk-live');
+    await face.save();
+    const state = face.hooks.webSearchFetch.getSnapshot();
+    expect(state.failed).toBe(true);
+    // The draft is kept so the user can correct it rather than retype.
+    expect(state.dirty).toBe(true);
+  });
+
+  it('discard 丢弃全部草稿', async () => {
+    const { face } = mount({ value: { search: { zhipuTransport: 'anthropic' } } });
+    face.editTransport('tools-api');
+    face.editKey('zhihu', 'secret-draft');
+    face.discard();
+    const state = face.hooks.webSearchFetch.getSnapshot();
+    expect(state.dirty).toBe(false);
+    expect(state.transport).toBe('anthropic');
+  });
+
+  it('凭证变更事件只对受监视引用触发重读', async () => {
+    const described: string[][] = [];
+    const { face, page } = mount({
+      value: { search: { zhipuTransport: 'anthropic' } },
+      describe: (refs) => {
+        described.push(refs);
+        return { ok: true, value: {} };
+      },
+    });
+    await Promise.resolve();
+    const before = described.length;
+    const handler = page.eventHandlers.get('credentials/reference-updated')!;
+    handler('UNRELATED_REF');
+    await Promise.resolve();
+    expect(described.length).toBe(before);
+    handler('ZHIPU_API_KEY');
+    await Promise.resolve();
+    expect(described.length).toBeGreaterThan(before);
+  });
+
+  it('描述调用失败时不把凭证报成未配置（保持未知）', async () => {
+    const { face } = mount({
+      value: { search: { zhipuTransport: 'anthropic' } },
+      describe: () => {
+        throw new Error('gateway down');
+      },
+    });
+    await Promise.resolve();
+    const state = face.hooks.webSearchFetch.getSnapshot();
+    // The card still renders; no row claims a false negative from a failed read.
+    expect(state.keys).toHaveLength(16);
+    expect(state.keys.every((row: { configured: boolean }) => row.configured === false)).toBe(true);
+  });
+
+  it('作用域订阅更新后投影随之刷新', async () => {
+    const { face, scope } = mount({ value: { search: { zhipuTransport: 'anthropic' } } });
+    expect(face.hooks.webSearchFetch.getSnapshot().transport).toBe('anthropic');
+    scope.setValue({ search: { zhipuTransport: 'tools-api' } });
+    expect(face.hooks.webSearchFetch.getSnapshot().transport).toBe('tools-api');
+  });
+
+  it('注册了凭证失效事件与表单清理 effect', () => {
+    const { page } = mount({ value: { search: { zhipuTransport: 'anthropic' } } });
+    expect(page.eventHandlers.has('credentials/reference-updated')).toBe(true);
+    expect(page.effects.some((label) => label.includes('credential invalidations'))).toBe(true);
+  });
+  it('扩展引擎开关作为路径编辑保存，保留原有配置', async () => {
+    const { face, scope } = mount({ value: { engines: { tavily: { enabled: true, apiKeyEnv: 'CUSTOM', baseURL: 'https://example.com' } } }, revision: 9 });
+    face.editEngine('tavily', false);
+    face.editEngine('exa', true);
+    await face.save();
+    expect(scope.mutations[0]).toEqual([
+      { op: 'set', path: ['engines', 'tavily', 'enabled'], value: false },
+      { op: 'set', path: ['engines', 'exa', 'enabled'], value: true },
+    ]);
+    expect(scope.revisions).toEqual([9]);
+  });
+
+  it('豆包搜索与提取分别写入各自的自定义引用', async () => {
+    const writes: string[][] = [];
+    const { face } = mount({ value: { engines: { doubao: { apiKeyEnv: 'CUSTOM_SEARCH', fetchApiKeyEnv: 'CUSTOM_FETCH' } } },
+      set: (ref, value) => { writes.push([ref, value]); return { ok: true }; } });
+    face.editKey('doubao-search', 'search-fixture');
+    face.editKey('doubao-fetch', 'fetch-fixture');
+    await face.save();
+    expect(writes).toEqual([['CUSTOM_SEARCH', 'search-fixture'], ['CUSTOM_FETCH', 'fetch-fixture']]);
+    expect(JSON.stringify(face.hooks.webSearchFetch.getSnapshot())).not.toContain('fixture');
+  });
+
+  it('Firecrawl 搜索与提取拆分引用时两者同时更新', async () => {
+    const writes: string[] = [];
+    const { face } = mount({ value: { fetch: { firecrawlApiKeyEnv: 'FC_FETCH' }, engines: { firecrawl: { apiKeyEnv: 'FC_SEARCH' } } },
+      set: (ref) => { writes.push(ref); return { ok: true }; } });
+    face.editKey('firecrawl', 'fixture');
+    await face.save();
+    expect(writes).toEqual(['FC_FETCH', 'FC_SEARCH']);
+  });
+
+  it('凭证引用在输入期间变化时拒绝向新引用写入旧草稿', async () => {
+    const writes: string[] = [];
+    const { face, scope } = mount({ value: { engines: { tavily: { apiKeyEnv: 'OLD_REF' } } },
+      set: ref => { writes.push(ref); return { ok: true }; } });
+    face.editKey('tavily', 'fixture');
+    scope.setValue({ engines: { tavily: { apiKeyEnv: 'NEW_REF' } } });
+    await face.save();
+    expect(writes).toEqual([]);
+    expect(face.hooks.webSearchFetch.getSnapshot().failed).toBe(true);
+  });
+
+
+  // Complete inventory and interaction regressions.
+  it('服务列表包含每一个后端扩展和 README 接入项，匿名服务不新增凭证位', () => {
+    const { face, page } = mount({ value: {} });
+    const state = face.hooks.webSearchFetch.getSnapshot();
+    expect(state.visibleServiceIds).toEqual(expect.arrayContaining(Object.keys(ADDITIONAL_ENGINE_DEFAULTS)));
+    expect(state.visibleServiceIds).toHaveLength(18);
+    const bundles = page.localeRegistrations[0]!.bundles as { zh: Record<string, string> };
+    const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
+    for (const id of state.visibleServiceIds) expect(readme).toContain(bundles.zh[id + '-service']);
+    expect(state.keys.some((row: { id: string }) => ['bing', 'aihot', 'http'].includes(row.id))).toBe(false);
+    expect(state.keys.map((row: { id: string }) => row.id)).toEqual(expect.arrayContaining(['tinyfish', 'serply', 'doubao-search', 'doubao-fetch']));
+  });
+
+  it('搜索、能力与状态筛选保留所有未保存输入，放弃更改恢复配置', async () => {
+    const { face } = mount({ value: { engines: { aihot: { enabled: false } } } });
+    await Promise.resolve();
+    face.editView({ query: 'Google' });
+    expect(face.hooks.webSearchFetch.getSnapshot().visibleServiceIds).toEqual(['serply']);
+    face.editView({ query: 'Serply' });
+    expect(face.hooks.webSearchFetch.getSnapshot().visibleServiceIds).toEqual(['serply']);
+    face.editView({ query: '' });
+    face.toggleService('tinyfish');
+    face.editKey('tinyfish', 'fixture-key');
+    face.editEngine('aihot', true);
+    face.editView({ query: 'Bing', capability: 'search' });
+    let state = face.hooks.webSearchFetch.getSnapshot();
+    expect(state.visibleServiceIds).toEqual(['bing']);
+    expect(state.dirty).toBe(true);
+    expect(state.changeCount).toBe(2);
+    face.editView({ query: '', capability: 'all', status: 'pending' });
+    state = face.hooks.webSearchFetch.getSnapshot();
+    expect(state.visibleServiceIds).toEqual(['tinyfish', 'aihot']);
+    expect(state.keys.find((row: { id: string }) => row.id === 'tinyfish').text).toBe('fixture-key');
+    face.discard();
+    state = face.hooks.webSearchFetch.getSnapshot();
+    expect(state.visibleServiceIds).toEqual([]);
+    expect(state.engines.aihot).toBe(false);
+    expect(state.dirty).toBe(false);
+  });
+
+  it('匿名服务可保存开关，但没有凭证写入', async () => {
+    const writes: string[] = [];
+    const { face, scope } = mount({ value: { engines: { aihot: { enabled: false }, bing: {} } },
+      set: (ref) => { writes.push(ref); return { ok: true }; } });
+    face.editEngine('aihot', true);
+    face.editEngine('bing', false);
+    await face.save();
+    expect(scope.mutations[0]).toEqual([
+      { op: 'set', path: ['engines', 'aihot', 'enabled'], value: true },
+      { op: 'set', path: ['engines', 'bing', 'enabled'], value: false },
+    ]);
+    expect(writes).toEqual([]);
+    expect(face.hooks.webSearchFetch.getSnapshot().saved).toBe(true);
+  });
+
+  it('配置已保存但密钥失败后，重试不会再用旧 revision 重写配置', async () => {
+    let refused = true;
+    const { face, scope } = mount({ value: { engines: { tinyfish: { enabled: false } } },
+      set: () => ({ ok: !refused }) });
+    face.editEngine('tinyfish', true);
+    face.editKey('tinyfish', 'fixture-key');
+    await face.save();
+    expect(face.hooks.webSearchFetch.getSnapshot().failed).toBe(true);
+    refused = false;
+    await face.save();
+    expect(scope.mutations).toHaveLength(1);
+    expect(face.hooks.webSearchFetch.getSnapshot().dirty).toBe(false);
+    expect(face.hooks.webSearchFetch.getSnapshot().saved).toBe(true);
+  });
+
+  it('正文模式与预算按字段保存，保留自定义端点和未编辑的控制字段', async () => {
+    const { face, scope } = mount({ value: { controls: { mode: 'organize', maxRequests: 32, searchServices: ['anysearch', 'kimi'], extra: 'preserve' }, engines: { kimi: { baseURL: 'https://custom.example' } } } });
+    face.editControl('mode', 'select');
+    face.editControl('maxRequests', 2);
+    face.editParticipation('kimi', 'search', false);
+    await face.save();
+    expect(scope.mutations[0]).toEqual([
+      { op: 'set', path: ['controls', 'mode'], value: 'select' },
+      { op: 'set', path: ['controls', 'maxRequests'], value: 2 },
+      { op: 'set', path: ['controls', 'searchServices'], value: ['anysearch'] },
+    ]);
+    expect(face.hooks.webSearchFetch.getSnapshot().controls.extra).toBe('preserve');
+    expect(face.hooks.webSearchFetch.getSnapshot().dirty).toBe(false);
+  });
+  it('非法预算不形成草稿，放弃更改恢复整理设置', () => {
+    const { face } = mount({ value: { controls: { mode: 'organize', maxRequests: 32 } } });
+    face.editControl('maxRequests', 0);
+    expect(face.hooks.webSearchFetch.getSnapshot().dirty).toBe(false);
+    face.editControl('mode', 'select');
+    face.discard();
+    expect(face.hooks.webSearchFetch.getSnapshot().controls.mode).toBe('organize');
+  });
+});

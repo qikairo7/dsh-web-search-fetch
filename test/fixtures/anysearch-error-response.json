@@ -1,0 +1,6 @@
+{
+  "code": -1,
+  "message": "Target is blocked by Extract policy.",
+  "request_id": "req_blocked",
+  "error_code": "extract_target_blocked"
+}

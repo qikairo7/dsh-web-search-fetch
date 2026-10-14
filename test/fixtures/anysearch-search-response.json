@@ -1,0 +1,23 @@
+{
+  "code": 0,
+  "message": "success",
+  "request_id": "req_search_1",
+  "data": {
+    "results": [
+      {
+        "title": "Result A",
+        "url": "https://a.example.com/one",
+        "snippet": "First summary"
+      },
+      {
+        "title": "Result B",
+        "url": "https://b.example.com/two",
+        "snippet": "Second summary"
+      }
+    ],
+    "metadata": {
+      "total_results": 2,
+      "search_time_ms": 37
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "code": 0,
+  "message": "success",
+  "request_id": "req_extract_1",
+  "data": {
+    "url": "https://example.com/article",
+    "title": "Example article",
+    "content": "# Example article\n\nCleaned body."
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "20261013173512b0e9c1f2a3d4e5f6",
+  "results": [
+    { "index": 2, "relevance_score": 0.9123 },
+    { "index": 0, "relevance_score": 0.7245 },
+    { "index": 4, "relevance_score": 0.5512 },
+    { "index": 3, "relevance_score": 0.3104 },
+    { "index": 1, "relevance_score": 0.1207 }
+  ],
+  "meta": {
+    "tokens": { "input_tokens": 42, "output_tokens": 0 }
+  }
+}
