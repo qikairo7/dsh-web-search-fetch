@@ -96,7 +96,15 @@ Firecrawl 官方 Search / Scrape 支持 Keyless：未填密钥时不发送 Autho
 | 开发工具 | pnpm 12.10.1 |
 | 外部服务 | 网络连通性；官方 Firecrawl 匿名模式与 Bing RSS 无需凭证，其他服务按需配置 |
 
-开发依赖使用 DSH `0.2.1-alpha.2`。其他 DSH 版本的兼容性需实际验证。
+已在 Windows、Node.js 24.20.0、DSH `0.2.1-alpha.2` 的正式环境及隔离 profile 中验证安装、原生搜索和网页提取。CI 覆盖 Windows／Ubuntu、Node.js 22.19／24 的构建、类型检查与测试；CI 通过不表示这些组合均完成 DSH 实机验收。
+
+| DSH 版本 | 兼容声明 | 验证范围 |
+| --- | --- | --- |
+| `0.2.1-alpha.2` | compatible | 上述 Windows 环境的安装、搜索与提取 |
+| `0.2.1-alpha.1` | unknown | 尚未执行该版本运行验收 |
+| `0.2.0-rc.2` | unknown | 尚未执行该版本运行验收 |
+
+默认分支的 `package.json` 提供 `dsh.compatibility.dshReleases` 精确版本声明；未验证版本保持 `unknown`。当前 `v0.2.0` 发布包先于这项元数据补充发布，运行实现相同。这里不声明所有版本的卸载或回滚已通过验收。
 
 ### 使用发布包安装
 
