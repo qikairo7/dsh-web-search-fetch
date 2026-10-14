@@ -702,3 +702,29 @@ describe('AggregatedSearchProvider publishedAt 直通', () => {
     expect(byUrl.get('https://www.sohu.com/a/897879632_121123890')?.publishedAt).toBe('2025-05-23');
   });
 });
+
+
+it('统一启停控制关闭基础搜索和额度检查，并允许运行时启用原本关闭的重排', async () => {
+  let quotaCalls = 0;
+  let rerankCalls = 0;
+  let flags: Record<string, boolean> = { zhihu: false, siliconflow: false };
+  const lane = fakeEngine('zhihu', ok([source('https://example.com/guide')]), async () => { quotaCalls++; return { remaining: 10 }; });
+  const provider = new AggregatedSearchProvider({
+    engines: [lane.engine], breaker: new CircuitBreaker(),
+    resolveControls: () => ({ serviceEnabled: flags }),
+    rerank: { enabled: false, rerank: async () => { rerankCalls++; return [0]; } },
+  });
+  await expectWebError(provider.search({ query: 'sample' }), 'WEB_PROVIDER_ERROR');
+  expect(lane.requests).toHaveLength(0);
+  expect(quotaCalls).toBe(0);
+  flags = { zhihu: true, siliconflow: false };
+  expect((await provider.search({ query: 'sample' })).sources).toHaveLength(1);
+  expect(quotaCalls).toBe(1);
+  expect(rerankCalls).toBe(0);
+  flags = { zhihu: true, siliconflow: true };
+  await provider.search({ query: 'sample' });
+  expect(rerankCalls).toBe(1);
+  flags = { zhihu: false, siliconflow: true };
+  await expectWebError(provider.search({ query: 'sample' }), 'WEB_PROVIDER_ERROR');
+  expect(lane.requests).toHaveLength(2);
+});

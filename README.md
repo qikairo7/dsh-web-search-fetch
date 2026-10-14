@@ -10,7 +10,7 @@
 [快速开始](#快速开始) · [正文整理演示](./docs/content-organization.md#输入与输出演示) · [真实对比](./docs/modsearch-comparison.md) · [配置参考](./docs/configuration.md) · [参与贡献](./CONTRIBUTING.md)
 
 ```sh
-dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.3/dsh-web-search-fetch-0.2.3.tgz
+dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.4/dsh-web-search-fetch-0.2.4.tgz
 ```
 
 安装后重启 DSH，直接请求搜索或读取公开网页。匿名模式受服务方额度与限流约束，不能保证无限使用。未安装 DSH 的环境需先完成[宿主安装](https://github.com/deepseek-ai/deepseek-harness)。
@@ -27,7 +27,7 @@ dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/re
 | 服务统一管理 | DSH 凭证管理、服务开关、智谱通道选择，以及超时、取消、限流冷却和额度熔断 | 一处配置搜索、提取与重排；单路失败时继续使用其他可用结果 |
 | 调用范围与预算 | 免费接口／均衡／深度／自定义预设，搜索与提取分别选择参与服务，限制请求次数与总限时 | 按任务控制调用范围，减少不需要的派发 |
 
-插件注册两个 ID 为 `aggregated` 的 provider。设置页覆盖 18 项服务、16 个凭证位和 13 个扩展开关。静态资源使用 DSH 内置 HTTP 提取器，AIHOT 专用 API 直接读取；其余 URL 按配置进入多服务提取。
+插件注册两个 ID 为 `aggregated` 的 provider。设置页覆盖 18 项服务和 16 个凭证位。每项服务均提供独立启停开关。静态资源使用 DSH 内置 HTTP 提取器，AIHOT 专用 API 直接读取；其余 URL 按配置进入多服务提取。
 
 动态网页提取默认将同一 URL 的多路结果整理成一份正文：按章节和共同段落去重，补充独有内容，保留提取来源和文本差异。代码、表格、链接和原文数字保留；不同标题、明确版本标记、语言或返回目标的内容放入补充片段，识别出的登录与挑战页面不混入正文。引用式链接与脚注按来源保留完整 Markdown 原文，避免同名定义串用。可切换旧版单份正文模式。规则边界见[网页正文整理](./docs/content-organization.md)。
 
@@ -111,7 +111,7 @@ Firecrawl 官方 Search / Scrape 支持 Keyless：未填密钥时不发送 Autho
 在已配置 DSH 的环境中执行：
 
 ```sh
-dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.3/dsh-web-search-fetch-0.2.3.tgz
+dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.4/dsh-web-search-fetch-0.2.4.tgz
 ```
 
 将 `web` 替换为实际使用的 profile，安装后重启宿主。本项目通过 GitHub Release 分发固定版本包；此命令不需要 npm 包发布账号或 GitHub 登录。
@@ -163,7 +163,7 @@ dsh --profile <profile> --dump-config
 | `MOONSHOT_API_KEY` | Kimi 搜索与提取 |
 | `SILICONFLOW_API_KEY` | 硅基流动重排 |
 
-Bing RSS、AIHOT 和直接 HTTP 抓取无需凭证。豆包搜索与提取分别填写；Firecrawl 开关只控制搜索，官方网页提取在未配置密钥时使用匿名额度，配置密钥后使用账户额度。服务列表支持名称搜索、能力筛选和配置状态筛选；隐藏或折叠的草稿仍会保留。配置状态表示凭证存在，不证明服务健康。
+Bing RSS、AIHOT 和直接 HTTP 抓取无需凭证。豆包搜索与提取分别填写；Firecrawl 总开关同时控制搜索与提取。官方网页提取在未配置密钥时使用匿名额度，配置密钥后使用账户额度。服务列表支持名称搜索、能力筛选和配置状态筛选；隐藏或折叠的草稿仍会保留。配置状态表示凭证存在，不证明服务健康。
 
 配置文件只填写引用名。凭证值由 DSH 管理，每次操作重新解析。详细说明见[配置参考](./docs/configuration.md)。
 
@@ -180,7 +180,7 @@ Bing RSS、AIHOT 和直接 HTTP 抓取无需凭证。豆包搜索与提取分别
 
 ## 设置界面
 
-设置页使用 DSH 原生分段选择、输入框、复选框和开关。首屏显示当前调用方式与服务配置；展开“调用设置”可切换预设和正文处理方式，请求数、超时和正文长度在“高级调用限制”中调整。服务列表支持关键词搜索、能力筛选和逐项配置。
+设置页使用 DSH 原生分段选择、输入框、复选框和开关。首屏显示当前调用方式与服务配置；展开“调用设置”可切换预设和正文处理方式，请求数、超时和正文长度在“高级调用限制”中调整。服务列表支持关键词搜索、能力筛选和逐项配置。每行统一显示凭证状态、启用开关和展开箭头。总开关保留凭证与参与范围；关闭直接 HTTP 抓取后，静态 URL 会报错，不会自动调用其他服务。
 
 数值输入允许暂时清空，超出范围时显示提示并阻止保存；搜索框按 Enter 不会提交设置。保存前可以放弃修改，离开设置页会撤销未保存草稿。配置状态仅表示凭证是否存在。
 

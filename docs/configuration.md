@@ -25,6 +25,7 @@
 | Bing RSS | 无需凭证 | 是 | 否 |
 | AIHOT（可选） | 无需凭证 | AI 资讯关键词 | 专用 API |
 | 硅基流动 | `SILICONFLOW_API_KEY` | 重排 | 否 |
+| 直接 HTTP 抓取 | 无需凭证 | 否 | 静态资源 |
 
 按能力和费用选择需要的服务，费用区别见 [服务费用](../README.md#服务费用)。配置方式与价格无关：AnySearch、智谱和知乎通过 `search` 字段配置；Firecrawl 与 AnySearch 的提取通过 `fetch` 字段配置。用 `controls.searchServices` / `controls.fetchServices` 分别控制参与范围。`engines` 中的服务仅在列出且未设 `enabled: false` 时创建。凭证服务明确报告未配置时，该路不派发；状态未知时保留实际请求验证。
 
@@ -83,7 +84,13 @@
 
 插件固定使用 `BAAI/bge-reranker-v2-m3`，当前在硅基流动提供免费调用，仍需配置 API Key。可通过[硅基流动邀请链接](https://cloud.siliconflow.cn/i/E3nhNFP4)注册账号并创建密钥，在设置页的「硅基流动」项中保存，默认凭证引用为 `SILICONFLOW_API_KEY`。
 
-`search.rerank` 默认为 `true`。重排不可用时保留 RRF 融合顺序。模型费用以[官方定价](https://siliconflow.cn/pricing)为准。
+`search.rerank` 默认为 `true`，作为重排总开关的兼容初始值。显式设置 `controls.serviceEnabled.siliconflow` 时使用该值。重排不可用时保留 RRF 融合顺序。模型费用以[官方定价](https://siliconflow.cn/pricing)为准。
+
+## 服务总开关
+
+`controls.serviceEnabled` 按服务 ID 保存总开关，例如 `anysearch: false` 会停止 AnySearch 的搜索与提取。关闭不会清除凭证或参与范围，重新开启后沿用原配置。扩展服务首次开启时，设置页会补齐所需的 `engines` 条目；关闭总开关会保留该条目。
+
+直接 HTTP 抓取的 ID 为 `http`。关闭后，静态 URL 返回 `WEB_PROVIDER_ERROR`，不会自动改走其他提取服务。需要读取静态资源时，重新开启该服务。
 
 ## 搜索与提取参数
 
@@ -200,7 +207,7 @@ GitHub 提取只识别仓库根 URL 与 `/blob/<ref>/<path>`，不提供任意 G
 
 页面上方设置正文处理模式、调用预设和各项预算，服务详情内分别勾选搜索与提取参与。修改参与范围不会删除密钥或自定义端点。保存仅提交修改路径；放弃更改同时清除未保存的模式、预算和参与范围。
 
-13 个扩展服务有独立启用开关。Firecrawl 的开关只控制搜索，网页提取继续可用。GitHub 提取限定仓库 README / 文件。扩展服务开关和智谱通道均在保存后影响下一次调用，无需重挂插件。
+18 项服务均提供总开关，控制该服务的全部能力。Firecrawl 的总开关同时控制搜索与提取。旧 `engines.firecrawl.enabled` 仍只控制搜索；设置页的「参与搜索」会反映并修改这个旧字段。GitHub 提取限定仓库 README / 文件。扩展服务开关和智谱通道均在保存后影响下一次调用，无需重挂插件。
 
 密钥通过 DSH credentials 域写入。留空保持现值；保存成功清空输入框，刷新后只显示配置状态。环境变量提供的凭证遵循宿主只读规则。AnySearch 或 Firecrawl 的搜索与提取若使用不同引用，一次填写会更新两处引用；豆包两把密钥分别更新。
 

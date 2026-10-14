@@ -38,16 +38,16 @@ window.__ModuleLoader__.load({
             githubCapabilities: '仓库搜索 · README / 文件提取', staticFetch: '静态资源提取', aiNews: 'AI 资讯搜索 · API 读取',
             configured: '已配置', unconfigured: '未配密钥', partial: '部分配置', staged: '待保存', readOnly: '只读',
             checking: '读取中…', statusFailed: '状态未知', noKey: '无需密钥', configure: '配置',
-            enable: '启用', firecrawlEnable: '启用 Firecrawl 搜索',
+            enable: '启用',
             searchLabel: '查找服务', searchPlaceholder: '搜索服务名称或用途', clearSearch: '清空搜索',
             statusFilter: '筛选配置状态', allStatus: '全部状态', needsKey: '未配置凭证', pending: '有未保存修改',
             servicesCount: '个服务', keysCount: '个凭证位', matches: '项匹配', noMatches: '没有匹配的服务',
             noMatchesHint: '试试其他关键词，或清除筛选条件。', resetFilters: '清除筛选',
             transportLabel: '智谱搜索通道', transportAnthropic: '套餐额度', transportToolsApi: '按次计费',
             transportHint: 'GLM Coding Plan 为付费订阅；tools-api 使用按次计费的 search_pro。套餐额度不属于免费额度，两条通道共用此密钥。',
-            baseHint: '配置凭证后参与调用；未配置时，其他可用服务继续工作。',
+            baseHint: '启用后按参与范围调用。关闭会保留凭证与参与范围。',
             extensionHint: '启用并保存后，参与下一次搜索或适用网页的提取。',
-            firecrawlHint: '官方端点未配置密钥时使用匿名免费额度，可直接搜索和提取；受服务方额度及限流约束。填写密钥后使用账户额度，自定义端点仍需密钥。开关只控制搜索。',
+            firecrawlHint: '官方端点未配置密钥时使用匿名额度，受服务方额度及限流约束。填写密钥后使用账户额度，自定义端点仍需密钥。总开关控制搜索与提取，下方可分别选择参与范围。',
             githubHint: '搜索公开仓库；提取仅适用于仓库 README 和 blob 文件 URL。',
             doubaoHint: '搜索和提取分别使用密钥，可独立配置。',
             tinyfishHint: 'Search 与 Fetch 使用独立 API 地址，共用此密钥。',
@@ -58,7 +58,7 @@ window.__ModuleLoader__.load({
             aihotTerms: '使用范围：个人非商业、公益及组织内部使用；对外代理、收费或再分发须取得书面授权。',
             rerankHint: '使用硅基流动免费模型 BAAI/bge-reranker-v2-m3，仍需 API Key。对融合结果重排，不计入搜索来源数量。',
             siliconflowInvite: '注册硅基流动并获取 API Key（邀请链接）',
-            httpHint: '静态资源由 DSH HTTP 组件直接抓取。无需密钥，不调用模型 API。',
+            httpHint: '静态资源由 DSH HTTP 组件直接抓取，无需密钥。关闭后静态 URL 会报错，不会自动改走其他提取服务。',
             enableWarning: '此服务尚未启用。填写密钥后，记得打开右侧开关并保存。',
             missingWarning: '已启用，但凭证尚未配置；此路可能无法返回结果。',
             unavailable: '插件当前未加载，暂时无法配置。', readOnlyHint: '当前部署配置为只读。',
@@ -95,16 +95,16 @@ window.__ModuleLoader__.load({
             githubCapabilities: 'Repository search · README / Files', staticFetch: 'Static resources', aiNews: 'AI news search · API reading',
             configured: 'Configured', unconfigured: 'Needs key', partial: 'Partially configured', staged: 'Unsaved', readOnly: 'Read-only',
             checking: 'Checking…', statusFailed: 'Status unknown', noKey: 'No key needed', configure: 'Configure',
-            enable: 'Enable', firecrawlEnable: 'Enable Firecrawl search',
+            enable: 'Enable',
             searchLabel: 'Find a service', searchPlaceholder: 'Search by service or purpose', clearSearch: 'Clear search',
             statusFilter: 'Filter configuration status', allStatus: 'All statuses', needsKey: 'Needs credentials', pending: 'Unsaved changes',
             servicesCount: 'services', keysCount: 'credential inputs', matches: 'matches', noMatches: 'No matching services',
             noMatchesHint: 'Try another keyword or clear the filters.', resetFilters: 'Clear filters',
             transportLabel: 'Zhipu search transport', transportAnthropic: 'Coding Plan', transportToolsApi: 'Pay per call',
             transportHint: 'Coding Plan is a paid subscription; tools-api uses pay-per-call search_pro. Plan credits are not free credits. Both share this key.',
-            baseHint: 'Uses configured credentials. Other available services still work without this key.',
+            baseHint: 'Enable to use the selected capabilities. Disabling preserves credentials and participation settings.',
             extensionHint: 'Enable and save to join the next search or supported page extraction.',
-            firecrawlHint: 'Official endpoints use anonymous free credits without a key, subject to quota and rate limits. A configured key uses account credits; custom endpoints still require a key. This switch controls search only.',
+            firecrawlHint: 'Official endpoints use anonymous credits without a key, subject to quota and rate limits. A configured key uses account credits; custom endpoints still require a key. The switch controls both search and extraction; select each capability below.',
             githubHint: 'Search public repositories; extract only repository README and blob file URLs.',
             doubaoHint: 'Search and extraction use separate credentials.',
             tinyfishHint: 'Separate Search and Fetch API endpoints share this key.',
@@ -115,7 +115,7 @@ window.__ModuleLoader__.load({
             aihotTerms: 'Personal noncommercial, charitable and internal use; external proxies, paid use or redistribution require written authorization.',
             rerankHint: 'Uses the free BAAI/bge-reranker-v2-m3 model on SiliconFlow. An API key is required. Reranks fused results; excluded from search source counts.',
             siliconflowInvite: 'Register with SiliconFlow and get an API key (invitation link)',
-            httpHint: 'DSH HTTP fetches static resources directly. No key or model API call.',
+            httpHint: 'DSH HTTP fetches static resources without a key. When disabled, static URLs return an error and do not switch to other extraction services.',
             enableWarning: 'This service is off. Enable it and save after entering a key.',
             missingWarning: 'Enabled without credentials. This source may not return results.',
             unavailable: 'The plugin is not loaded.', readOnlyHint: 'This deployment is read-only.',
@@ -223,7 +223,7 @@ window.__ModuleLoader__.load({
             numberDrafts = new Map();
             controls() {
                 return { mode: 'organize', preset: 'custom', ...Object.fromEntries(Object.entries(NUMBER_CONTROLS).map(([name, spec]) => [name, spec.initial])),
-                    searchServices: SERVICES.filter(service => service.capabilities.includes('search')).map(service => service.id),
+                    serviceEnabled: {}, searchServices: SERVICES.filter(service => service.capabilities.includes('search')).map(service => service.id),
                     fetchServices: SERVICES.filter(service => service.capabilities.includes('fetch') && service.id !== 'http').map(service => service.id),
                     ...this.section()?.controls, ...Object.fromEntries(this.controlDrafts) };
             }
@@ -256,16 +256,34 @@ window.__ModuleLoader__.load({
                 if (name in ranges && (!Number.isInteger(value) || value < (name === 'maxOutputChars' ? 1000 : 1) || value > ranges[name])) return;
                 if (name === 'mode' && !['organize', 'select'].includes(value) || name === 'preset' && !['custom', 'free', 'balanced', 'deep'].includes(value)) return;
                 if (['searchServices', 'fetchServices'].includes(name) && (!Array.isArray(value) || value.some(id => !SERVICES.some(service => service.id === id)))) return;
-                if (!['mode', 'preset', 'searchServices', 'fetchServices', ...Object.keys(ranges)].includes(name)) return;
+                if (name === 'serviceEnabled' && (value === null || typeof value !== 'object' || Array.isArray(value) || Object.values(value).some(flag => typeof flag !== 'boolean'))) return;
+                if (!['mode', 'preset', 'searchServices', 'fetchServices', 'serviceEnabled', ...Object.keys(ranges)].includes(name)) return;
                 this.numberDrafts.delete(name);
                 this.baselineRevision ??= this.scope.getSnapshot().revision;
-                const served = this.section()?.controls?.[name];
+                const served = this.section()?.controls?.[name] ?? (name === 'serviceEnabled' ? {}
+                    : name === 'searchServices' || name === 'fetchServices' ? SERVICES.filter(service => service.capabilities.includes(name === 'searchServices' ? 'search' : 'fetch') && service.id !== 'http').map(service => service.id) : undefined);
                 if (JSON.stringify(served) === JSON.stringify(value)) this.controlDrafts.delete(name); else this.controlDrafts.set(name, value);
                 this.failed = false; this.saved = false; this.publish();
             }
             editParticipation(id, face, enabled) {
+                if (this.saving) return;
                 const key = face === 'search' ? 'searchServices' : 'fetchServices';
                 const current = this.controls()[key];
+                if (id === 'firecrawl' && face === 'search') {
+                    const served = this.section()?.controls?.searchServices ?? SERVICES.filter(service => service.capabilities.includes('search')).map(service => service.id);
+                    const original = this.engineEnabled(id, false) && served.includes(id);
+                    if (enabled === original) {
+                        this.engineDrafts.delete(id);
+                        const restored = current.filter(value => value !== id);
+                        if (served.includes(id)) {
+                            const next = served.slice(served.indexOf(id) + 1).find(value => restored.includes(value));
+                            restored.splice(next === undefined ? restored.length : restored.indexOf(next), 0, id);
+                        }
+                        this.editControl(key, restored);
+                        return;
+                    }
+                    if (enabled) this.editEngine(id, true);
+                }
                 this.editControl(key, enabled ? [...new Set([...current, id])] : current.filter(value => value !== id));
             }
             keyRefs = new Map();
@@ -297,7 +315,7 @@ window.__ModuleLoader__.load({
                 this.editView({ expandedId: this.view.expandedId === id ? null : id });
             }
             serviceDirty(service) {
-                return service.keys.some(id => this.keyDrafts.has(id)) || this.engineDrafts.has(service.id) || ['searchServices', 'fetchServices'].some(name => this.controlDrafts.has(name) && this.controlDrafts.get(name).includes(service.id) !== (this.section()?.controls?.[name] ?? SERVICES.filter(item => item.capabilities.includes(name === 'searchServices' ? 'search' : 'fetch')).map(item => item.id)).includes(service.id)) || (service.id === 'zhipu' && this.transportDraft !== undefined);
+                return this.serviceEnabled(service.id) !== this.serviceEnabled(service.id, false) || service.keys.some(id => this.keyDrafts.has(id)) || this.engineDrafts.has(service.id) || ['searchServices', 'fetchServices'].some(name => this.controlDrafts.has(name) && this.controlDrafts.get(name).includes(service.id) !== (this.section()?.controls?.[name] ?? SERVICES.filter(item => item.capabilities.includes(name === 'searchServices' ? 'search' : 'fetch')).map(item => item.id)).includes(service.id)) || (service.id === 'zhipu' && this.transportDraft !== undefined);
             }
             matchesService(service) {
                 const { query, capability, status } = this.view;
@@ -363,6 +381,31 @@ window.__ModuleLoader__.load({
 				this.publish();
 			}
 			/** Whether a save would write anything. */
+            serviceEnabled(id, draft = true) {
+                const section = this.section();
+                const flags = draft ? this.controls().serviceEnabled : section?.controls?.serviceEnabled ?? {};
+                // Firecrawl extraction exists independently of its legacy search-only entry.
+                if (EXTENSIONS.includes(id) && id !== 'firecrawl') return this.engineEnabled(id, draft) && flags[id] !== false;
+                return flags[id] ?? (id === 'siliconflow' ? section?.search?.rerank !== false : true);
+            }
+            engineEnabled(id, draft = true) {
+                const entry = this.section()?.engines?.[id];
+                const served = entry !== undefined && entry.enabled !== false;
+                return draft ? this.engineDrafts.get(id) ?? served : served;
+            }
+            editService(id, enabled) {
+                if (this.saving || typeof enabled !== 'boolean' || !SERVICES.some(service => service.id === id)) return;
+                const flags = { ...this.controls().serviceEnabled };
+                if (enabled === this.serviceEnabled(id, false)) {
+                    const served = this.section()?.controls?.serviceEnabled;
+                    if (served && Object.hasOwn(served, id)) flags[id] = served[id]; else delete flags[id];
+                } else flags[id] = enabled;
+                if (EXTENSIONS.includes(id) && id !== 'firecrawl') {
+                    if (enabled === this.serviceEnabled(id, false)) this.engineDrafts.delete(id);
+                    else if (enabled) this.editEngine(id, true);
+                }
+                this.editControl('serviceEnabled', flags);
+            }
             editEngine(id, enabled) {
                 if (!EXTENSIONS.includes(id) || this.saving) return;
                 this.baselineRevision ??= this.scope.getSnapshot().revision;
@@ -545,7 +588,8 @@ window.__ModuleLoader__.load({
                     changeCount: this.keyDrafts.size + this.engineDrafts.size + new Set([...this.controlDrafts.keys(), ...this.numberDrafts.keys()]).size + (this.transportDraft === undefined ? 0 : 1),
 					transport: this.transport(),
 					transportDirty: this.transportDraft !== void 0,
-                    engines: Object.fromEntries(EXTENSIONS.map(id => [id, this.engineDrafts.get(id) ?? (this.section()?.engines?.[id] !== undefined && this.section().engines[id].enabled !== false)])),
+                    engines: Object.fromEntries(SERVICES.map(service => [service.id, this.serviceEnabled(service.id)])),
+                    firecrawlSearchEnabled: this.engineEnabled('firecrawl'),
 					keys: CREDENTIAL_SLOTS.map((slot) => {
 						const draft = this.keyDrafts.get(slot.id) ?? "";
 						const info = this.credentials.get(slot.id);
@@ -632,8 +676,7 @@ window.__ModuleLoader__.load({
             .wsf-results-count{margin-inline-start:auto;color:var(--dsw-alias-label-tertiary);font-size:12px;white-space:nowrap}
             .wsf-list{border-block-start:.5px solid var(--dsw-alias-border-l2)}
             .wsf-service{border-block-end:.5px solid var(--dsw-alias-border-l2);min-inline-size:0}
-            .wsf-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:12px;min-block-size:58px}
-            .wsf-row[data-toggle=true]{grid-template-columns:minmax(0,1fr) auto 36px auto}
+            .wsf-row{display:grid;grid-template-columns:minmax(0,1fr) auto 36px auto;align-items:center;gap:12px;min-block-size:58px}
             .wsf-row>[role=switch]{grid-column:3;grid-row:1;z-index:1}
             .wsf-open{grid-area:1/1/2/-1;display:grid;grid-template-columns:subgrid;align-items:center;gap:12px;min-inline-size:0;text-align:start;border:0;border-radius:var(--dsw-radius-sm);color:inherit;background:transparent;padding-block:10px;padding-inline:4px;cursor:pointer;font:inherit}
             .wsf-name{grid-column:1;min-inline-size:0}
@@ -675,7 +718,7 @@ window.__ModuleLoader__.load({
             return rows.some(row => row.configured) ? 'partial' : 'unconfigured';
         }
         function WebSearchFetchCard(props) {
-            const { t, editKey, editTransport, editEngine, editControl, editNumber, editParticipation, editView, toggleService, refresh, save, discard } = props;
+            const { t, editKey, editTransport, editService, editControl, editNumber, editParticipation, editView, toggleService, refresh, save, discard } = props;
             const state = props.useWebSearchFetch(snapshot => snapshot);
             const onDiscard = React.useRef(props.leave);
             onDiscard.current = props.leave;
@@ -771,23 +814,22 @@ window.__ModuleLoader__.load({
                         const specificHint = ['http', 'siliconflow', 'firecrawl', 'github', 'doubao', 'tinyfish', 'serply', 'kimi', 'bing', 'aihot'].includes(service.id)
                             ? (service.id === 'siliconflow' ? 'rerankHint' : service.id + 'Hint') : service.extension ? 'extensionHint' : 'baseHint';
                         return jsxs('section', { className: 'wsf-service', 'aria-label': name, children: [
-                            jsxs('div', { className: 'wsf-row', 'data-toggle': service.extension ? 'true' : undefined, children: [
+                            jsxs('div', { className: 'wsf-row', children: [
                                 jsxs('button', { type: 'button', className: 'wsf-open', 'aria-expanded': expanded,
                                     'aria-controls': detailId, 'aria-label': t('configure') + ' ' + name, onClick: () => toggleService(service.id), children: [
                                         jsxs('span', { className: 'wsf-name', children: [jsx('strong', { children: name }), jsx('small', { children: t(service.capability) })] }),
                                         jsx('span', { className: 'wsf-state', 'data-dirty': status === 'staged', children: t(status) }),
                                         jsx('span', { className: 'wsf-chevron', 'aria-hidden': true, children: expanded ? '⌄' : '›' }),
                                     ] }),
-                                service.extension ? jsx(ui.Switch, { label: service.id === 'firecrawl' ? t('firecrawlEnable') : t('enable') + ' ' + name,
-                                    checked: state.engines[service.id], disabled, onChange: checked => editEngine(service.id, checked) })
-                                    : null,
+                                jsx(ui.Switch, { label: t('enable') + ' ' + name,
+                                    checked: state.engines[service.id], disabled, onChange: checked => editService(service.id, checked) }),
                             ] }),
                             jsx('div', { id: detailId, hidden: !expanded, children: expanded && jsxs('div', { className: 'wsf-detail', children: [
                                 jsx('p', { className: 'wsf-muted', children: t(specificHint) }),
                                 service.id !== 'http' && service.id !== 'siliconflow' && jsx('div', { className: 'wsf-participation', children: service.capabilities.filter(face => face === 'search' || face === 'fetch').map(face => {
                                     const allowed = state.controls.preset !== 'free' || ['tinyfish', 'bing', 'github', 'aihot'].includes(service.id);
                                     return jsx(ui.Checkbox, { disabled: disabled || !allowed, label: t(face === 'search' ? 'participateSearch' : 'participateFetch'),
-                                        checked: allowed && state.controls[face === 'search' ? 'searchServices' : 'fetchServices'].includes(service.id),
+                                        checked: allowed && (service.id !== 'firecrawl' || face !== 'search' || state.firecrawlSearchEnabled) && state.controls[face === 'search' ? 'searchServices' : 'fetchServices'].includes(service.id),
                                         onChange: checked => editParticipation(service.id, face, checked) }, face);
                                 }) }),
                                 service.id === 'aihot' && jsx('p', { className: 'wsf-muted', children: t('aihotTerms') }),
@@ -856,6 +898,7 @@ window.__ModuleLoader__.load({
                     toggleService: (id) => card.toggleService(id),
                     refresh: () => card.readCredentials(),
 					editEngine: (id, enabled) => card.editEngine(id, enabled),
+                    editService: (id, enabled) => card.editService(id, enabled),
                     editControl: (name, value) => card.editControl(name, value),
                     editNumber: (name, text) => card.editNumber(name, text),
                     leave: () => card.leave(),

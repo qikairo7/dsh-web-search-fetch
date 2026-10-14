@@ -55,6 +55,7 @@ import {
   WEB_SEARCH_FETCH_SETTINGS_NAMESPACE,
   projectEditableSettings,
   resolveCredentialRef,
+  readVolatile,
 } from './settings-surface.js';
 
 export {
@@ -190,7 +191,7 @@ export interface SearchConfig {
   /** Whether the daily Zhihu quota probe runs; defaults to on. */
   zhihuQuotaCheck?: boolean;
   /** Set `false` to skip the rerank stage entirely (pure RRF). */
-  rerank?: boolean;
+  rerank?: Volatile<boolean> | boolean;
   /** Rerank whole-operation deadline in milliseconds; defaults to the documented ~3 s. */
   rerankTimeoutMs?: number;
   /**
@@ -240,7 +241,7 @@ export interface SearchConfig {
 
 /** Fetch-side configuration: routing knobs, engine endpoints, and 择优 tuning. */
 export interface FetchConfig {
-  /** `false` disables static routing: every URL uses dynamic aggregation. Default `true`. */
+  /** `false` bypasses routing: every URL uses the HTTP fetcher. Default `true`. */
   staticRouting?: boolean;
   /** Static-domain profiles whose pages skip the paid engines. */
   staticDomains?: string[];
@@ -281,6 +282,7 @@ export interface Config {
 
 export const Config = z.object({
   controls: z.object({
+    serviceEnabled: z.dict(z.boolean()).default({}).description('服务总开关；关闭后不派发该服务，保留各能力的参与范围。'),
     mode: z.union(['organize', 'select']).default('organize').description('正文整理；select 为旧版单份正文模式。'),
     preset: z.union(['custom', 'free', 'balanced', 'deep']).default('custom').description('自定义、免费、均衡（最多三路）或深度检索。免费仍可能需要凭证。'),
     searchServices: z.array(z.string()).default(['anysearch', 'zhipu', 'zhihu', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'qianfan', 'doubao', 'firecrawl', 'tinyfish', 'serply', 'kimi', 'bing', 'aihot']).description('搜索服务 ID 与调用优先级；空数组不调用搜索服务。'),
@@ -331,6 +333,7 @@ export const Config = z.object({
       rerank: z
         .boolean()
         .default(true)
+        .volatile()
         .description('是否启用重排层（硅基流动 bge-reranker-v2-m3）。关闭则纯 RRF 排序，省一次调用。'),
       rerankTimeoutMs: z
         .natural()
@@ -456,7 +459,10 @@ export function apply(ctx: Context, config: Config): void {
   // (per-operation credential resolution), so a rotated key reaches the next search.
   const resolveCredential = async (ref: CredentialRef): Promise<string | undefined> =>
     (await ctx.credentials.resolve(ref))?.value;
-  const controls = (): RuntimeControls => structuredClone(config.controls?.get() ?? {});
+  const controls = (): RuntimeControls => {
+    const snapshot = structuredClone(config.controls?.get() ?? {});
+    return { ...snapshot, serviceEnabled: { siliconflow: readVolatile(search.rerank) ?? true, ...snapshot.serviceEnabled } };
+  };
   const ready = async (id: string, face: 'search' | 'fetch'): Promise<boolean> => {
     const settings = config.engines?.get()?.[id as keyof AdditionalEnginesConfig];
     if (currentControls().preset === 'free') {
@@ -520,7 +526,7 @@ export function apply(ctx: Context, config: Config): void {
     ...(search.rrfK === undefined ? {} : { rrfK: search.rrfK }),
     ...(search.rerankPool === undefined ? {} : { rerankPool: search.rerankPool }),
     ...(search.zhihuQuotaCheck === undefined ? {} : { zhihuQuotaCheck: search.zhihuQuotaCheck }),
-    ...(search.rerank === undefined ? {} : { rerank: search.rerank }),
+    ...(search.rerank === undefined ? {} : { rerank: readVolatile(search.rerank) }),
     ...(search.rerankTimeoutMs === undefined ? {} : { rerankTimeoutMs: search.rerankTimeoutMs }),
     // A live reader, not a captured value: the transport is the one field the
     // settings page edits, and a volatile edit is committed into the running

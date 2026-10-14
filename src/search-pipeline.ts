@@ -218,7 +218,7 @@ export function createAggregatedSearchProvider(
   );
 
   const rerank = buildRerankHandle({
-    enabled: options.rerank ?? true,
+    enabled: true,
     resolveApiKey: () => options.resolveCredential(ref(siliconflowApiKeyEnv())),
     credentialName: siliconflowApiKeyEnv(),
     ...(options.rerankTimeoutMs === undefined ? {} : { timeoutMs: options.rerankTimeoutMs }),
@@ -251,7 +251,7 @@ export function createAggregatedSearchProvider(
       resolveEngines: () => [...engines, ...options.resolveAdditionalEngines!()],
     }),
     breaker,
-    ...(rerank === undefined ? {} : { rerank }),
+    ...(rerank === undefined ? {} : { rerank: { ...rerank, enabled: options.rerank ?? true } }),
     ...(logger === undefined ? {} : { logger }),
     maxFanoutMs: timeoutMs,
     ...(options.rrfK === undefined ? {} : { rrfK: options.rrfK }),

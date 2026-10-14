@@ -19,7 +19,8 @@
  * @module fetch-pipeline
  */
 import { DEFAULT_USER_AGENT, HttpFetchProvider } from '@deepseek-ai/dsh-web-fetch-http';
-import { runOperation, currentControls, selectServices } from './request-budget.js';
+import { runOperation, currentControls, serviceEnabled, selectServices } from './request-budget.js';
+import { WebError } from '@deepseek-ai/dsh-web';
 import type { RuntimeControls } from './request-budget.js';
 import type { HttpFetchLimits, HttpFetchResolver } from '@deepseek-ai/dsh-web-fetch-http';
 import type {
@@ -133,12 +134,14 @@ export class AggregatedFetchProvider implements WebFetchProvider {
   private async fetchOperation(request: WebFetchRequest, signal: AbortSignal): Promise<WebFetchResult> {
     const controls = currentControls();
     for (const engine of this.options.additionalEngines ?? []) {
+      if (!serviceEnabled(engine.id)) continue;
       if (controls.fetchServices && !controls.fetchServices.includes(engine.id)) continue;
       if (engine.readApi && this.options.ready && !await this.options.ready(engine.id, 'fetch')) continue;
       const result = await engine.readApi?.(request.url, signal);
       if (result !== undefined) return result;
     }
     if (classifyFetchRoute(request.url, this.options.route) === 'static') {
+      if (!serviceEnabled('http')) throw new WebError('直接 HTTP 抓取已关闭，无法提取此静态 URL；请启用该服务后重试。', 'WEB_PROVIDER_ERROR');
       return this.http.fetch(request, signal);
     }
     return aggregateDynamicFetch({

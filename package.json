@@ -1,6 +1,6 @@
 {
   "name": "dsh-web-search-fetch",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "DeepSeek Harness 多来源网络搜索与网页提取插件",
   "packageManager": "pnpm@12.10.1",
   "keywords": [

@@ -107,3 +107,35 @@ it('shares the HTTP budget with Zhipu fallback, Zhihu quota and optional reranki
     await server.close();
   }
 });
+
+
+it('统一服务开关经原生工具生效，关闭不请求，重排关闭后可热启用', async () => {
+  const server = await startMockServer((request, response) => {
+    response.setHeader('content-type', 'application/json');
+    if (request.url.includes('/rerank')) {
+      const body = JSON.parse(request.body) as { documents: unknown[] };
+      response.end(JSON.stringify({ results: body.documents.map((_, index) => ({ index, relevance_score: 1 - index / 100 })) }));
+    } else response.end(readFixtureText(request.url.includes('quota') ? 'zhihu-quota-response.json' : 'zhihu-global-search-response.json'));
+  });
+  const ctx = new Context();
+  const fibers = [];
+  try {
+    for (const component of [SystemPrompt, ToolRuntime, WebRuntime, Credentials]) fibers.push(await ctx.plugin(component));
+    fibers.push(await ctx.plugin(ToolWeb, { search: true }));
+    const config = plugin.Config({ controls: { searchServices: ['zhihu'], serviceEnabled: { zhihu: false } }, search: {
+      rerank: false, zhihuBaseURL: server.url + '/search', zhihuQuotaURL: server.url + '/quota', rerankBaseURL: server.url + '/rerank',
+    } });
+    let controls = config.controls!.get()!;
+    config.controls = { get: () => controls } as typeof config.controls;
+    fibers.push(await ctx.plugin({ name: 'service-switches', inject: ['web', 'credentials'], apply: (host: Context) => plugin.apply(host, config) }));
+    const execute = () => ctx.tools.execute({ name: 'web_search', arguments: { queries: ['fixture'] }, callId: ToolCallId('switches'), signal: AbortSignal.timeout(5000) });
+    expect((await execute()).isError).toBe(true);
+    expect(server.requests).toHaveLength(0);
+    controls = { ...controls, serviceEnabled: { zhihu: true } };
+    expect((await execute()).isError).toBeFalsy();
+    expect(server.requests.filter(request => request.url.includes('rerank'))).toHaveLength(0);
+    controls = { ...controls, serviceEnabled: { zhihu: true, siliconflow: true } };
+    expect((await execute()).isError).toBeFalsy();
+    expect(server.requests.filter(request => request.url.includes('rerank'))).toHaveLength(1);
+  } finally { for (const fiber of fibers.reverse()) await fiber.dispose(); await server.close(); }
+});

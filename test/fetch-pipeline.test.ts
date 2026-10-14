@@ -326,3 +326,39 @@ describe('createExtractionLegs 引擎接线', () => {
     for (const leg of legs) expect(leg.signalOf).toBeTypeOf('function');
   });
 });
+
+
+it('关闭 HTTP 不发送请求或改走付费提取，重新启用后恢复静态抓取', async () => {
+  const server = await startMockServer((_request, response) => { response.setHeader('content-type', 'text/plain'); response.end('static body'); });
+  let enabled = false;
+  const dynamic = countedLeg('anysearch');
+  try {
+    const provider = createProvider({ legs: [dynamic], resolveControls: () => ({ serviceEnabled: { http: enabled } }) });
+    await expect(provider.fetch({ url: server.url + '/page.txt' })).rejects.toMatchObject({ code: 'WEB_PROVIDER_ERROR' });
+    expect(server.requests).toHaveLength(0);
+    expect(dynamic.calls).toBe(0);
+    enabled = true;
+    const fetched = await provider.fetch({ url: server.url + '/page.txt' });
+    expect(fetched.body).toMatchObject({ content: 'static body' });
+    expect(server.requests).toHaveLength(1);
+  } finally { await server.close(); }
+});
+
+
+it('关闭服务总开关同时阻止动态提取与专用 API 读取', async () => {
+  let apiCalls = 0;
+  const disabled = countedLeg('anysearch');
+  const survivor = countedLeg('tavily');
+  const provider = new AggregatedFetchProvider({
+    resolveControls: () => ({ serviceEnabled: { anysearch: false, aihot: false } }),
+    legs: [disabled, survivor],
+    additionalEngines: [{ id: 'aihot', search: async () => ({ sources: [], truncated: false }), readApi: async url => {
+      apiCalls++; return { url, statusCode: 200, body: { kind: 'text', content: 'special API' }, truncated: false };
+    } }],
+  });
+  const fetched = await provider.fetch({ url: 'https://example.com/guide' });
+  expect(fetched.body).toMatchObject({ content: expect.stringContaining('engine body') });
+  expect(disabled.calls).toBe(0);
+  expect(survivor.calls).toBe(1);
+  expect(apiCalls).toBe(0);
+});

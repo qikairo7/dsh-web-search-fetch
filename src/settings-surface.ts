@@ -33,6 +33,7 @@ export const WEB_SEARCH_FETCH_SETTINGS_NAMESPACE = 'web-search-fetch';
  */
 export const EDITABLE_SETTINGS_PATHS = [
   ['controls'],
+  ['search', 'rerank'],
   ['engines'],
   ['fetch', 'anysearchApiKeyEnv'],
   ['apiKeyEnv'],

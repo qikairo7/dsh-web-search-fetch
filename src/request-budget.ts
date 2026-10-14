@@ -6,6 +6,7 @@ export interface RuntimeControls {
   preset?: 'custom' | 'free' | 'balanced' | 'deep';
   searchServices?: readonly string[];
   fetchServices?: readonly string[];
+  serviceEnabled?: Readonly<Record<string, boolean>>;
   maxSearchServices?: number;
   maxFetchServices?: number;
   maxRequests?: number;
@@ -27,6 +28,7 @@ export function operationNotes(): readonly string[] { return operations.getStore
 export function noteOperation(note: string): void { operations.getStore()?.notes.push(note); }
 export function requestCount(): number { return operations.getStore()?.requests ?? 0; }
 export function currentControls(): RuntimeControls { return operations.getStore()?.controls ?? {}; }
+export function serviceEnabled(id: string, fallback = true): boolean { return currentControls().serviceEnabled?.[id] ?? fallback; }
 export function deadlineReached(): boolean {
   const operation = operations.getStore();
   return operation?.signal.aborted === true && !operation.caller?.aborted;
@@ -102,7 +104,7 @@ export async function selectServices<T>(items: readonly T[], id: (item: T) => st
   const limit = face === 'search' ? controls.maxSearchServices ?? 16 : controls.maxFetchServices ?? 11;
   const cap = controls.preset === 'balanced' ? Math.min(limit, 3) : limit;
   const ordered = chosen ? [...items].sort((a, b) => chosen.indexOf(id(a)) - chosen.indexOf(id(b))) : [...items];
-  const allowed = ordered.filter(item => (!chosen || chosen.includes(id(item))) && (controls.preset !== 'free' || free.includes(id(item))));
+  const allowed = ordered.filter(item => serviceEnabled(id(item)) && (!chosen || chosen.includes(id(item))) && (controls.preset !== 'free' || free.includes(id(item))));
   const available = await Promise.all(allowed.map(async item => !ready || await ready(id(item), face)));
   const usable = allowed.filter((_, index) => available[index]);
   const selected = usable.slice(0, cap);

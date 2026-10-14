@@ -71,7 +71,7 @@ describe('EDITABLE_SETTINGS_PATHS', () => {
     expect(isEditableSettingsPath(['apiKeyEnv'])).toBe(true);
     // Ordinary tuning knobs stay out of the served form.
     expect(isEditableSettingsPath(['search', 'rrfK'])).toBe(false);
-    expect(isEditableSettingsPath(['search', 'rerank'])).toBe(false);
+    expect(isEditableSettingsPath(['search', 'rerank'])).toBe(true);
     // A path that merely shares a prefix is not editable either.
     expect(isEditableSettingsPath(['search'])).toBe(false);
     expect(isEditableSettingsPath(['search', 'zhipuTransport', 'x'])).toBe(false);

@@ -24,7 +24,7 @@
  * @module search-aggregate
  */
 import { WebError } from '@deepseek-ai/dsh-web';
-import { runOperation, selectServices, currentControls, noteOperation, operationNotes, requestCount, deadlineReached, abortable } from './request-budget.js';
+import { runOperation, selectServices, currentControls, serviceEnabled, noteOperation, operationNotes, requestCount, deadlineReached, abortable } from './request-budget.js';
 import type { RuntimeControls } from './request-budget.js';
 import type { WebSearchProvider, WebSearchRequest, WebSearchResult, WebSearchSource } from '@deepseek-ai/dsh-web';
 import { anySearchFailureSignal } from './engines/anysearch/index.js';
@@ -72,6 +72,7 @@ export interface SearchEngineClient {
 
 /** What the orchestration needs from the rerank engine (a full permutation, or `null` to degrade). */
 export interface RerankHandle {
+  readonly enabled?: boolean;
   readonly free?: boolean;
   rerank(
     query: string,
@@ -364,7 +365,7 @@ export class AggregatedSearchProvider implements WebSearchProvider {
     pool: readonly FusedCandidate[],
     signal?: AbortSignal,
   ): Promise<readonly FusedCandidate[]> {
-    if (this.rerank === undefined || pool.length === 0 || deadlineReached()) return pool;
+    if (this.rerank === undefined || !serviceEnabled('siliconflow', this.rerank.enabled ?? true) || pool.length === 0 || deadlineReached()) return pool;
     if (currentControls().preset === 'free' && !this.rerank.free) { noteOperation('免费预设未调用自定义重排端点。'); return pool; }
     const documents = pool.map(candidateDocument);
     const topN = request.maxResults ?? pool.length;

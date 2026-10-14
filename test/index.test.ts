@@ -171,7 +171,7 @@ describe('Config', () => {
     expect(defaults.rrfK).toBe(60);
     expect(defaults.rerankPool).toBe(20);
     expect(defaults.zhihuQuotaCheck).toBe(true);
-    expect(defaults.rerank).toBe(true);
+    expect(defaults.rerank.get()).toBe(true);
     expect(defaults.rerankTimeoutMs).toBe(3_000);
     expect(refOf(defaults.anysearchApiKeyEnv)).toBe('ANYSEARCH_API_KEY');
     expect(refOf(defaults.zhihuAccessSecretEnv)).toBe('ZHIHU_ACCESS_SECRET');

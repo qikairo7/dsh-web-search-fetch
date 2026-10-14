@@ -786,4 +786,85 @@ describe('card controller', () => {
     expect(state.saved).toBe(false);
     expect(scope.mutations).toEqual([[{ op: 'set', path: ['controls', 'maxRequests'], value: 24 }]]);
   });
+  it('全部服务统一提供启停状态，基础服务关闭不改参与范围或凭证', async () => {
+    const { face, scope } = mount({ value: { controls: { searchServices: ['anysearch', 'zhihu'], fetchServices: ['anysearch'] } } });
+    expect(Object.keys(face.hooks.webSearchFetch.getSnapshot().engines)).toHaveLength(18);
+    face.editService('anysearch', false);
+    face.editService('zhihu', false);
+    face.editService('http', false);
+    const state = face.hooks.webSearchFetch.getSnapshot();
+    expect(state.engines.anysearch).toBe(false);
+    expect(state.engines.http).toBe(false);
+    expect(state.controls.searchServices).toEqual(['anysearch', 'zhihu']);
+    expect(state.controls.fetchServices).toEqual(['anysearch']);
+    await face.save();
+    expect(scope.mutations).toEqual([[{ op: 'set', path: ['controls', 'serviceEnabled'], value: { anysearch: false, zhihu: false, http: false } }]]);
+  });
+  it('统一开关尊重原重排配置，恢复基础服务原状态会清除草稿', async () => {
+    const { face, scope } = mount({ value: { search: { rerank: false } } });
+    expect(face.hooks.webSearchFetch.getSnapshot().engines.siliconflow).toBe(false);
+    face.editService('anysearch', false);
+    face.editService('anysearch', true);
+    expect(face.hooks.webSearchFetch.getSnapshot().dirty).toBe(false);
+    face.editService('siliconflow', true);
+    await face.save();
+    expect(scope.mutations).toEqual([[{ op: 'set', path: ['controls', 'serviceEnabled'], value: { siliconflow: true } }]]);
+  });
+  it('统一扩展开关同时保存启停控制，保留自定义端点与凭证引用', async () => {
+    const { face, scope } = mount({ value: { engines: { firecrawl: { enabled: true, baseURL: 'https://custom.example', apiKeyEnv: 'CUSTOM_FC' } } } });
+    face.editService('firecrawl', false);
+    expect(face.hooks.webSearchFetch.getSnapshot().changedServiceIds).toContain('firecrawl');
+    await face.save();
+    expect(scope.mutations).toEqual([[
+      { op: 'set', path: ['controls', 'serviceEnabled'], value: { firecrawl: false } },
+    ]]);
+  });
+
+  it('旧 Firecrawl 搜索关闭或缺省时总开关仍反映可用提取，切回原状态不改旧搜索配置', () => {
+    for (const value of [{}, { engines: { firecrawl: { enabled: false } } }]) {
+      const { face } = mount({ value });
+      expect(face.hooks.webSearchFetch.getSnapshot().engines.firecrawl).toBe(true);
+      expect(face.hooks.webSearchFetch.getSnapshot().firecrawlSearchEnabled).toBe(false);
+      face.editService('firecrawl', false);
+      face.editService('firecrawl', true);
+      expect(face.hooks.webSearchFetch.getSnapshot().dirty).toBe(false);
+      expect(face.hooks.webSearchFetch.getSnapshot().firecrawlSearchEnabled).toBe(false);
+    }
+  });
+
+  it('扩展服务切回原总开关状态时恢复原字段，不产生隐藏草稿', () => {
+    for (const value of [
+      { engines: { tavily: { enabled: true } }, controls: { serviceEnabled: { tavily: false } } },
+      { engines: { tavily: { enabled: false } } },
+    ]) {
+      const { face } = mount({ value });
+      expect(face.hooks.webSearchFetch.getSnapshot().engines.tavily).toBe(false);
+      face.editService('tavily', true);
+      expect(face.hooks.webSearchFetch.getSnapshot().engines.tavily).toBe(true);
+      face.editService('tavily', false);
+      expect(face.hooks.webSearchFetch.getSnapshot().dirty).toBe(false);
+    }
+  });
+
+  it('Firecrawl 参与搜索切回原有效状态时还原旧开关及列表位置', () => {
+    for (const value of [
+      { engines: { firecrawl: { enabled: false } }, controls: { searchServices: ['bing', 'firecrawl', 'tavily'] } },
+      { engines: { firecrawl: { enabled: true } }, controls: { searchServices: ['bing'] } },
+      { engines: { firecrawl: { enabled: false } } },
+    ]) {
+      const { face } = mount({ value });
+      const before = [...face.hooks.webSearchFetch.getSnapshot().controls.searchServices];
+      face.editParticipation('firecrawl', 'search', true);
+      expect(face.hooks.webSearchFetch.getSnapshot().firecrawlSearchEnabled).toBe(true);
+      face.editParticipation('firecrawl', 'search', false);
+      expect(face.hooks.webSearchFetch.getSnapshot().controls.searchServices).toEqual(before);
+      expect(face.hooks.webSearchFetch.getSnapshot().dirty).toBe(false);
+    }
+    const { face } = mount({ value: { engines: { firecrawl: { enabled: false } }, controls: { searchServices: ['bing', 'firecrawl', 'tavily'] } } });
+    face.editParticipation('bing', 'search', false);
+    face.editParticipation('firecrawl', 'search', true);
+    face.editParticipation('firecrawl', 'search', false);
+    expect(face.hooks.webSearchFetch.getSnapshot().controls.searchServices).toEqual(['firecrawl', 'tavily']);
+  });
+
 });
