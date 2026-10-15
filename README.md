@@ -10,7 +10,7 @@
 [快速开始](#快速开始) · [正文整理演示](./docs/content-organization.md#输入与输出演示) · [真实对比](./docs/modsearch-comparison.md) · [配置参考](./docs/configuration.md) · [参与贡献](./CONTRIBUTING.md)
 
 ```sh
-dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.5/dsh-web-search-fetch-0.2.5.tgz
+dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.6/dsh-web-search-fetch-0.2.6.tgz
 ```
 
 安装后重启 DSH，直接请求搜索或读取公开网页。匿名模式受服务方额度与限流约束，不能保证无限使用。未安装 DSH 的环境需先完成[宿主安装](https://github.com/deepseek-ai/deepseek-harness)。
@@ -106,11 +106,12 @@ AIHOT 搜索覆盖近 7 天 AI 资讯；启用后，原生 `web_fetch` 可读取
 | 开发工具 | pnpm 12.10.1 |
 | 外部服务 | 网络连通性；推荐的 AnySearch、Firecrawl、Tavily 官方匿名模式无需凭证，增强服务按需启用 |
 
-已在 Windows、Node.js 24.20.0、DSH `0.2.1-alpha.2` 的正式环境及隔离 profile 中验证安装、原生搜索和网页提取。CI 覆盖 Windows／Ubuntu、Node.js 22.19／24 的构建、类型检查与测试；CI 通过不表示这些组合均完成 DSH 实机验收。
+已在 Windows、Node.js 24.20.0、DSH `0.2.1-alpha.2` / `0.2.1-alpha.3` 的正式环境及隔离 profile 中验证安装、原生搜索和网页提取。`alpha.3` 的 `@deepseek-ai/dsh-tool-web` 与 `@deepseek-ai/dsh-web` 运行时代码和类型声明相对 `alpha.2` 未变化，新增 locale 资源与依赖版本。CI 覆盖 Windows／Ubuntu、Node.js 22.19／24 的构建、类型检查与测试；CI 通过不表示这些组合均完成 DSH 实机验收。
 
 | DSH 版本 | 兼容声明 | 验证范围 |
 | --- | --- | --- |
 | `0.2.1-alpha.2` | compatible | 上述 Windows 环境的安装、搜索与提取 |
+| `0.2.1-alpha.3` | compatible | 上述 Windows 环境的安装、搜索与提取 |
 | `0.2.1-alpha.1` | unknown | 尚未执行该版本运行验收 |
 | `0.2.0-rc.2` | unknown | 尚未执行该版本运行验收 |
 
@@ -121,7 +122,7 @@ AIHOT 搜索覆盖近 7 天 AI 资讯；启用后，原生 `web_fetch` 可读取
 在已配置 DSH 的环境中执行：
 
 ```sh
-dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.5/dsh-web-search-fetch-0.2.5.tgz
+dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.6/dsh-web-search-fetch-0.2.6.tgz
 ```
 
 将 `web` 替换为实际使用的 profile，安装后重启宿主。本项目通过 GitHub Release 分发固定版本包；此命令不需要 npm 包发布账号或 GitHub 登录。

@@ -223,7 +223,10 @@ describe('client bundle', () => {
       name: string;
       exports?: Record<string, unknown>;
       files?: string[];
-      dsh?: { client?: { platform?: string; inject?: string[] } };
+      dsh?: {
+        client?: { platform?: string; inject?: string[] };
+        compatibility?: { dsh?: string; dshReleases?: Record<string, string> };
+      };
     };
     // The host scanner reads dsh.client (platform must be "web"), resolves
     // exports["./client"] to a real file, and requires that file to ship.
@@ -248,6 +251,11 @@ describe('client bundle', () => {
     // The bundle registers under its own package name, which is the id the
     // scanner addresses it by.
     expect(manifest.name).toBe('dsh-web-search-fetch');
+    expect(manifest.dsh?.compatibility?.dsh).toBe('0.2.1-alpha.3');
+    expect(manifest.dsh?.compatibility?.dshReleases).toMatchObject({
+      '0.2.1-alpha.2': 'compatible',
+      '0.2.1-alpha.3': 'compatible',
+    });
   });
 
   it('注册的 id 与包名一致，factory 暴露 apply / inject / NS', () => {

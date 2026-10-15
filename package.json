@@ -1,6 +1,6 @@
 {
   "name": "dsh-web-search-fetch",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "DeepSeek Harness 多来源网络搜索与网页提取插件",
   "packageManager": "pnpm@12.10.1",
   "keywords": [
@@ -73,11 +73,12 @@
       "platform": "web"
     },
     "compatibility": {
-      "dsh": "0.2.1-alpha.2",
+      "dsh": "0.2.1-alpha.3",
       "dshReleases": {
         "0.2.0-rc.2": "unknown",
         "0.2.1-alpha.1": "unknown",
-        "0.2.1-alpha.2": "compatible"
+        "0.2.1-alpha.2": "compatible",
+        "0.2.1-alpha.3": "compatible"
       },
       "profiles": [
         "web"
@@ -85,7 +86,7 @@
     }
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": ">=4.0.1-rc.1 <5 || 4.0.5-alpha.1",
+    "@deepseek-ai/cordis": ">=4.0.1-rc.1 <5 || 4.0.5-alpha.1 || 4.0.5-alpha.2",
     "@deepseek-ai/dsh-credentials": "*",
     "@deepseek-ai/dsh-tool-web": "*",
     "@deepseek-ai/dsh-tools": "*",
@@ -93,24 +94,24 @@
     "@deepseek-ai/dsh-web-fetch-http": "*"
   },
   "dependencies": {
-    "@deepseek-ai/schemastery": "3.18.5-alpha.1",
+    "@deepseek-ai/schemastery": "3.18.5-alpha.2",
     "@joplin/turndown-plugin-gfm": "1.0.68",
     "fast-xml-parser": "5.11.2",
     "turndown": "7.2.4"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "4.0.5-alpha.1",
-    "@deepseek-ai/cosmokit": "1.8.6-alpha.1",
-    "@deepseek-ai/dsh-brand": "0.2.1-alpha.2",
-    "@deepseek-ai/dsh-credentials": "0.2.1-alpha.2",
-    "@deepseek-ai/dsh-http-proxy": "0.2.1-alpha.2",
-    "@deepseek-ai/dsh-llm": "0.2.1-alpha.2",
-    "@deepseek-ai/dsh-system-prompt": "0.2.1-alpha.2",
-    "@deepseek-ai/dsh-timeout": "0.2.1-alpha.2",
-    "@deepseek-ai/dsh-tool-web": "0.2.1-alpha.2",
-    "@deepseek-ai/dsh-tools": "0.2.1-alpha.2",
-    "@deepseek-ai/dsh-web": "0.2.1-alpha.2",
-    "@deepseek-ai/dsh-web-fetch-http": "0.2.1-alpha.2",
+    "@deepseek-ai/cordis": "4.0.5-alpha.2",
+    "@deepseek-ai/cosmokit": "1.8.6-alpha.2",
+    "@deepseek-ai/dsh-brand": "0.2.1-alpha.3",
+    "@deepseek-ai/dsh-credentials": "0.2.1-alpha.3",
+    "@deepseek-ai/dsh-http-proxy": "0.2.1-alpha.3",
+    "@deepseek-ai/dsh-llm": "0.2.1-alpha.3",
+    "@deepseek-ai/dsh-system-prompt": "0.2.1-alpha.3",
+    "@deepseek-ai/dsh-timeout": "0.2.1-alpha.3",
+    "@deepseek-ai/dsh-tool-web": "0.2.1-alpha.3",
+    "@deepseek-ai/dsh-tools": "0.2.1-alpha.3",
+    "@deepseek-ai/dsh-web": "0.2.1-alpha.3",
+    "@deepseek-ai/dsh-web-fetch-http": "0.2.1-alpha.3",
     "@types/node": "^24.0.0",
     "@types/turndown": "5.0.6",
     "typescript": "^6.0.3",
