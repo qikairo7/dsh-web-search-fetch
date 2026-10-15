@@ -17,6 +17,11 @@ export interface RuntimeControls {
   searchDeadlineMs?: number;
   fetchDeadlineMs?: number;
   maxOutputChars?: number;
+  decision?: DecisionRouter;
+}
+
+export interface DecisionRouter {
+  decide(request: 'search' | 'fetch', text: string, signal?: AbortSignal): Promise<{ depth: 'fast' | 'balanced' | 'deep'; model: string; confidence?: number } | null>;
 }
 interface Operation {
   closed?: boolean;
@@ -88,6 +93,21 @@ export function resolveRuntimeRequest(controls: RuntimeControls, request: 'searc
   return controls.preset === 'auto' ? { ...controls, request, requestText: text } : controls;
 }
 
+/** Resolve the automatic preset through the configured decision model. */
+export async function resolveAutomaticDepth(signal?: AbortSignal): Promise<'fast' | 'balanced' | 'deep' | undefined> {
+  const controls = currentControls();
+  if (controls.preset !== 'auto' || controls.decision === undefined) return undefined;
+  try {
+    const outcome = await controls.decision.decide(controls.request ?? 'search', controls.requestText ?? '', signal);
+    if (!outcome) return undefined;
+    noteOperation(`决策模型 ${outcome.model} 判定为 ${outcome.depth}${outcome.confidence === undefined ? '' : `（置信度 ${(outcome.confidence * 100).toFixed(0)}%）`}。`);
+    return outcome.depth;
+  } catch (error) {
+    if ((error as { code?: string }).code === 'WEB_ABORTED') throw error;
+    return undefined;
+  }
+}
+
 /** Every plugin-owned HTTP attempt acquires a permit before any network write. */
 export function budgetedFetch(fetcher?: typeof fetch): typeof fetch {
   return async (input, init) => {
@@ -111,7 +131,7 @@ export async function selectServices<T>(items: readonly T[], id: (item: T) => st
   const chosen = face === 'search' ? controls.searchServices : controls.fetchServices;
   const free = ['tinyfish', 'bing', 'github', 'aihot'];
   const limit = face === 'search' ? controls.maxSearchServices ?? 16 : controls.maxFetchServices ?? 11;
-  const autoCap = resolveAutoCap(controls, face);
+  const autoCap = resolveAutoCap(controls, face, await resolveAutomaticDepth());
   const cap = controls.preset === 'balanced' ? Math.min(limit, 3) : autoCap;
   const ordered = chosen ? [...items].sort((a, b) => chosen.indexOf(id(a)) - chosen.indexOf(id(b))) : [...items];
   const allowed = ordered.filter(item => serviceEnabled(id(item)) && (!chosen || chosen.includes(id(item))) && (controls.preset !== 'free' || free.includes(id(item))));
@@ -128,12 +148,18 @@ export async function selectServices<T>(items: readonly T[], id: (item: T) => st
  * shape and configured limits decide between the recommended trio and a deep
  * run. Users never select the resulting depth manually.
  */
-export function resolveAutoCap(controls: RuntimeControls, face: 'search' | 'fetch'): number {
+export function resolveAutoCap(controls: RuntimeControls, face: 'search' | 'fetch', decisionDepth?: 'fast' | 'balanced' | 'deep'): number {
   if (controls.preset !== 'auto') {
     const limit = face === 'search' ? controls.maxSearchServices ?? 16 : controls.maxFetchServices ?? 11;
     return limit;
   }
   const limit = face === 'search' ? controls.maxSearchServices ?? 16 : controls.maxFetchServices ?? 11;
+  if (decisionDepth !== undefined) {
+    const caps = { fast: 3, balanced: 5, deep: limit } as const;
+    const cap = Math.min(limit, caps[decisionDepth]);
+    noteOperation(`自动档按决策结果派发 ${cap} 路。`);
+    return cap;
+  }
   if (face === 'search') {
     const query = controls.requestText ?? '';
     const deep = /对比|比较|综述|review|compare|benchmark|研究|调研|资料|证据|引用|来源|最新|today|latest|news|202\d/i.test(query);

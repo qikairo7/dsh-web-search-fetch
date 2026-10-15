@@ -98,7 +98,7 @@ describe('resolveCredentialRefs', () => {
   });
 
   it('槽位顺序稳定（卡片按此顺序渲染）', () => {
-    expect(CREDENTIAL_SLOTS.map((slot) => slot.id)).toEqual(['anysearch', 'zhipu', 'zhihu', 'firecrawl', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'qianfan', 'doubao-search', 'doubao-fetch', 'tinyfish', 'serply', 'kimi', 'siliconflow']);
+    expect(CREDENTIAL_SLOTS.map((slot) => slot.id)).toEqual(['anysearch', 'zhipu', 'zhihu', 'firecrawl', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'qianfan', 'doubao-search', 'doubao-fetch', 'tinyfish', 'serply', 'kimi', 'siliconflow', 'dashscope', 'typesafe']);
     expect(resolveCredentialRefs(Config({})).map((slot) => slot.id)).toEqual(
       CREDENTIAL_SLOTS.map((slot) => slot.id),
     );

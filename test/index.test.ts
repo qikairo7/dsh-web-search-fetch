@@ -301,7 +301,7 @@ describe('apply', () => {
 
   it('三路引擎并发：各自解析一次凭证、Bearer 注入、结果聚合为 seam sources', async () => {
     const stub = createStubContext();
-    apply(stub.ctx, Config({ search: { rerank: false, zhihuQuotaCheck: false } }));
+    apply(stub.ctx, Config({ controls: { preset: 'custom' }, search: { rerank: false, zhihuQuotaCheck: false } }));
     const engine = stubEngineFetch();
     try {
       const provider = stub.searchProviders[0]!;
@@ -489,6 +489,7 @@ describe('apply 凭证回落链与端点透出', () => {
     apply(
       stub.ctx,
       Config({
+        controls: { preset: 'custom' },
         search: { rerank: false, zhihuQuotaCheck: false },
         fetch: {
           firecrawlApiKeyEnv: 'FC_KEY',

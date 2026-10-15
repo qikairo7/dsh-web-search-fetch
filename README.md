@@ -25,13 +25,13 @@ dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/re
 | 原生双工具 | 仅注册搜索和提取 provider，不新增模型工具，也不需要额外 MCP 服务、浏览器自动化或外部 CLI | 沿用 DSH 的 `web_search`、`web_fetch` 调用方式 |
 | 可选免费重排 | 调用硅基流动免费模型 `BAAI/bge-reranker-v2-m3`；不可用时保留融合顺序 | 对融合候选进行相关性排序，仍需配置 API Key |
 | 服务统一管理 | DSH 凭证管理、服务开关、智谱通道选择，以及超时、取消、限流冷却和额度熔断 | 一处配置搜索、提取与重排；单路失败时继续使用其他可用结果 |
-| 调用范围与预算 | 自动预设按查询意图与 URL 形态调整覆盖范围；也支持免费接口／均衡／深度／自定义 | 不手动切换模式，普通请求控制用量，研究请求扩大并发 |
+| 调用范围与预算 | 自动预设由快速决策模型判断 `fast`／`balanced`／`deep`；也支持免费接口／均衡／深度／自定义 | 不手动切换模式，由请求内容决定速度与覆盖范围 |
 
-插件注册两个 ID 为 `aggregated` 的 provider。设置页覆盖 18 项服务和 16 个凭证位。每项服务均提供独立启停开关。静态资源使用 DSH 内置 HTTP 提取器，AIHOT 专用 API 直接读取；其余 URL 按配置进入多服务提取。
+插件注册两个 ID 为 `aggregated` 的 provider。设置页覆盖 20 项服务和 18 个凭证位。每项服务均提供独立启停开关。静态资源使用 DSH 内置 HTTP 提取器，AIHOT 专用 API 直接读取；其余 URL 按配置进入多服务提取。
 
 动态网页提取默认将同一 URL 的多路结果整理成一份正文：按章节和共同段落去重，补充独有内容，保留提取来源和文本差异。代码、表格、链接和原文数字保留；不同标题、明确版本标记、语言或返回目标的内容放入补充片段，识别出的登录与挑战页面不混入正文。引用式链接与脚注按来源保留完整 Markdown 原文，避免同名定义串用。可切换旧版单份正文模式。规则边界见[网页正文整理](./docs/content-organization.md)。
 
-默认使用自动预设：普通查询按前三路可用服务快速响应；对比、调研、综述、时效性和证据类查询扩大到已选服务范围。网页提取按 URL 形态选择轻量、文档或深度并发。设置页也可固定为免费接口、均衡、深度或自定义，并独立选择搜索／提取服务、限制服务数量、HTTP 请求数、操作总限时和正文输出长度。保存后下一次调用生效；免费额度与付费服务不会自动纳入免费接口预设。
+默认使用自动预设：决策模型先判断 `fast`（3 路）、`balanced`（5 路）或 `deep`（已选服务范围），再派发搜索和提取；模型超时或凭证缺失时，本次退回本地规则，不阻断请求。设置页也可固定为免费接口、均衡、深度或自定义，并独立选择搜索／提取服务、限制服务数量、HTTP 请求数、操作总限时和正文输出长度。保存后下一次调用生效；免费额度与付费服务不会自动纳入免费接口预设。
 
 搜索融合和正文整理不构成事实交叉验证。多路并发会消耗对应服务额度。参数与使用边界见[配置参考](./docs/configuration.md)，离线验证方法见[正文整理](./docs/content-organization.md)。
 
@@ -58,6 +58,8 @@ dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/re
 | Bing RSS | 支持 | — | 匿名公开 RSS 搜索 |
 | AIHOT | AI 资讯关键词 | 专用 API | 默认关闭，支持热点、事件、报告与精选读取 |
 | 硅基流动 | 重排 | — | 融合结果相关性排序 |
+| 阿里决策模型 | 自动预设路由 | — | `decision-model-preview` 判断覆盖范围 |
+| TypeSafe | 自动预设路由 | — | `jev-latest` 判断覆盖范围 |
 | 直接 HTTP 抓取 | — | 静态资源 | 复用 DSH HTTP 组件，无需服务凭证 |
 
 新安装默认开启 AnySearch、Firecrawl、Tavily 三家推荐服务，其余远程服务与硅基流动重排作为可选增强，默认关闭。直接 HTTP 抓取保留为静态资源的基础提取能力。已保存的显式开关设置优先于安装默认；旧版未设置开关的服务采用新版默认。按需开启增强后，搜索最多 16 路；普通动态提取最多 10 路，适用的 GitHub URL 最多 11 路。Kimi Basic / Pro 二选一，只计一路。AIHOT 专用 API 直接读取，重排和 HTTP 抓取均不计入动态提取路数。实际参与调用的服务取决于配置、凭证、URL 适用范围及熔断状态。
@@ -72,10 +74,11 @@ AIHOT 搜索覆盖近 7 天 AI 资讯；启用后，原生 `web_fetch` 可读取
 
 | 费用方式 | 服务 | 说明 |
 | --- | --- | --- |
-| 免费服务 | TinyFish Search／Fetch、Bing RSS、GitHub 公开 API、直接 HTTP 抓取、硅基流动 `BAAI/bge-reranker-v2-m3` | 受请求频率、访问权限或资源限制约束；硅基流动仍需配置 API Key |
+| 免费服务 | TinyFish Search／Fetch、Bing RSS、GitHub 公开 API、直接 HTTP 抓取、硅基流动 `BAAI/bge-reranker-v2-m3` 与三款 SystemOne 决策模型、阿里 `decision-model-preview` | 受请求频率、访问权限或资源限制约束；硅基流动与阿里仍需配置 API Key |
 | 免费服务（有用途限制） | AIHOT | 个人非商业、公益非商业及组织内部使用；其他用途按服务规则授权 |
 | 提供免费额度 | AnySearch、知乎、Firecrawl、Tavily、Exa、Keenable、Crawl4AI Cloud、Serply | 免费额度的有效期、重置周期和超额计费以服务方及账号为准 |
 | 按次计费或付费订阅 | 智谱当前搜索通道、Kimi REST 搜索与提取 | Coding Plan 为付费订阅；`tools-api` 使用按次计费的 `search_pro`，套餐额度不属于免费额度；Kimi REST 接口按次计费，账号赠送额度需另行确认 |
+| 按区域限制 | TypeSafe `jev-latest` | 付费模型；本机访问返回 HTTP 451，未完成质量评测 |
 
 推荐服务支持匿名访问，匿名额度仍受 IP、请求频率及服务方额度限制：
 
@@ -173,6 +176,8 @@ dsh --profile <profile> --dump-config
 | `SERPLY_API_KEY` | Serply |
 | `MOONSHOT_API_KEY` | Kimi 搜索与提取 |
 | `SILICONFLOW_API_KEY` | 硅基流动重排 |
+| `DASHSCOPE_API_KEY` | 阿里决策模型 |
+| `TYPESAFE_API_KEY` | TypeSafe 决策模型 |
 
 推荐的 AnySearch、Firecrawl、Tavily 官方搜索与提取无需凭证，状态显示“匿名额度”；配置密钥后使用账户模式。Bing RSS、AIHOT 和直接 HTTP 抓取无需凭证。豆包搜索与提取分别填写；服务总开关同时控制其搜索与提取。服务列表支持名称搜索、能力筛选和配置状态筛选；隐藏或折叠的草稿仍会保留。配置状态表示凭证存在，不证明服务健康。
 

@@ -39,7 +39,7 @@ it('native tools organize both extracts, apply live controls and respect actual 
     fibers.push(await ctx.plugin(ToolWeb, { fetch: true, search: true }));
     const config = plugin.Config({
       engines: { tavily: { baseURL: `${server.url}/tavily` }, exa: { baseURL: `${server.url}/exa` }, doubao: { baseURL: `${server.url}/doubao`, apiKeyEnv: 'MISSING_SEARCH_REF' } },
-      controls: { searchServices: ['tavily', 'exa'], fetchServices: ['tavily', 'exa'] },
+      controls: { preset: 'custom', searchServices: ['tavily', 'exa'], fetchServices: ['tavily', 'exa'] },
       search: { rerank: false, zhihuQuotaCheck: false },
     });
     let controls = config.controls!.get()!;
@@ -87,7 +87,7 @@ it('shares the HTTP budget with Zhipu fallback, Zhihu quota and optional reranki
     for (const component of [SystemPrompt, ToolRuntime, WebRuntime, Credentials]) fibers.push(await ctx.plugin(component));
     fibers.push(await ctx.plugin(ToolWeb, { search: true }));
     const config = plugin.Config({
-      controls: { searchServices: ['zhipu'], maxRequests: 1 },
+      controls: { preset: 'custom', searchServices: ['zhipu'], maxRequests: 1 },
       search: { zhipuAnthropicBaseURL: `${server.url}/zhipu`, zhihuBaseURL: `${server.url}/search`, zhihuQuotaURL: `${server.url}/quota`, rerankBaseURL: `${server.url}/rerank` },
     });
     let controls = config.controls!.get()!;

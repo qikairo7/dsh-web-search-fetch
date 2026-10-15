@@ -362,7 +362,7 @@ describe('card controller', () => {
     const { face } = mount({ value: { search: { zhipuTransport: 'tools-api' } } });
     const state = face.hooks.webSearchFetch.getSnapshot();
     expect(state.transport).toBe('tools-api');
-    expect(state.keys.map((row: { id: string }) => row.id)).toEqual(['anysearch', 'zhipu', 'zhihu', 'firecrawl', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'qianfan', 'doubao-search', 'doubao-fetch', 'tinyfish', 'serply', 'kimi', 'siliconflow']);
+    expect(state.keys.map((row: { id: string }) => row.id)).toEqual(['anysearch', 'zhipu', 'zhihu', 'firecrawl', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'qianfan', 'doubao-search', 'doubao-fetch', 'tinyfish', 'serply', 'kimi', 'siliconflow', 'dashscope', 'typesafe']);
     expect(state.keys.every((row: { text: string }) => row.text === '')).toBe(true);
     expect(state.writable).toBe(true);
   });
@@ -558,7 +558,7 @@ describe('card controller', () => {
     await Promise.resolve();
     const state = face.hooks.webSearchFetch.getSnapshot();
     // The card still renders; no row claims a false negative from a failed read.
-    expect(state.keys).toHaveLength(16);
+    expect(state.keys).toHaveLength(18);
     expect(state.keys.every((row: { configured: boolean }) => row.configured === false)).toBe(true);
   });
 
@@ -623,7 +623,7 @@ describe('card controller', () => {
     const { face, page } = mount({ value: {} });
     const state = face.hooks.webSearchFetch.getSnapshot();
     expect(state.visibleServiceIds).toEqual(expect.arrayContaining(Object.keys(ADDITIONAL_ENGINE_DEFAULTS)));
-    expect(state.visibleServiceIds).toHaveLength(18);
+    expect(state.visibleServiceIds).toHaveLength(20);
     const bundles = page.localeRegistrations[0]!.bundles as { zh: Record<string, string> };
     const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
     for (const id of state.visibleServiceIds) expect(readme).toContain(bundles.zh[id + '-service']);
@@ -796,7 +796,7 @@ describe('card controller', () => {
   });
   it('全部服务统一提供启停状态，基础服务关闭不改参与范围或凭证', async () => {
     const { face, scope } = mount({ value: { controls: { searchServices: ['anysearch', 'zhihu'], fetchServices: ['anysearch'] } } });
-    expect(Object.keys(face.hooks.webSearchFetch.getSnapshot().engines)).toHaveLength(18);
+    expect(Object.keys(face.hooks.webSearchFetch.getSnapshot().engines)).toHaveLength(20);
     face.editService('anysearch', false);
     face.editService('zhihu', false);
     face.editService('http', false);

@@ -90,7 +90,7 @@ export interface SettingsSurfaceConfig {
 }
 
 /** Stable id of one engine key slot the settings card offers. */
-export type CredentialSlotId = 'anysearch' | 'zhipu' | 'zhihu' | 'firecrawl' | 'tavily' | 'exa' | 'keenable' | 'crawl4ai' | 'github' | 'qianfan' | 'doubao-search' | 'doubao-fetch' | 'tinyfish' | 'serply' | 'kimi' | 'siliconflow';
+export type CredentialSlotId = 'anysearch' | 'zhipu' | 'zhihu' | 'firecrawl' | 'tavily' | 'exa' | 'keenable' | 'crawl4ai' | 'github' | 'qianfan' | 'doubao-search' | 'doubao-fetch' | 'tinyfish' | 'serply' | 'kimi' | 'siliconflow' | 'dashscope' | 'typesafe';
 
 /** One engine key slot: which references name it, and the fallback. */
 export interface CredentialSlot {
@@ -124,7 +124,9 @@ export const CREDENTIAL_SLOTS: readonly CredentialSlot[] = [
   {"id": "tinyfish", "overridePaths": [["engines", "tinyfish", "apiKeyEnv"]], "defaultRef": "TINYFISH_API_KEY"},
   {"id": "serply", "overridePaths": [["engines", "serply", "apiKeyEnv"]], "defaultRef": "SERPLY_API_KEY"},
   {"id": "kimi", "overridePaths": [["engines", "kimi", "apiKeyEnv"]], "defaultRef": "MOONSHOT_API_KEY"},
-  {"id": "siliconflow", "overridePaths": [["search", "siliconflowApiKeyEnv"]], "defaultRef": "SILICONFLOW_API_KEY"}
+  {"id": "siliconflow", "overridePaths": [["search", "siliconflowApiKeyEnv"]], "defaultRef": "SILICONFLOW_API_KEY"},
+  {"id": "dashscope", "overridePaths": [], "defaultRef": "DASHSCOPE_API_KEY"},
+  {"id": "typesafe", "overridePaths": [], "defaultRef": "TYPESAFE_API_KEY"}
 ];
 
 /** One slot bound to the reference its chain currently resolves to. */

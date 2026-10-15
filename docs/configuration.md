@@ -25,6 +25,8 @@
 | Bing RSS | 无需凭证 | 是 | 否 |
 | AIHOT（可选） | 无需凭证 | AI 资讯关键词 | 专用 API |
 | 硅基流动 | `SILICONFLOW_API_KEY` | 重排 | 否 |
+| 阿里决策模型 | `DASHSCOPE_API_KEY` | 自动预设路由 | 否 |
+| TypeSafe | `TYPESAFE_API_KEY` | 自动预设路由 | 否 |
 | 直接 HTTP 抓取 | 无需凭证 | 否 | 静态资源 |
 
 按能力和费用选择需要的服务，费用区别见 [服务费用](../README.md#服务费用)。配置方式与价格无关：AnySearch、智谱和知乎通过 `search` 字段配置；Firecrawl 与 AnySearch 的提取通过 `fetch` 字段配置。用 `controls.searchServices` / `controls.fetchServices` 分别控制参与范围。`engines` 中的服务仅在列出且未设 `enabled: false` 时创建。凭证服务明确报告未配置时，该路不派发；状态未知时保留实际请求验证。
@@ -62,6 +64,8 @@
       rerankPool: 20
       rerank: true
       rerankTimeoutMs: 3000
+      decisionModel: decision-model-preview
+      decisionTimeoutMs: 1000
       zhihuQuotaCheck: true
       anysearchApiKeyEnv: ANYSEARCH_API_KEY
       zhipuTransport: anthropic
@@ -102,6 +106,8 @@
 | `search.rerankPool` | 正整数 | `20` | 重排候选数 |
 | `search.rerank` | 布尔值 | `true` | 是否启用重排 |
 | `search.rerankTimeoutMs` | 正整数，毫秒 | `3000` | 重排请求预算 |
+| `search.decisionModel` | 字符串枚举 | `decision-model-preview` | 另可选 `Kev-4b`、`SemIf`、`diffusiongemma`、`jev-latest` |
+| `search.decisionTimeoutMs` | 正整数，毫秒 | `1000` | 自动预设决策请求预算 |
 | `search.zhihuQuotaCheck` | 布尔值 | `true` | 当日首次查询的额度检查 |
 | `search.zhipuTransport` | 字符串枚举 | `anthropic` | 另可选 `tools-api` |
 | `search.zhipuAnthropicModel` | 字符串 | `glm-4.6` | 搜索通道模型 |
@@ -177,7 +183,9 @@
 
 免费接口预设只派发 TinyFish、Bing RSS、GitHub 和已主动启用的 AIHOT，仍遵守凭证、用途和限流要求。硅基流动免费标准模型可继续重排。免费额度、试用额度和智谱付费订阅不属于此预设；使用自定义端点的服务也不会被当作免费。静态 HTTP 路径保持独立，模型 token 用量不受此预设控制。
 
-自动预设不需要用户切换模式。搜索先判断查询意图：对比、比较、综述、调研、证据、来源、最新和新闻类词扩大到已选服务范围；普通查询按参与列表顺序最多派发三路，优先获得快速响应。提取按 URL 形态判断：文本类静态扩展名最多三路；文档、开发者站点、GitHub、Stack Overflow 和 Wikipedia 最多五路；其他动态页面使用已选服务范围。自动预设只调整派发数量，不自动开启扩展、提高请求预算或改变正文整理规则。
+自动预设不需要用户切换模式。默认先调用 `search.decisionModel` 判断 `fast`（3 路）、`balanced`（5 路）或 `deep`（已选服务范围），再统一进入服务筛选；返回说明包含模型、判定结果和置信度。决策请求超时、失败或凭证缺失时，本次退回本地规则：搜索按查询意图判断；提取按 URL 形态判断。自动预设只调整派发数量，不自动开启扩展、提高请求预算或改变正文整理规则。
+
+`Kev-4b`、`SemIf`、`diffusiongemma` 和阿里 `decision-model-preview` 当前由服务方提供免费调用，仍需对应 API Key；TypeSafe `jev-latest` 为付费模型。费用和额度以服务方当前页面为准。硅基流动模型使用 `SILICONFLOW_API_KEY`，阿里使用 `DASHSCOPE_API_KEY`，TypeSafe 使用 `TYPESAFE_API_KEY`。TypeSafe 在部分地区返回 HTTP 451，本机当前无法完成质量评测。
 
 均衡预设按参与列表顺序，从已启用、未熔断且具备凭证的适用服务中最多派发三路。深度和自定义预设按指定数量上限派发，不自动开启扩展或提高预算。请求上限计入额度查询、重试和重排，不等于人民币费用上限，也不限制上游服务的内部工具调用次数。HTTP 静态路径沿用宿主响应、重定向和长度限制；插件总限时仍适用。日志记录插件请求次数，返回结果附带自动档判定、预算耗尽、超时或未派发说明。
 
@@ -205,13 +213,13 @@ GitHub 提取只识别仓库根 URL 与 `/blob/<ref>/<path>`，不提供任意 G
 
 匿名额度与免费接口预设分别处理：`free` 排除额度型服务；推荐默认组合使用 `custom` 预设。其他服务作为增强按需开启，已保存的显式开关与凭证保持不变；旧版未设置开关的服务采用新版默认。依据见 [README 匿名访问说明](../README.md#服务费用)。
 
-打开「设置 → 内置插件 → 网络搜索与提取」。卡片与 README 的完整接入清单一致，覆盖 18 项服务、16 个凭证位，包括无需凭证的 Bing RSS、AIHOT 和直接 HTTP 抓取。豆包搜索与提取分别填写密钥；智谱只保留搜索。
+打开「设置 → 内置插件 → 网络搜索与提取」。卡片与 README 的完整接入清单一致，覆盖 20 项服务、18 个凭证位，包括无需凭证的 Bing RSS、AIHOT 和直接 HTTP 抓取。豆包搜索与提取分别填写密钥；智谱只保留搜索。
 
 用服务名称或用途搜索，按搜索 / 提取 / 重排筛选，或只查看待配置、未保存及无需密钥的服务。点击服务行展开密钥与说明；切换筛选或折叠保留草稿。保存和放弃更改位于列表下方，全局计数包含筛选后隐藏的修改。
 
 页面上方设置正文处理模式、调用预设和各项预算，服务详情内分别勾选搜索与提取参与。修改参与范围不会删除密钥或自定义端点。保存仅提交修改路径；放弃更改同时清除未保存的模式、预算和参与范围。
 
-18 项服务均提供总开关，控制该服务的全部能力。Firecrawl 的总开关同时控制搜索与提取。旧 `engines.firecrawl.enabled` 仍只控制搜索；设置页的「参与搜索」会反映并修改这个旧字段。GitHub 提取限定仓库 README / 文件。扩展服务开关和智谱通道均在保存后影响下一次调用，无需重挂插件。
+20 项服务均提供总开关，控制该服务的全部能力。Firecrawl 的总开关同时控制搜索与提取。旧 `engines.firecrawl.enabled` 仍只控制搜索；设置页的「参与搜索」会反映并修改这个旧字段。GitHub 提取限定仓库 README / 文件。扩展服务开关和智谱通道均在保存后影响下一次调用，无需重挂插件。
 
 密钥通过 DSH credentials 域写入。留空保持现值；保存成功清空输入框，刷新后只显示配置状态。环境变量提供的凭证遵循宿主只读规则。AnySearch 或 Firecrawl 的搜索与提取若使用不同引用，一次填写会更新两处引用；豆包两把密钥分别更新。
 

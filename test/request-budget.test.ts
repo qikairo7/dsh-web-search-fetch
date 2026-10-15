@@ -68,3 +68,27 @@ it('auto preset chooses extraction breadth from the URL instead of asking the us
     expect(operationNotes().join(' ')).toContain('轻量提取');
   });
 });
+
+it('uses the decision model as the primary automatic-routing layer and local rules as failure fallback', async () => {
+  const services = ['anysearch', 'firecrawl', 'tavily', 'exa', 'kimi'];
+  const controls = (depth: 'fast' | 'balanced' | 'deep' | null) => ({
+    preset: 'auto' as const,
+    request: 'search' as const,
+    requestText: 'DeepSeek Harness 使用入门',
+    decision: {
+      decide: async () => depth === null ? null : { depth, model: 'Kev-4b', confidence: 0.82 },
+    },
+  });
+  await runOperation(controls('fast'), 'search', undefined, async () => {
+    expect(await selectServices(services, id => id, 'search')).toEqual(['anysearch', 'firecrawl', 'tavily']);
+    expect(operationNotes().join(' ')).toContain('决策模型 Kev-4b 判定为 fast');
+  });
+  await runOperation(controls('balanced'), 'search', undefined, async () => {
+    expect((await selectServices(services, id => id, 'search'))).toHaveLength(5);
+    expect(operationNotes().join(' ')).toContain('置信度 82%');
+  });
+  await runOperation(controls(null), 'search', undefined, async () => {
+    expect(await selectServices(services, id => id, 'search')).toEqual(['anysearch', 'firecrawl', 'tavily']);
+    expect(operationNotes().join(' ')).toContain('快速响应');
+  });
+});

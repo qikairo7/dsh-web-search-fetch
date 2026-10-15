@@ -59,6 +59,10 @@ window.__ModuleLoader__.load({
             aihotHint: '默认关闭。搜索近 7 天 AI 资讯；原生 web_fetch 可读取热点、报告与精选 API，保留来源和署名。',
             aihotTerms: '使用范围：个人非商业、公益及组织内部使用；对外代理、收费或再分发须取得书面授权。',
             rerankHint: '使用硅基流动免费模型 BAAI/bge-reranker-v2-m3，仍需 API Key。对融合结果重排，不计入搜索来源数量。',
+            dashscope: '阿里 DashScope API Key', typesafe: 'TypeSafe API Key',
+            'dashscope-service': '阿里决策模型', 'typesafe-service': 'TypeSafe 决策模型', decision: '决策路由',
+            dashscopeHint: 'decision-model-preview 当前免费，仍需 DashScope API Key。用于自动预设判断搜索和提取覆盖范围。',
+            typesafeHint: 'jev-latest 为付费模型。用于自动预设判断搜索和提取覆盖范围。',
             siliconflowInvite: '注册硅基流动并获取 API Key（邀请链接）',
             httpHint: '静态资源由 DSH HTTP 组件直接抓取，无需密钥。关闭后静态 URL 会报错，不会自动改走其他提取服务。',
             enableWarning: '此服务尚未启用。填写密钥后，记得打开右侧开关并保存。',
@@ -118,6 +122,10 @@ window.__ModuleLoader__.load({
             aihotHint: 'Off by default. Search recent AI news and read hot topics, reports and selected-item APIs through native web_fetch with attribution.',
             aihotTerms: 'Personal noncommercial, charitable and internal use; external proxies, paid use or redistribution require written authorization.',
             rerankHint: 'Uses the free BAAI/bge-reranker-v2-m3 model on SiliconFlow. An API key is required. Reranks fused results; excluded from search source counts.',
+            dashscope: 'Alibaba DashScope API key', typesafe: 'TypeSafe API key',
+            'dashscope-service': 'Alibaba decision model', 'typesafe-service': 'TypeSafe decision model', decision: 'Decision routing',
+            dashscopeHint: 'decision-model-preview is currently free but requires a DashScope API key. It routes the automatic preset.',
+            typesafeHint: 'jev-latest is a paid model. It routes the automatic preset.',
             siliconflowInvite: 'Register with SiliconFlow and get an API key (invitation link)',
             httpHint: 'DSH HTTP fetches static resources without a key. When disabled, static URLs return an error and do not switch to other extraction services.',
             enableWarning: 'This service is off. Enable it and save after entering a key.',
@@ -172,7 +180,9 @@ window.__ModuleLoader__.load({
 			{"id": "tinyfish", "overridePaths": [["engines", "tinyfish", "apiKeyEnv"]], "defaultRef": "TINYFISH_API_KEY"},
 			{"id": "serply", "overridePaths": [["engines", "serply", "apiKeyEnv"]], "defaultRef": "SERPLY_API_KEY"},
 			{"id": "kimi", "overridePaths": [["engines", "kimi", "apiKeyEnv"]], "defaultRef": "MOONSHOT_API_KEY"},
-			{"id": "siliconflow", "overridePaths": [["search", "siliconflowApiKeyEnv"]], "defaultRef": "SILICONFLOW_API_KEY"}
+			{"id": "siliconflow", "overridePaths": [["search", "siliconflowApiKeyEnv"]], "defaultRef": "SILICONFLOW_API_KEY"},
+			{"id": "dashscope", "overridePaths": [], "defaultRef": "DASHSCOPE_API_KEY"},
+			{"id": "typesafe", "overridePaths": [], "defaultRef": "TYPESAFE_API_KEY"}
 		];
 		/** DOM id of one slot's key field. */
 		function slotDomId(id) {
@@ -643,6 +653,8 @@ window.__ModuleLoader__.load({
             { id: 'bing', keywords: 'RSS 免费 匿名 free anonymous', mark: 'B', capability: 'search', capabilities: ['search'], keys: [], extension: true },
             { id: 'aihot', keywords: 'AI news 新闻 资讯', mark: 'AI', capability: 'aiNews', capabilities: ['search', 'fetch'], keys: [], extension: true },
             { id: 'siliconflow', mark: '硅', capability: 'rerank', capabilities: ['rerank'], keys: ['siliconflow'] },
+            { id: 'dashscope', mark: '阿', capability: 'decision', capabilities: ['decision'], keys: ['dashscope'] },
+            { id: 'typesafe', mark: 'T', capability: 'decision', capabilities: ['decision'], keys: ['typesafe'] },
             { id: 'http', mark: '↗', capability: 'staticFetch', capabilities: ['fetch'], keys: [] },
         ];
         const SETTINGS_CSS = `
@@ -815,7 +827,7 @@ window.__ModuleLoader__.load({
                             children: ['all', 'needsKey', 'pending', 'noKey'].map(value => jsx('option', { value, children: t(value === 'all' ? 'allStatus' : value) }, value)) }),
                     ] }),
                     jsxs('div', { className: 'wsf-filters', role: 'group', 'aria-label': t('searchLabel'), children: [
-                        ...['all', 'search', 'fetch', 'rerank'].map(capability => jsxs(ui.Button, { type: 'button', size: 'sm', variant: state.view.capability === capability ? 'outline' : 'ghost', className: 'wsf-filter',
+                        ...['all', 'search', 'fetch', 'rerank', 'decision'].map(capability => jsxs(ui.Button, { type: 'button', size: 'sm', variant: state.view.capability === capability ? 'outline' : 'ghost', className: 'wsf-filter',
                             'aria-pressed': state.view.capability === capability, onClick: () => editView({ capability }), children: [
                                 t(capability), jsx('span', { className: 'wsf-filter-count', 'aria-hidden': true,
                                     children: SERVICES.filter(service => capability === 'all' || service.capabilities.includes(capability)).length }),
@@ -828,7 +840,7 @@ window.__ModuleLoader__.load({
                         const missingKey = service.keys.some(id => { const row = state.keys.find(row => row.id === id); return row.ready && !row.configured && !row.staged; });
                         const name = t(service.id + '-service');
                         const detailId = 'wsf-detail-' + service.id;
-                        const specificHint = ['http', 'siliconflow', 'anysearch', 'tavily', 'firecrawl', 'github', 'doubao', 'tinyfish', 'serply', 'kimi', 'bing', 'aihot'].includes(service.id)
+                        const specificHint = ['http', 'siliconflow', 'anysearch', 'tavily', 'firecrawl', 'github', 'doubao', 'tinyfish', 'serply', 'kimi', 'bing', 'aihot', 'dashscope', 'typesafe'].includes(service.id)
                             ? (service.id === 'siliconflow' ? 'rerankHint' : service.id + 'Hint') : service.extension ? 'extensionHint' : 'baseHint';
                         return jsxs('section', { className: 'wsf-service', 'aria-label': name, children: [
                             jsxs('div', { className: 'wsf-row', children: [
