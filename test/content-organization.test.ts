@@ -78,6 +78,22 @@ it('puts unrelated titles in sourced supplements', () => {
   expect(content).toContain('标题或版本不同');
   expect(content).toContain('Other version.');
 });
+it('treats wrapper suffixes and separator noise in equivalent headings as the same article', () => {
+  const content = organize('# Building effective agent automations\n\nBody.', '# Building effective agent automations / claude.dev Blog\n\nBody.').body.content;
+  expect(content).not.toContain('标题或版本不同');
+  expect(content.match(/Body\./g)).toHaveLength(2);
+});
+it('summarizes repeated incompatible extracts instead of repeating every block', () => {
+  const bodies = ['# Reference\n\nReference body.', '# Alternative A\n\nA body.', '# Alternative B\n\nB body.', '# Alternative C\n\nC body.'];
+  const content = organize(...bodies).body.content;
+  expect(content).toContain('3 路提取因标题、版本或语言不同，未加入主正文；仅保留摘要');
+  expect(content).toContain('F2: service1，2 个内容块');
+  expect(content).toContain('F3: service2，2 个内容块');
+  expect(content).not.toContain('A body.');
+  expect(content).not.toContain('B body.');
+  expect(content).not.toContain('C body.');
+  expect(content.match(/提取来源：/g)).toHaveLength(2);
+});
 it('does not silently incorporate content from a different final target', () => {
   const output = organizeDocuments(url, [
     { engineId: 'wrong', result: { ...result('# Wrong\n\nforeign'), url: 'https://other.test/page' } },

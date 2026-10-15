@@ -8,6 +8,23 @@ interface Node { block: ContentBlock; refs: string[]; removed?: boolean }
 interface Section { key: string; nodes: Node[] }
 interface Document { candidate: FetchCandidate; id: string; sections: Section[]; blocks: ContentBlock[]; content: string }
 interface Difference { section: string; variants: Node[] }
+interface Addition { doc: Document; reason: string; nodes: Node[]; summaryOnly?: boolean }
+
+function titleBlock(blocks: ContentBlock[]): ContentBlock | undefined {
+  return blocks.find(block => block.kind === 'heading');
+}
+
+function normalizeHeading(text: string): string {
+  return text.toLowerCase().replace(/^heading:/, '').replace(/[#*]/g, '').replace(/[\s\u00b7/-]+/g, ' ').split(/\s+/).filter(Boolean).sort().join(' ');
+}
+
+function sameHeading(a: string | undefined, b: string | undefined): boolean {
+  if (!a || !b) return true;
+  const left = new Set(normalizeHeading(a).split(' '));
+  const right = new Set(normalizeHeading(b).split(' '));
+  const shared = [...left].filter(word => right.has(word)).length;
+  return shared >= Math.ceil(Math.min(left.size, right.size) * 0.8);
+}
 
 function sections(blocks: ContentBlock[], id: string): Section[] {
   const result: Section[] = [{ key: '', nodes: [] }];
@@ -16,7 +33,7 @@ function sections(blocks: ContentBlock[], id: string): Section[] {
   for (const block of blocks) {
     if (block.kind === 'heading') {
       stack.length = block.level! - 1;
-      stack.push(block.key);
+      stack.push(normalizeHeading(block.key));
       const path = stack.join('/');
       const occurrence = (occurrences.get(path) ?? 0) + 1;
       occurrences.set(path, occurrence);
@@ -119,9 +136,9 @@ export function organizeDocuments(url: string, candidates: readonly FetchCandida
   });
   const challenge = (doc: Document) => /^(?:#{1,6}\s*)?(?:403 Forbidden|Access Denied|Login required|Just a moment[.!…]*|Attention Required!?\s*\|\s*Cloudflare|请先登录|请输入验证码)\s*$/i.test(doc.blocks[0]?.text ?? '');
   const successful = documents.filter(doc => target(doc.candidate.result.url) === target(url) && doc.candidate.result.statusCode >= 200 && doc.candidate.result.statusCode < 300 && !challenge(doc));
-  const firstHeading = successful[0]?.blocks.find(block => block.kind === 'heading')?.key;
+  const firstHeading = successful[0] && titleBlock(successful[0].blocks)?.key;
   const firstVersion = successful[0] && version(successful[0]);
-  const compatible = successful.filter(doc => (!firstHeading || !doc.blocks.some(block => block.kind === 'heading') || doc.blocks.find(block => block.kind === 'heading')?.key === firstHeading)
+  const compatible = successful.filter(doc => (!firstHeading || !doc.blocks.some(block => block.kind === 'heading') || sameHeading(firstHeading, titleBlock(doc.blocks)?.key))
     && (!firstVersion || !version(doc) || version(doc) === firstVersion));
   const errors = documents.filter(doc => target(doc.candidate.result.url) === target(url) && !challenge(doc) && (doc.candidate.result.statusCode < 200 || doc.candidate.result.statusCode >= 300));
   const usable = compatible.length ? compatible : errors;
@@ -131,22 +148,22 @@ export function organizeDocuments(url: string, candidates: readonly FetchCandida
   const reference = [...usable].sort((a, b) => b.sections.length - a.sections.length || b.blocks.length - a.blocks.length)[0]!;
   const referenceDefinitions = documents.some(doc => !challenge(doc) && doc.blocks.some(block => block.kind !== 'code' && /^ {0,3}\[[^\]\n]+\]:/m.test(block.text)));
   const main = referenceDefinitions ? [{ key: '', nodes: [originalMarkdown(reference)] }] : reference.sections;
-  const additions: { doc: Document; reason: string; nodes: Node[] }[] = [];
+  const additions: Addition[] = [];
   const supplementalSections = new Map<string, Section>();
   const differences: Difference[] = [];
-  const heading = reference.blocks.find(block => block.kind === 'heading')?.key;
+  const heading = titleBlock(reference.blocks)?.key;
   const referenceLanguage = language(reference.blocks);
   const referenceVersion = version(reference);
   const referenceKeys = new Set(reference.blocks.map(block => block.key));
   for (const doc of documents) {
     if (doc === reference) continue;
-    const otherHeading = doc.blocks.find(block => block.kind === 'heading')?.key;
+    const otherHeading = titleBlock(doc.blocks)?.key;
     const otherLanguage = language(doc.blocks);
     const shared = doc.blocks.some(block => referenceKeys.has(block.key));
     const reason = challenge(doc) ? '登录或挑战页面，未加入主正文'
       : doc.candidate.result.statusCode < 200 || doc.candidate.result.statusCode >= 300 ? '非成功状态，未加入主正文'
       : target(doc.candidate.result.url) !== target(url) ? '返回页面目标不同，未加入主正文'
-      : heading && otherHeading && heading !== otherHeading ? '标题或版本不同，未加入主正文'
+      : heading && otherHeading && !sameHeading(heading, otherHeading) ? '标题或版本不同，未加入主正文'
       : referenceVersion && version(doc) && version(doc) !== referenceVersion ? '版本标记不同，未加入主正文'
       : referenceLanguage && otherLanguage && referenceLanguage !== otherLanguage ? '语言不同，未加入主正文'
       : !shared ? '缺少共同段落锚点，保留独立片段' : '';
@@ -183,11 +200,28 @@ export function organizeDocuments(url: string, candidates: readonly FetchCandida
   const render = (node: Node) => `${node.block.text}\n\n提取来源：${node.refs.join(', ')}`;
   for (const section of main) for (const node of section.nodes) if (!node.removed) append(render(node));
   if (additions.length) {
-    if (append('## 补充片段')) {
-      for (const addition of additions) {
+        const incompatible = additions.filter(addition => addition.nodes.length > 0
+          && /^(标题或版本不同|语言不同)/.test(addition.reason));
+        const incompatibleBlocks = incompatible.reduce((count, addition) => count + addition.nodes.length, 0);
+        const summarize = incompatible.length > 1 || incompatibleBlocks > 20;
+        const grouped = summarize ? additions.filter(addition => !incompatible.includes(addition)) : additions;
+        if (summarize) {
+          grouped.push({
+            doc: incompatible[0]!.doc,
+            reason: `${incompatible.length} 路提取因标题、版本或语言不同，未加入主正文；仅保留摘要以避免重复正文噪声`,
+            summaryOnly: true,
+            nodes: incompatible.map(addition => ({
+              block: { ...addition.nodes[0]!.block, text: `${addition.doc.id}: ${addition.doc.candidate.engineId}，${addition.nodes.length} 个内容块` },
+              refs: addition.nodes[0]!.refs,
+            })),
+          });
+        }
+        if (append('## 补充片段')) {
+          for (const addition of grouped) {
         const label = `${addition.doc.id}：${addition.reason}`;
         if (!addition.nodes.length) append(label);
-        for (const node of addition.nodes) if (!node.removed) append(`${label}\n\n${render(node)}`);
+            if (addition.summaryOnly) append(`${label}\n\n${addition.nodes.map(node => node.block.text).join('\n')}`);
+            else for (const node of addition.nodes) if (!node.removed) append(`${label}\n\n${render(node)}`);
       }
     } else omitted += additions.reduce((count, addition) => count + addition.nodes.length, 0);
   }
