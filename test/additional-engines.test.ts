@@ -255,7 +255,7 @@ describe('新增引擎进入聚合', () => {
     let fetch!: WebFetchProvider;
     const log = { info() {}, warn() {}, error() {} };
     const ctx = { web: { registerSearchProvider: (value: WebSearchProvider) => { search = value; }, registerFetchProvider: (value: WebFetchProvider) => { fetch = value; } }, credentials: { resolve: async (ref: string) => ref === 'MY_TAVILY' ? { value: 'test-secret' } : undefined }, tools: { register() {} }, logger: () => log } as unknown as Context;
-    apply(ctx, Config({ engines: { tavily: { baseURL: server.url, apiKeyEnv: 'MY_TAVILY' }, exa: { enabled: false } }, search: { rerank: false, zhihuQuotaCheck: false } }));
+    apply(ctx, Config({ controls: { preset: 'custom' }, engines: { tavily: { baseURL: server.url, apiKeyEnv: 'MY_TAVILY' }, exa: { enabled: false } }, search: { rerank: false, zhihuQuotaCheck: false } }));
     expect((await search.search({ query: 'query' })).sources[0]!.url).toBe(target);
     expect((await fetch.fetch({ url: target })).body.content).toContain('Body');
     expect(server.requests.map(request => request.url)).toEqual(['/search', '/extract']);

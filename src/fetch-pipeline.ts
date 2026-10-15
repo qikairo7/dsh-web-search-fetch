@@ -19,7 +19,7 @@
  * @module fetch-pipeline
  */
 import { DEFAULT_USER_AGENT, HttpFetchProvider } from '@deepseek-ai/dsh-web-fetch-http';
-import { runOperation, currentControls, serviceEnabled, selectServices } from './request-budget.js';
+import { runOperation, currentControls, serviceEnabled, selectServices, resolveRuntimeRequest } from './request-budget.js';
 import { WebError } from '@deepseek-ai/dsh-web';
 import type { RuntimeControls } from './request-budget.js';
 import type { HttpFetchLimits, HttpFetchResolver } from '@deepseek-ai/dsh-web-fetch-http';
@@ -128,7 +128,8 @@ export class AggregatedFetchProvider implements WebFetchProvider {
    * responses are results (never throws) on both routes.
    */
   async fetch(request: WebFetchRequest, signal?: AbortSignal): Promise<WebFetchResult> {
-    return runOperation(this.options.resolveControls?.() ?? {}, 'fetch', signal, composed => this.fetchOperation(request, composed));
+    const controls = resolveRuntimeRequest(this.options.resolveControls?.() ?? {}, 'fetch', request.url);
+    return runOperation(controls, 'fetch', signal, composed => this.fetchOperation(request, composed));
   }
 
   private async fetchOperation(request: WebFetchRequest, signal: AbortSignal): Promise<WebFetchResult> {

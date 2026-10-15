@@ -12,12 +12,12 @@ window.__ModuleLoader__.load({
         const zh = {
             servicesTitle: '服务与凭证', settingsTitle: '调用设置', advanced: '高级调用限制', advancedHint: '请求数、超时与正文长度',
             startGuide: '推荐服务与匿名额度', organizeHint: '合并多份正文，去重与互补，保留来源与差异。', selectHint: '兼容旧版，仅返回一份提取正文。',
-            customPresetHint: '按服务开关、参与范围与调用限制执行。', balancedPresetHint: '每次最多调用三路服务，兼顾覆盖范围与调用用量。', deepPresetHint: '调用已选择且可用的服务，仍受调用限制约束。',
+            autoPresetHint: '按查询意图和 URL 形态自动选择快速或广覆盖，保存后下一次调用生效。', customPresetHint: '按服务开关、参与范围与调用限制执行。', balancedPresetHint: '每次最多调用三路服务，兼顾覆盖范围与调用用量。', deepPresetHint: '调用已选择且可用的服务，仍受调用限制约束。',
             invalidNumber: '请输入范围内的整数：', invalidControls: '请先修正调用限制', resetField: '撤销此项', range: '范围',
 
             title: '网络搜索与提取', intro: '新安装默认启用 AnySearch、Firecrawl、Tavily，使用官方匿名额度，无需填写密钥；其他服务按需开启作为增强。匿名额度有限流，填写密钥后使用账户额度。',
             controlsTitle: '正文整理与调用控制', modeLabel: '网页正文处理', organizeMode: '整理正文', selectMode: '单份正文',
-            presetLabel: '调用预设', customPreset: '自定义', freePreset: '免费接口', balancedPreset: '均衡', deepPreset: '深度',
+            presetLabel: '调用预设', autoPreset: '自动', customPreset: '自定义', freePreset: '免费接口', balancedPreset: '均衡', deepPreset: '深度',
             maxSearchServices: '每个查询的搜索服务上限', maxFetchServices: '每个 URL 的提取服务上限', maxRequests: '每次操作的 HTTP 请求上限',
             searchDeadlineMs: '搜索总限时（毫秒）', fetchDeadlineMs: '提取总限时（毫秒）', maxOutputChars: '整理输出上限（字符）',
             participateSearch: '参与搜索', participateFetch: '参与提取',
@@ -71,12 +71,12 @@ window.__ModuleLoader__.load({
         const en = {
             servicesTitle: 'Services & credentials', settingsTitle: 'Call settings', advanced: 'Advanced limits', advancedHint: 'Requests, deadlines and content length',
             startGuide: 'Recommended services and anonymous quotas', organizeHint: 'Combine extracts, remove duplicates and retain sources and differences.', selectHint: 'Legacy behavior: return one extract.',
-            customPresetHint: 'Use service switches, participation and call limits.', balancedPresetHint: 'Use up to three services per operation to balance coverage and usage.', deepPresetHint: 'Use selected, available services within the call limits.',
+            autoPresetHint: 'Choose fast or broad fan-out from the query and URL, effective on the next call.', customPresetHint: 'Use service switches, participation and call limits.', balancedPresetHint: 'Use up to three services per operation to balance coverage and usage.', deepPresetHint: 'Use selected, available services within the call limits.',
             invalidNumber: 'Enter an integer within ', invalidControls: 'Correct the call limits first', resetField: 'Undo this field', range: 'Range',
 
             title: 'Web search & fetch', intro: 'New installations enable AnySearch, Firecrawl and Tavily with official anonymous quotas. Enable other services when needed. Anonymous access is rate-limited; configured keys use account quotas.',
             controlsTitle: 'Content organization and call limits', modeLabel: 'Page content', organizeMode: 'Organize', selectMode: 'Single extract',
-            presetLabel: 'Call preset', customPreset: 'Custom', freePreset: 'Free APIs', balancedPreset: 'Balanced', deepPreset: 'Deep',
+            presetLabel: 'Call preset', autoPreset: 'Auto', customPreset: 'Custom', freePreset: 'Free APIs', balancedPreset: 'Balanced', deepPreset: 'Deep',
             maxSearchServices: 'Search services per query', maxFetchServices: 'Extraction services per URL', maxRequests: 'HTTP requests per operation',
             searchDeadlineMs: 'Search deadline (ms)', fetchDeadlineMs: 'Extraction deadline (ms)', maxOutputChars: 'Organized output limit (characters)',
             participateSearch: 'Participate in search', participateFetch: 'Participate in extraction',
@@ -226,7 +226,7 @@ window.__ModuleLoader__.load({
             controlDrafts = new Map();
             numberDrafts = new Map();
             controls() {
-                return { mode: 'organize', preset: 'custom', ...Object.fromEntries(Object.entries(NUMBER_CONTROLS).map(([name, spec]) => [name, spec.initial])),
+                return { mode: 'organize', preset: 'auto', ...Object.fromEntries(Object.entries(NUMBER_CONTROLS).map(([name, spec]) => [name, spec.initial])),
                     serviceEnabled: {}, searchServices: SERVICES.filter(service => service.capabilities.includes('search')).map(service => service.id),
                     fetchServices: SERVICES.filter(service => service.capabilities.includes('fetch') && service.id !== 'http').map(service => service.id),
                     ...this.section()?.controls, ...Object.fromEntries(this.controlDrafts) };
@@ -258,7 +258,7 @@ window.__ModuleLoader__.load({
                 if (this.saving) return;
                 const ranges = Object.fromEntries(Object.entries(NUMBER_CONTROLS).map(([name, spec]) => [name, spec.max]));
                 if (name in ranges && (!Number.isInteger(value) || value < (name === 'maxOutputChars' ? 1000 : 1) || value > ranges[name])) return;
-                if (name === 'mode' && !['organize', 'select'].includes(value) || name === 'preset' && !['custom', 'free', 'balanced', 'deep'].includes(value)) return;
+                if (name === 'mode' && !['organize', 'select'].includes(value) || name === 'preset' && !['auto', 'custom', 'free', 'balanced', 'deep'].includes(value)) return;
                 if (['searchServices', 'fetchServices'].includes(name) && (!Array.isArray(value) || value.some(id => !SERVICES.some(service => service.id === id)))) return;
                 if (name === 'serviceEnabled' && (value === null || typeof value !== 'object' || Array.isArray(value) || Object.values(value).some(flag => typeof flag !== 'boolean'))) return;
                 if (!['mode', 'preset', 'searchServices', 'fetchServices', 'serviceEnabled', ...Object.keys(ranges)].includes(name)) return;
@@ -762,7 +762,7 @@ window.__ModuleLoader__.load({
                             jsx('span', { className: 'wsf-setting-label', children: t('presetLabel') }),
                             jsx(ui.SegmentedControl, { id: 'wsf-preset', value: state.controls.preset,
                                 label: t('presetLabel'), disabled, onChange: value => editControl('preset', value),
-                                options: ['free', 'balanced', 'deep', 'custom'].map(value => ({ value, label: t(value + 'Preset') })) }),
+                                options: ['auto', 'free', 'balanced', 'deep', 'custom'].map(value => ({ value, label: t(value + 'Preset') })) }),
                         ] }),
                         jsx('p', { id: presetId + '-panel', role: 'tabpanel', 'aria-labelledby': presetId, className: 'wsf-muted',
                             children: t(state.controls.preset === 'free' ? 'freeHint' : state.controls.preset + 'PresetHint') }),

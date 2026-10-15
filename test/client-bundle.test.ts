@@ -689,7 +689,7 @@ describe('card controller', () => {
   });
 
   it('正文模式与预算按字段保存，保留自定义端点和未编辑的控制字段', async () => {
-    const { face, scope } = mount({ value: { controls: { mode: 'organize', maxRequests: 32, searchServices: ['anysearch', 'kimi'], extra: 'preserve' }, engines: { kimi: { baseURL: 'https://custom.example' } } } });
+    const { face, scope } = mount({ value: { controls: { mode: 'organize', preset: 'custom', maxRequests: 32, searchServices: ['anysearch', 'kimi'], extra: 'preserve' }, engines: { kimi: { baseURL: 'https://custom.example' } } } });
     face.editControl('mode', 'select');
     face.editControl('maxRequests', 2);
     face.editParticipation('kimi', 'search', false);

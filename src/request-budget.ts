@@ -3,7 +3,11 @@ import { WebError } from '@deepseek-ai/dsh-web';
 
 export interface RuntimeControls {
   mode?: 'organize' | 'select';
-  preset?: 'custom' | 'free' | 'balanced' | 'deep';
+  preset?: 'auto' | 'custom' | 'free' | 'balanced' | 'deep';
+  /** The request used by the automatic preset; absent for static configuration-only calls. */
+  request?: 'search' | 'fetch';
+  /** The query (search) or URL (fetch) used by the automatic preset. */
+  requestText?: string;
   searchServices?: readonly string[];
   fetchServices?: readonly string[];
   serviceEnabled?: Readonly<Record<string, boolean>>;
@@ -79,6 +83,11 @@ export async function runOperation<T>(controls: RuntimeControls, face: 'search' 
   });
 }
 
+/** Attach the operation's request text so the automatic preset can use it. */
+export function resolveRuntimeRequest(controls: RuntimeControls, request: 'search' | 'fetch', text: string): RuntimeControls {
+  return controls.preset === 'auto' ? { ...controls, request, requestText: text } : controls;
+}
+
 /** Every plugin-owned HTTP attempt acquires a permit before any network write. */
 export function budgetedFetch(fetcher?: typeof fetch): typeof fetch {
   return async (input, init) => {
@@ -102,7 +111,8 @@ export async function selectServices<T>(items: readonly T[], id: (item: T) => st
   const chosen = face === 'search' ? controls.searchServices : controls.fetchServices;
   const free = ['tinyfish', 'bing', 'github', 'aihot'];
   const limit = face === 'search' ? controls.maxSearchServices ?? 16 : controls.maxFetchServices ?? 11;
-  const cap = controls.preset === 'balanced' ? Math.min(limit, 3) : limit;
+  const autoCap = resolveAutoCap(controls, face);
+  const cap = controls.preset === 'balanced' ? Math.min(limit, 3) : autoCap;
   const ordered = chosen ? [...items].sort((a, b) => chosen.indexOf(id(a)) - chosen.indexOf(id(b))) : [...items];
   const allowed = ordered.filter(item => serviceEnabled(id(item)) && (!chosen || chosen.includes(id(item))) && (controls.preset !== 'free' || free.includes(id(item))));
   const available = await Promise.all(allowed.map(async item => !ready || await ready(id(item), face)));
@@ -110,4 +120,31 @@ export async function selectServices<T>(items: readonly T[], id: (item: T) => st
   const selected = usable.slice(0, cap);
   if (usable.length > selected.length) noteOperation(`服务数量上限：仅派发 ${selected.length} 路，未派发 ${usable.length - selected.length} 路。`);
   return selected;
+}
+
+/**
+ * Resolve the automatic preset's cap. The rule layer is local and deterministic:
+ * search query intent decides between a fast lane and broad fan-out; fetch URL
+ * shape and configured limits decide between the recommended trio and a deep
+ * run. Users never select the resulting depth manually.
+ */
+export function resolveAutoCap(controls: RuntimeControls, face: 'search' | 'fetch'): number {
+  if (controls.preset !== 'auto') {
+    const limit = face === 'search' ? controls.maxSearchServices ?? 16 : controls.maxFetchServices ?? 11;
+    return limit;
+  }
+  const limit = face === 'search' ? controls.maxSearchServices ?? 16 : controls.maxFetchServices ?? 11;
+  if (face === 'search') {
+    const query = controls.requestText ?? '';
+    const deep = /对比|比较|综述|review|compare|benchmark|研究|调研|资料|证据|引用|来源|最新|today|latest|news|202\d/i.test(query);
+    const cap = deep ? limit : Math.min(limit, 3);
+    noteOperation(`自动档判定为${deep ? '广覆盖' : '快速响应'}（${cap} 路）。`);
+    return cap;
+  }
+  const url = controls.requestText ?? '';
+  const staticLike = /\.(?:txt|text|xml|json|md|markdown|csv|tsv|rss|atom|yaml|yml|log|ini|toml|ics|vtt|srt)(?:[?#]|$)/i.test(url);
+  const documentationLike = /(?:docs?|documentation|developer|github\.com|stackoverflow\.com|wikipedia\.org)/i.test(url);
+  const cap = staticLike ? Math.min(limit, 3) : documentationLike ? Math.min(limit, 5) : limit;
+  noteOperation(`自动档判定为${staticLike ? '轻量提取' : documentationLike ? '文档提取' : '深度提取'}（${cap} 路）。`);
+  return cap;
 }

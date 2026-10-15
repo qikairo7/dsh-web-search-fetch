@@ -285,7 +285,7 @@ export const Config = z.object({
   controls: z.object({
     serviceEnabled: z.dict(z.boolean()).default({}).description('服务总开关；关闭后不派发该服务，保留各能力的参与范围。'),
     mode: z.union(['organize', 'select']).default('organize').description('正文整理；select 为旧版单份正文模式。'),
-    preset: z.union(['custom', 'free', 'balanced', 'deep']).default('custom').description('自定义、免费、均衡（最多三路）或深度检索。免费仍可能需要凭证。'),
+    preset: z.union(['auto', 'custom', 'free', 'balanced', 'deep']).default('auto').description('自动按请求判断覆盖范围；也可固定为自定义、免费、均衡（最多三路）或深度检索。免费仍可能需要凭证。'),
     searchServices: z.array(z.string()).default(['anysearch', 'zhipu', 'zhihu', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'qianfan', 'doubao', 'firecrawl', 'tinyfish', 'serply', 'kimi', 'bing', 'aihot']).description('搜索服务 ID 与调用优先级；空数组不调用搜索服务。'),
     fetchServices: z.array(z.string()).default(['firecrawl', 'anysearch', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'doubao', 'tinyfish', 'serply', 'kimi', 'aihot']).description('提取服务 ID 与调用优先级；HTTP 静态路径不受此列表控制。'),
     maxSearchServices: z.natural().min(1).max(16).default(16).description('每个查询最多调用的搜索服务数。'),

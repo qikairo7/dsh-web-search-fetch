@@ -35,6 +35,7 @@
           aihot:
             enabled: false
         controls:
+          preset: auto
           serviceEnabled:
             anysearch: true
             firecrawl: true

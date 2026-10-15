@@ -24,7 +24,7 @@
  * @module search-aggregate
  */
 import { WebError } from '@deepseek-ai/dsh-web';
-import { runOperation, selectServices, currentControls, serviceEnabled, noteOperation, operationNotes, requestCount, deadlineReached, abortable } from './request-budget.js';
+import { runOperation, selectServices, currentControls, serviceEnabled, noteOperation, operationNotes, requestCount, deadlineReached, abortable, resolveRuntimeRequest } from './request-budget.js';
 import type { RuntimeControls } from './request-budget.js';
 import type { WebSearchProvider, WebSearchRequest, WebSearchResult, WebSearchSource } from '@deepseek-ai/dsh-web';
 import { anySearchFailureSignal } from './engines/anysearch/index.js';
@@ -189,7 +189,8 @@ export class AggregatedSearchProvider implements WebSearchProvider {
 
   /** Run one aggregated search. */
   async search(request: WebSearchRequest, signal?: AbortSignal): Promise<WebSearchResult> {
-    return runOperation(this.controls(), 'search', signal, composed => this.searchOperation(request, composed));
+    const controls = resolveRuntimeRequest(this.controls(), 'search', request.query);
+    return runOperation(controls, 'search', signal, composed => this.searchOperation(request, composed));
   }
 
   private async searchOperation(request: WebSearchRequest, signal: AbortSignal): Promise<WebSearchResult> {

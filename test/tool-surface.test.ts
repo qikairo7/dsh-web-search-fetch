@@ -49,6 +49,7 @@ it.each(['tavily', 'tinyfish-serply-bing', 'aihot', 'kimi'])('%s：仅注入两�
     fibers.push(await ctx.plugin(ToolWeb, { search: true, fetch: true }));
     const before = await ctx.systemPrompt.assemble();
     fibers.push(await ctx.plugin(plugin, {
+      controls: { preset: 'custom' },
       engines: mode === 'kimi' ? { kimi: { baseURL: server.url } } : mode === 'aihot' ? { aihot: { baseURL: server.url }, tavily: { baseURL: server.url } } : mode === 'tavily' ? { tavily: { baseURL: server.url } } : {
         tinyfish: { baseURL: `${server.url}/tinyfish`, fetchBaseURL: `${server.url}/tinyfish` },
         serply: { baseURL: `${server.url}/serply` }, bing: { baseURL: `${server.url}/bing` },

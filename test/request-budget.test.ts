@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { budgetedFetch, requestCount, runOperation, selectServices } from '../src/request-budget.js';
+import { budgetedFetch, operationNotes, requestCount, runOperation, selectServices } from '../src/request-budget.js';
 
 it('reserves permits atomically across concurrent attempts and retries', async () => {
   let sent = 0;
@@ -34,5 +34,37 @@ it('uses priority, enabled capability lists, credential presence and preset caps
   });
   await runOperation({ searchServices: [] }, 'search', undefined, async () => {
     expect(await selectServices(['bing'], id => id, 'search')).toEqual([]);
+  });
+});
+
+it('auto preset keeps simple requests fast and research requests broad without manual switching', async () => {
+  const services = ['anysearch', 'firecrawl', 'tavily', 'exa', 'kimi'];
+  await runOperation({ preset: 'auto', request: 'search', requestText: 'DeepSeek Harness 使用入门' }, 'search', undefined, async () => {
+    expect(await selectServices(services, id => id, 'search')).toEqual(['anysearch', 'firecrawl', 'tavily']);
+    expect(operationNotes().join(' ')).toContain('快速响应');
+  });
+  await runOperation({ preset: 'auto', request: 'search', requestText: '对比 DeepSeek 与 OpenAI 最新文档' }, 'search', undefined, async () => {
+    expect(await selectServices(services, id => id, 'search')).toEqual(services);
+    expect(operationNotes().join(' ')).toContain('广覆盖');
+  });
+});
+
+it('auto preset chooses extraction breadth from the URL instead of asking the user', async () => {
+  const services = ['firecrawl', 'anysearch', 'tavily', 'exa', 'kimi'];
+  await runOperation({ preset: 'auto', request: 'fetch', requestText: 'https://example.com/docs/guide' }, 'fetch', undefined, async () => {
+    expect(await selectServices(services, id => id, 'fetch')).toHaveLength(5);
+    expect(operationNotes().join(' ')).toContain('文档提取');
+  });
+  await runOperation({ preset: 'auto', request: 'fetch', requestText: 'https://example.com/post/article' }, 'fetch', undefined, async () => {
+    expect(await selectServices(services, id => id, 'fetch')).toHaveLength(5);
+    expect(operationNotes().join(' ')).toContain('深度提取');
+  });
+  await runOperation({ preset: 'auto', request: 'fetch', requestText: 'https://github.com/org/repo' }, 'fetch', undefined, async () => {
+    expect(await selectServices(services, id => id, 'fetch')).toHaveLength(5);
+    expect(operationNotes().join(' ')).toContain('文档提取');
+  });
+  await runOperation({ preset: 'auto', request: 'fetch', requestText: 'https://example.com/data.json' }, 'fetch', undefined, async () => {
+    expect(await selectServices(services, id => id, 'fetch')).toHaveLength(3);
+    expect(operationNotes().join(' ')).toContain('轻量提取');
   });
 });

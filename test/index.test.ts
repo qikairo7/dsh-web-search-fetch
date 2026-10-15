@@ -765,7 +765,7 @@ describe('引擎失败信号经真实客户端转发熔断', () => {
 describe('live extension settings', () => {
   it('开关保存后下一次搜索与提取改变扩展路数，两个 provider 各注册一次', async () => {
     const stub = createStubContext();
-    const config = Config({ engines: { tavily: { enabled: false } }, search: { rerank: false, zhihuQuotaCheck: false }, fetch: {} });
+    const config = Config({ controls: { preset: 'custom' }, engines: { tavily: { enabled: false } }, search: { rerank: false, zhihuQuotaCheck: false }, fetch: {} });
     let enabled = false;
     Object.assign(config, { engines: { get: () => ({ tavily: { enabled } }) } });
     apply(stub.ctx, config);
