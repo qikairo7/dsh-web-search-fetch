@@ -36,11 +36,11 @@
 | `balanced` | 五路 |
 | `deep` | 已选服务范围 |
 
-`search.decisionModel` 支持 `Kev-4b`、`SemIf`、`diffusiongemma`、阿里 `decision-model-preview` 和 TypeSafe `jev-latest`。前四个使用各自平台当前提供的免费调用，TypeSafe 为付费模型；费用以服务方为准。硅基流动三款使用 `SILICONFLOW_API_KEY`，阿里使用 `DASHSCOPE_API_KEY`，TypeSafe 使用 `TYPESAFE_API_KEY`。默认模型为 `decision-model-preview`：本机评测中五题四中、延迟约 94～217 毫秒。决策请求限时 1,000 毫秒并计入插件请求预算。
+`search.decisionModel` 支持 `Kev-4b`、`SemIf`、`diffusiongemma`、阿里 `decision-model-preview` 和 TypeSafe `jev-latest`。前四个使用各自平台当前提供的免费调用，TypeSafe 为付费模型；费用以服务方为准。硅基流动三款使用 `SILICONFLOW_API_KEY`，阿里使用 `DASHSCOPE_API_KEY`，TypeSafe 使用 `TYPESAFE_API_KEY`。默认模型为 `decision-model-preview`：五题路由样例中三题符合预期、延迟约 94～217 毫秒。决策请求默认限时 2,000 毫秒并计入插件请求预算。
 
-本机同题评测（普通搜索、文档提取、对比调研、新闻核验、静态 JSON）中：`decision-model-preview` 五题四中，单题 94～217 毫秒；TypeSafe `jev-latest` 走本机 DSH 代理后五题四中，414～760 毫秒；`Kev-4b` 三题命中，204～346 毫秒；`SemIf` 三题命中但普通请求偏深，155～358 毫秒；`diffusiongemma` 三题命中，332～739 毫秒。TypeSafe 直连返回 HTTP 451，代理链路可用。
+本机五题冒烟检查（样本过少，不能据此排名；普通搜索、文档提取、对比调研、新闻核验、静态 JSON）中：`decision-model-preview` 五题三中，单题 94～217 毫秒；TypeSafe `jev-latest` 走本机 DSH 代理后五题四中，414～760 毫秒；`Kev-4b` 三题命中，204～346 毫秒；`SemIf` 两题命中但普通请求偏深，155～358 毫秒；`diffusiongemma` 三题命中，332～739 毫秒。TypeSafe 直连返回 HTTP 451，代理链路可用。
 
-决策失败、超时或凭证缺失时，本次退回本地规则：搜索按查询意图判断，提取按 URL 形态判断。自动档只改变派发数量，不自动开启服务、不提高预算、不改变 URL 分流和正文整理。模型、判定结果和置信度写入操作说明。
+自动预设将外部决策模型作为必要依赖。决策失败、超时或凭证缺失时，本次返回明确错误，不派发搜索或提取服务。自动档只改变派发数量，不自动开启服务、不提高预算、不改变 URL 分流和正文整理。模型、判定结果和置信度写入操作说明。
 
 ## 搜索
 
@@ -125,7 +125,7 @@ AnySearch 官方 `/v1/search` 与 `/v1/extract`、Firecrawl 官方 `/v2/search` 
 
 Web 设置域的命名空间为 Loader entry ID `web-search-fetch`。schema 的 `.volatile()` 标记决定可服务字段；保存将新值提交到运行中的引用，不重新挂载插件。端点和调优参数由配置文件管理。
 
-浏览器卡片覆盖 18 项服务和 16 个凭证位，通过凭证服务读取状态、写入值，通过设置域保存服务总开关、扩展服务启用状态、智谱通道和 `controls` 字段。保存只提交发生变化的路径，保留未修改的端点与其他配置。空白草稿不写入凭证。浏览器模块独立于 Host 模块，两侧填写位及 README 服务清单由测试核对。AnySearch 和 Firecrawl 显式使用不同搜索／提取引用时，一次填写可更新两个引用；豆包两把凭证独立管理。外部请求与日志边界见[安全说明](./SECURITY.md)。
+浏览器卡片覆盖 18 项搜索／提取／重排服务和 18 个凭证位，另有五款决策模型选择，通过凭证服务读取状态、写入值，通过设置域保存服务总开关、扩展服务启用状态、智谱通道和 `controls` 字段。保存只提交发生变化的路径，保留未修改的端点与其他配置。空白草稿不写入凭证。浏览器模块独立于 Host 模块，两侧填写位及 README 服务清单由测试核对。AnySearch 和 Firecrawl 显式使用不同搜索／提取引用时，一次填写可更新两个引用；豆包两把凭证独立管理。外部请求与日志边界见[安全说明](./SECURITY.md)。
 
 设置界面复用 DSH 原生组件和主题变量，由宿主窗口统一滚动。调用参数默认收起，服务配置位于首屏；预设和正文处理方式使用分段选择，高级数值使用 `SettingsValueField`。数值草稿保留用户输入，无效值阻止保存。离开设置页会清除未保存草稿；若保存已开始，保留已提交操作的凭证引用快照，操作结束后再次清理草稿。已被服务端接受的写入不回滚。
 

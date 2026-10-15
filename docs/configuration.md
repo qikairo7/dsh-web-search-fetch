@@ -65,7 +65,7 @@
       rerank: true
       rerankTimeoutMs: 3000
       decisionModel: decision-model-preview
-      decisionTimeoutMs: 1000
+      decisionTimeoutMs: 2000
       zhihuQuotaCheck: true
       anysearchApiKeyEnv: ANYSEARCH_API_KEY
       zhipuTransport: anthropic
@@ -107,7 +107,7 @@
 | `search.rerank` | 布尔值 | `true` | 是否启用重排 |
 | `search.rerankTimeoutMs` | 正整数，毫秒 | `3000` | 重排请求预算 |
 | `search.decisionModel` | 字符串枚举 | `decision-model-preview` | 另可选 `Kev-4b`、`SemIf`、`diffusiongemma`、`jev-latest` |
-| `search.decisionTimeoutMs` | 正整数，毫秒 | `1000` | 自动预设决策请求预算 |
+| `search.decisionTimeoutMs` | 正整数，毫秒 | `2000` | 自动预设决策请求预算 |
 | `search.zhihuQuotaCheck` | 布尔值 | `true` | 当日首次查询的额度检查 |
 | `search.zhipuTransport` | 字符串枚举 | `anthropic` | 另可选 `tools-api` |
 | `search.zhipuAnthropicModel` | 字符串 | `glm-4.6` | 搜索通道模型 |
@@ -183,7 +183,7 @@
 
 免费接口预设只派发 TinyFish、Bing RSS、GitHub 和已主动启用的 AIHOT，仍遵守凭证、用途和限流要求。硅基流动免费标准模型可继续重排。免费额度、试用额度和智谱付费订阅不属于此预设；使用自定义端点的服务也不会被当作免费。静态 HTTP 路径保持独立，模型 token 用量不受此预设控制。
 
-自动预设不需要用户切换模式。默认先调用 `search.decisionModel` 判断 `fast`（3 路）、`balanced`（5 路）或 `deep`（已选服务范围），再统一进入服务筛选；返回说明包含模型、判定结果和置信度。决策请求超时、失败或凭证缺失时，本次退回本地规则：搜索按查询意图判断；提取按 URL 形态判断。自动预设只调整派发数量，不自动开启扩展、提高请求预算或改变正文整理规则。
+自动预设不需要用户切换模式。默认先调用 `search.decisionModel` 判断 `fast`（3 路）、`balanced`（5 路）或 `deep`（已选服务范围），再统一进入服务筛选；返回说明包含模型、判定结果和置信度。自动预设依赖外部决策模型；超时、失败或凭证缺失时返回明确错误，本次不派发搜索或提取服务。自动预设只调整派发数量，不自动开启扩展、提高请求预算或改变正文整理规则。
 
 `Kev-4b`、`SemIf`、`diffusiongemma` 和阿里 `decision-model-preview` 当前由服务方提供免费调用，仍需对应 API Key；TypeSafe `jev-latest` 为付费模型。费用和额度以服务方当前页面为准。硅基流动模型使用 `SILICONFLOW_API_KEY`，阿里使用 `DASHSCOPE_API_KEY`，TypeSafe 使用 `TYPESAFE_API_KEY`。TypeSafe 直连在部分地区返回 HTTP 451；决策请求会复用 DSH 启动时安装的出站代理策略。
 
@@ -211,9 +211,9 @@ GitHub 提取只识别仓库根 URL 与 `/blob/<ref>/<path>`，不提供任意 G
 
 新安装默认启用 AnySearch、Firecrawl、Tavily，无需填写密钥。AnySearch 官方 `/v1/search` 和 `/v1/extract` 使用公共匿名额度；Firecrawl 官方 `/v2/search` 和 `/v2/scrape` 使用匿名额度；Tavily 官方 `/search` 和 `/extract` 携带 `x-tavily-access-mode: keyless`。匿名访问有限流和额度限制，密钥配置后使用账户模式，不自动回退。自定义端点仍需密钥。AnySearch 域名发现接口仍需密钥，匿名错误正文不输出，额度耗尽时不自动使用上游生成的账号。
 
-匿名额度与免费接口预设分别处理：`free` 排除额度型服务；推荐默认组合使用 `custom` 预设。其他服务作为增强按需开启，已保存的显式开关与凭证保持不变；旧版未设置开关的服务采用新版默认。依据见 [README 匿名访问说明](../README.md#服务费用)。
+匿名额度与免费接口预设分别处理：`free` 排除额度型服务；默认 `auto` 预设需要决策模型凭证；未配置时可用 `custom` 体验匿名搜索。其他服务作为增强按需开启，已保存的显式开关与凭证保持不变；旧版未设置开关的服务采用新版默认。依据见 [README 匿名访问说明](../README.md#服务费用)。
 
-打开「设置 → 内置插件 → 网络搜索与提取」。卡片与 README 的完整接入清单一致，覆盖 20 项服务、18 个凭证位，包括无需凭证的 Bing RSS、AIHOT 和直接 HTTP 抓取。豆包搜索与提取分别填写密钥；智谱只保留搜索。
+打开「设置 → 内置插件 → 网络搜索与提取」。卡片与 README 的完整接入清单一致，覆盖 18 项搜索／提取／重排服务、18 个凭证位，另提供五款决策模型选择，包括无需凭证的 Bing RSS、AIHOT 和直接 HTTP 抓取。豆包搜索与提取分别填写密钥；智谱只保留搜索。
 
 用服务名称或用途搜索，按搜索 / 提取 / 重排筛选，或只查看待配置、未保存及无需密钥的服务。点击服务行展开密钥与说明；切换筛选或折叠保留草稿。保存和放弃更改位于列表下方，全局计数包含筛选后隐藏的修改。
 
@@ -258,3 +258,5 @@ Kimi 使用 `MOONSHOT_API_KEY`，默认基础地址为 `https://api.moonshot.cn`
 仅此源使用条件 GET 缓存：按完整请求 URL 分开保存，普通接口默认 60 秒，重置接口默认至少 10 分钟；遵循上游 max-age / no-cache / no-store，最多 32 项。过期携带 ETag；304 复用已有内容，新的 200 替换旧条目，失败不返回过期数据。429 / 503 的 Retry-After 进入客户端冷却，搜索另维护熔断状态，不并发重试，不伪装客户端或绕过安全拦截。
 
 [AIHOT 使用规则](https://aihot.news/terms)允许个人非商业、公益非商业及组织内部使用；对外提供代理、收费产品或再分发等需要书面授权。仓库 MIT 许可仅覆盖插件代码。只使用新 `/api/v1`，不使用即将停用的 `/api/public`。
+
+自动决策位于「调用设置 → 自动决策」。选择模型后只显示对应平台的密钥填写位。阿里与 TypeSafe 不是搜索服务，没有独立的服务启停开关。模型选择与凭证在保存后用于下一次请求。

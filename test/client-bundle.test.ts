@@ -367,6 +367,22 @@ describe('card controller', () => {
     expect(state.writable).toBe(true);
   });
 
+  it('五款决策模型暂存、撤销并保存到独立字段，不修改服务开关', async () => {
+    const { face, scope } = mount({ value: { search: { decisionModel: 'decision-model-preview' } } });
+    for (const model of ['Kev-4b', 'SemIf', 'diffusiongemma', 'decision-model-preview', 'jev-latest']) {
+      face.editDecision(model);
+      expect(face.hooks.webSearchFetch.getSnapshot().decisionModel).toBe(model);
+    }
+    face.discard();
+    expect(face.hooks.webSearchFetch.getSnapshot().decisionModel).toBe('decision-model-preview');
+    face.editDecision('jev-latest');
+    await face.save();
+    expect(scope.mutations).toEqual([[{ op: 'set', path: ['search', 'decisionModel'], value: 'jev-latest' }]]);
+    scope.setValue({ search: { decisionModel: 'jev-latest' } });
+    expect(face.hooks.webSearchFetch.getSnapshot().decisionModel).toBe('jev-latest');
+    expect(face.hooks.webSearchFetch.getSnapshot().dirty).toBe(false);
+  });
+
   it('按已服务的引用名询问凭证状态，且只投影布尔', async () => {
     const described: string[][] = [];
     const { face } = mount({
@@ -623,7 +639,7 @@ describe('card controller', () => {
     const { face, page } = mount({ value: {} });
     const state = face.hooks.webSearchFetch.getSnapshot();
     expect(state.visibleServiceIds).toEqual(expect.arrayContaining(Object.keys(ADDITIONAL_ENGINE_DEFAULTS)));
-    expect(state.visibleServiceIds).toHaveLength(20);
+    expect(state.visibleServiceIds).toHaveLength(18);
     const bundles = page.localeRegistrations[0]!.bundles as { zh: Record<string, string> };
     const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
     for (const id of state.visibleServiceIds) expect(readme).toContain(bundles.zh[id + '-service']);
@@ -796,7 +812,7 @@ describe('card controller', () => {
   });
   it('全部服务统一提供启停状态，基础服务关闭不改参与范围或凭证', async () => {
     const { face, scope } = mount({ value: { controls: { searchServices: ['anysearch', 'zhihu'], fetchServices: ['anysearch'] } } });
-    expect(Object.keys(face.hooks.webSearchFetch.getSnapshot().engines)).toHaveLength(20);
+    expect(Object.keys(face.hooks.webSearchFetch.getSnapshot().engines)).toHaveLength(18);
     face.editService('anysearch', false);
     face.editService('zhihu', false);
     face.editService('http', false);

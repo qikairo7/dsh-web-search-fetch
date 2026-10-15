@@ -50,7 +50,7 @@ import { DEFAULT_FETCH_ENGINE_TIMEOUT_MS, DEFAULT_STATIC_EXTENSIONS } from './fe
 import { createAdditionalEngines, type AdditionalEnginesConfig } from './engines/additional/index.js';
 import { budgetedFetch, currentControls, noteOperation } from './request-budget.js';
 import type { RuntimeControls } from './request-budget.js';
-import { DecisionClient } from './engines/decision/client.js';
+import { DecisionClient, decisionFetch } from './engines/decision/client.js';
 import { DECISION_MODEL_PROVIDER } from './engines/decision/wire.js';
 export { createAdditionalEngines, ADDITIONAL_ENGINE_DEFAULTS } from './engines/additional/index.js';
 export type { AdditionalEnginesConfig, AdditionalEngineConfig, AdditionalEngineId } from './engines/additional/index.js';
@@ -245,7 +245,7 @@ export interface SearchConfig {
   /** SiliconFlow rerank endpoint (DESIGN.md); defaults to the public endpoint. */
   rerankBaseURL?: string;
   /** Fast decision model behind the automatic preset. */
-  decisionModel?: 'Kev-4b' | 'SemIf' | 'diffusiongemma' | 'decision-model-preview' | 'jev-latest';
+  decisionModel?: Volatile<'Kev-4b' | 'SemIf' | 'diffusiongemma' | 'decision-model-preview' | 'jev-latest'>;
   /** Decision-model request budget. */
   decisionTimeoutMs?: number;
 }
@@ -415,8 +415,8 @@ export const Config = z.object({
       zhihuBaseURL: z.string().default(ZHIHU_GLOBAL_SEARCH_URL).description('知乎全网搜索端点。'),
       zhihuQuotaURL: z.string().default(ZHIHU_QUOTA_URL).description('知乎每日额度查询端点。'),
       rerankBaseURL: z.string().default(SILICONFLOW_RERANK_URL).description('硅基流动重排端点。'),
-      decisionModel: z.union(['Kev-4b', 'SemIf', 'diffusiongemma', 'decision-model-preview', 'jev-latest']).default('decision-model-preview').description('自动预设的快速决策模型。'),
-      decisionTimeoutMs: z.natural().min(100).max(5000).default(1000).description('决策模型限时；超时后本次使用本地规则。'),
+      decisionModel: z.union(['Kev-4b', 'SemIf', 'diffusiongemma', 'decision-model-preview', 'jev-latest']).default('decision-model-preview').volatile().description('自动预设的快速决策模型，保存后下一次请求生效。'),
+      decisionTimeoutMs: z.natural().min(100).max(5000).default(2000).description('决策模型限时；自动预设必须取得有效决策后才派发服务。'),
     })
     .default({})
     .description('搜索聚合管线（多来源并发、去重、RRF 融合与重排）的参数与服务凭证引用。'),
@@ -473,23 +473,26 @@ export function apply(ctx: Context, config: Config): void {
   const resolveCredential = async (ref: CredentialRef): Promise<string | undefined> =>
     (await ctx.credentials.resolve(ref))?.value;
   const log = ctx.logger('web-search-fetch');
-  const decisionModel = search.decisionModel ?? 'decision-model-preview';
-  const decisionProvider = DECISION_MODEL_PROVIDER[decisionModel] ?? 'siliconflow';
-  const decisionCredentialRef = decisionProvider === 'siliconflow'
-    ? () => resolveCredentialRef(config, 'siliconflow')
-    : decisionProvider === 'alibaba' ? () => 'DASHSCOPE_API_KEY' : () => 'TYPESAFE_API_KEY';
-  const decision = new DecisionClient({
-    model: decisionModel,
-    provider: decisionProvider,
-    resolveApiKey: async () => (await ctx.credentials.resolve(credentialRef(decisionCredentialRef())))?.value,
-    credentialName: decisionCredentialRef(),
-    timeoutMs: search.decisionTimeoutMs,
-    fetchImpl: budgetedFetch(),
-    onFailure: (reason, detail) => log.warn(`[决策] ${decisionModel} ${reason}：${detail}；本次使用本地规则。`),
-  });
+  const createDecision = () => {
+    const decisionModel = readVolatile(search.decisionModel) ?? 'decision-model-preview';
+    const decisionProvider = DECISION_MODEL_PROVIDER[decisionModel] ?? 'siliconflow';
+    const decisionCredentialRef = decisionProvider === 'siliconflow'
+      ? () => resolveCredentialRef(config, 'siliconflow')
+      : decisionProvider === 'alibaba' ? () => 'DASHSCOPE_API_KEY' : () => 'TYPESAFE_API_KEY';
+    const decision = new DecisionClient({
+      model: decisionModel,
+      provider: decisionProvider,
+      resolveApiKey: async () => (await ctx.credentials.resolve(credentialRef(decisionCredentialRef())))?.value,
+      credentialName: decisionCredentialRef(),
+      timeoutMs: search.decisionTimeoutMs,
+      fetchImpl: budgetedFetch(decisionFetch),
+      onFailure: (reason, detail) => log.warn(`[决策] ${decisionModel} ${reason}：${detail}；本次未派发服务。`),
+    });
+    return decision;
+  };
   const controls = (): RuntimeControls => {
     const snapshot = structuredClone(config.controls?.get() ?? {}) as RuntimeControls;
-    return { ...snapshot, decision, serviceEnabled: { siliconflow: readVolatile(search.rerank) ?? true, ...snapshot.serviceEnabled } };
+    return { ...snapshot, decision: createDecision(), serviceEnabled: { siliconflow: readVolatile(search.rerank) ?? true, ...snapshot.serviceEnabled } };
   };
   const ready = async (id: string, face: 'search' | 'fetch'): Promise<boolean> => {
     const settings = config.engines?.get()?.[id as keyof AdditionalEnginesConfig];

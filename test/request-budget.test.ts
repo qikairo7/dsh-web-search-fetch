@@ -69,7 +69,7 @@ it('auto preset chooses extraction breadth from the URL instead of asking the us
   });
 });
 
-it('uses the decision model as the primary automatic-routing layer and local rules as failure fallback', async () => {
+it('requires a valid decision before automatic fan-out', async () => {
   const services = ['anysearch', 'firecrawl', 'tavily', 'exa', 'kimi'];
   const controls = (depth: 'fast' | 'balanced' | 'deep' | null) => ({
     preset: 'auto' as const,
@@ -88,7 +88,6 @@ it('uses the decision model as the primary automatic-routing layer and local rul
     expect(operationNotes().join(' ')).toContain('置信度 82%');
   });
   await runOperation(controls(null), 'search', undefined, async () => {
-    expect(await selectServices(services, id => id, 'search')).toEqual(['anysearch', 'firecrawl', 'tavily']);
-    expect(operationNotes().join(' ')).toContain('快速响应');
+    await expect(selectServices(services, id => id, 'search')).rejects.toMatchObject({ code: 'WEB_PROVIDER_ERROR' });
   });
 });

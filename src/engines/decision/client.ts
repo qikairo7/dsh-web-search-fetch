@@ -1,11 +1,13 @@
 /**
- * Decision-model transport. Degrade-first: every non-cancellation failure
- * resolves to `null`, letting the automatic preset use its local rules.
+ * Decision-model transport. Non-cancellation failures resolve to `null`;
+ * automatic routing rejects the operation before dispatching services.
  * Requests consult DSH's process-wide proxy route, so region-restricted
  * providers follow the host's outbound policy.
  */
 import { WebError } from '@deepseek-ai/dsh-web';
 import { proxyRouteFor } from '@deepseek-ai/dsh-http-proxy';
+import { fetch as undiciFetch } from 'undici';
+import { abortable } from '../../request-budget.js';
 import { ALIBABA_DECISION_URL, DECISION_TIMEOUT_MS, MAX_DECISION_ERROR_CHARS, SILICONFLOW_SYSTEMONE_URL, TYPESAFE_JEV_URL } from './limits.js';
 import { buildDecisionRequest, parseDecisionDepth } from './wire.js';
 import type { DecisionProvider } from './types.js';
@@ -27,19 +29,23 @@ export interface DecisionOutcome {
   readonly confidence: number | undefined;
 }
 export class DecisionClient {
+  failureReason?: DecisionFailureReason;
   private readonly timeoutMs: number;
   private readonly fetchImpl: typeof fetch;
   constructor(private readonly options: DecisionClientOptions) {
     this.timeoutMs = options.timeoutMs ?? DECISION_TIMEOUT_MS;
-    this.fetchImpl = options.fetchImpl ?? ((input, init) => globalThis.fetch(input, init));
+    this.fetchImpl = options.fetchImpl ?? decisionFetch;
   }
   async decide(request: 'search' | 'fetch', text: string, signal?: AbortSignal): Promise<DecisionOutcome | null> {
-    let apiKey: string | undefined;
-    try { apiKey = await this.options.resolveApiKey(); }
-    catch (error) { return this.fail('credential-error', describe(error)); }
-    if (!apiKey) return this.fail('credential-missing', `credential "${this.options.credentialName}" is not configured`);
     const deadline = AbortSignal.timeout(this.timeoutMs);
     const composed = signal ? AbortSignal.any([signal, deadline]) : deadline;
+    let apiKey: string | undefined;
+    try { apiKey = await abortable(this.options.resolveApiKey(), composed); }
+    catch (error) {
+      if (signal?.aborted) throw new WebError('Decision model aborted', 'WEB_ABORTED', { cause: error });
+      return this.fail(deadline.aborted ? 'timeout' : 'credential-error', 'credential resolution failed');
+    }
+    if (!apiKey) return this.fail('credential-missing', `credential "${this.options.credentialName}" is not configured`);
     let response: Response;
     try {
       const url = new URL(this.endpoint());
@@ -51,15 +57,17 @@ export class DecisionClient {
         signal: composed,
       };
       if (route.proxied) (init as { dispatcher?: unknown }).dispatcher = route.dispatcher;
-      response = await this.fetchImpl(url, init);
-      if (route.proxied) (init as { dispatcher?: unknown }).dispatcher = route.dispatcher;
+      response = await abortable(this.fetchImpl(url, init), composed);
     } catch (error) {
       if (signal?.aborted) throw new WebError('Decision model aborted', 'WEB_ABORTED', { cause: error });
       return this.fail(deadline.aborted ? 'timeout' : 'transport-error', describe(error));
     }
     let body: string;
-    try { body = await response.text(); }
-    catch (error) { return this.fail('transport-error', describe(error)); }
+    try { body = await abortable(response.text(), composed); }
+    catch (error) {
+      if (signal?.aborted) throw new WebError('Decision model aborted', 'WEB_ABORTED', { cause: error });
+      return this.fail(deadline.aborted ? 'timeout' : 'transport-error', 'response body unavailable');
+    }
     if (!response.ok) return this.fail('http-error', `HTTP ${response.status}${upstreamDetail(body)}`);
     let payload: unknown;
     try { payload = JSON.parse(body); }
@@ -74,10 +82,13 @@ export class DecisionClient {
     return SILICONFLOW_SYSTEMONE_URL;
   }
   private fail(reason: DecisionFailureReason, detail: string): null {
+    this.failureReason = reason;
     try { this.options.onFailure?.(reason, detail); } catch { /* logging must not fail routing */ }
     return null;
   }
 }
+// Keep fetch and the host's dispatcher on the same Undici major version.
+export const decisionFetch = undiciFetch as unknown as typeof fetch;
 function describe(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
   return message.length <= MAX_DECISION_ERROR_CHARS ? message : `${message.slice(0, MAX_DECISION_ERROR_CHARS)}…`;

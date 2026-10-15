@@ -10,9 +10,9 @@ window.__ModuleLoader__.load({
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
         //#region locales
         const zh = {
-            servicesTitle: '服务与凭证', settingsTitle: '调用设置', advanced: '高级调用限制', advancedHint: '请求数、超时与正文长度',
+            decisionTitle: '自动决策', decisionModelLabel: '决策模型', decisionKeyHint: '仅用于自动判断调用范围。留空保留原密钥；保存后下一次请求生效。', decisionFallback: '自动预设需要有效决策。请求默认限时 2 秒；失败时提示检查凭证与网络。', servicesTitle: '服务与凭证', settingsTitle: '调用设置', advanced: '高级调用限制', advancedHint: '请求数、超时与正文长度',
             startGuide: '推荐服务与匿名额度', organizeHint: '合并多份正文，去重与互补，保留来源与差异。', selectHint: '兼容旧版，仅返回一份提取正文。',
-            autoPresetHint: '按查询意图和 URL 形态自动选择快速或广覆盖，保存后下一次调用生效。', customPresetHint: '按服务开关、参与范围与调用限制执行。', balancedPresetHint: '每次最多调用三路服务，兼顾覆盖范围与调用用量。', deepPresetHint: '调用已选择且可用的服务，仍受调用限制约束。',
+            autoPresetHint: '由决策模型自动判断调用范围，无需手动切换。模型不可用时提示检查配置，本次不派发搜索或提取服务。', customPresetHint: '按服务开关、参与范围与调用限制执行。', balancedPresetHint: '每次最多调用三路服务，兼顾覆盖范围与调用用量。', deepPresetHint: '调用已选择且可用的服务，仍受调用限制约束。',
             invalidNumber: '请输入范围内的整数：', invalidControls: '请先修正调用限制', resetField: '撤销此项', range: '范围',
 
             title: '网络搜索与提取', intro: '新安装默认启用 AnySearch、Firecrawl、Tavily，使用官方匿名额度，无需填写密钥；其他服务按需开启作为增强。匿名额度有限流，填写密钥后使用账户额度。',
@@ -73,6 +73,7 @@ window.__ModuleLoader__.load({
             clean: '暂无待保存更改', dirty: '项未保存', refresh: '刷新凭证状态',
         };
         const en = {
+            decisionTitle: 'Automatic routing', decisionModelLabel: 'Decision model', decisionKeyHint: 'Routes automatic requests only. Leave blank to keep the key. Changes apply to the next request.', decisionFallback: 'Decision requests default to a 2-second timeout. Automatic routing requires a valid decision; check credentials and network on failure.',
             servicesTitle: 'Services & credentials', settingsTitle: 'Call settings', advanced: 'Advanced limits', advancedHint: 'Requests, deadlines and content length',
             startGuide: 'Recommended services and anonymous quotas', organizeHint: 'Combine extracts, remove duplicates and retain sources and differences.', selectHint: 'Legacy behavior: return one extract.',
             autoPresetHint: 'Choose fast or broad fan-out from the query and URL, effective on the next call.', customPresetHint: 'Use service switches, participation and call limits.', balancedPresetHint: 'Use up to three services per operation to balance coverage and usage.', deepPresetHint: 'Use selected, available services within the call limits.',
@@ -232,6 +233,14 @@ window.__ModuleLoader__.load({
 			unsubscribe;
 			/** Staged transport, or undefined while the served value stands. */
 			transportDraft;
+            decisionDraft;
+            decisionModel() { return this.decisionDraft ?? this.section()?.search?.decisionModel ?? 'decision-model-preview'; }
+            editDecision(model) {
+                if (this.saving || !DECISION_MODELS.some(item => item.value === model)) return;
+                this.baselineRevision ??= this.scope.getSnapshot().revision;
+                this.decisionDraft = model === (this.section()?.search?.decisionModel ?? 'decision-model-preview') ? undefined : model;
+                this.failed = false; this.saved = false; this.publish();
+            }
             engineDrafts = new Map();
             controlDrafts = new Map();
             numberDrafts = new Map();
@@ -431,7 +440,7 @@ window.__ModuleLoader__.load({
                 this.publish();
             }
 			dirty() {
-				return this.transportDraft !== void 0 || this.engineDrafts.size > 0 || this.keyDrafts.size > 0 || this.controlDrafts.size > 0 || this.numberDrafts.size > 0;
+				return this.decisionDraft !== undefined || this.transportDraft !== void 0 || this.engineDrafts.size > 0 || this.keyDrafts.size > 0 || this.controlDrafts.size > 0 || this.numberDrafts.size > 0;
 			}
 			/**
 			* Ask the credentials domain about the reference each slot resolves to.
@@ -490,6 +499,7 @@ window.__ModuleLoader__.load({
 				const ops = this.transportDraft === void 0
 					? []
 					: [{ op: "set", path: [...TRANSPORT_PATH], value: this.transportDraft }];
+				if (this.decisionDraft !== undefined) ops.push({ op: 'set', path: ['search', 'decisionModel'], value: this.decisionDraft });
 				ops.push(...[...this.engineDrafts].map(([id, enabled]) => ({ op: "set", path: ["engines", id, "enabled"], value: enabled })));
                 ops.push(...[...this.controlDrafts].map(([name, value]) => ({ op: 'set', path: ['controls', name], value })));
                 // Keep the submitted references independent of a page closing during the write.
@@ -505,7 +515,8 @@ window.__ModuleLoader__.load({
                             landed = await this.scope.mutate(ops, this.baselineRevision);
                             if (landed) {
                                 // Accepted configuration is no longer a draft, even if a credential write fails.
-                                this.transportDraft = undefined;
+                                this.decisionDraft = undefined;
+                this.transportDraft = undefined;
                                 this.engineDrafts.clear();
                                 this.controlDrafts.clear();
                                 this.numberDrafts.clear();
@@ -526,6 +537,7 @@ window.__ModuleLoader__.load({
 					landed = false;
 				} finally {
 					if (landed) {
+						this.decisionDraft = undefined;
 						this.transportDraft = void 0;
 						this.keyDrafts.clear();
                         this.keyRefs.clear();
@@ -549,6 +561,7 @@ window.__ModuleLoader__.load({
 			}
 			/** Drop every staged edit. */
             clearDrafts() {
+                this.decisionDraft = undefined;
                 this.transportDraft = undefined;
                 this.keyDrafts.clear();
                 this.keyRefs.clear();
@@ -566,7 +579,8 @@ window.__ModuleLoader__.load({
 			discard() {
                 if (this.saving) return;
 				if (!this.dirty() && !this.failed) return;
-				this.transportDraft = void 0;
+				this.decisionDraft = undefined;
+						this.transportDraft = void 0;
 				this.keyDrafts.clear();
                         this.keyRefs.clear();
                         this.engineDrafts.clear();
@@ -594,13 +608,14 @@ window.__ModuleLoader__.load({
 				this.slotRefs = resolveSlotRefs(this.section());
 				return {
 					...this.shell(),
+                    decisionModel: this.decisionModel(),
                     saved: this.saved,
                     controls: this.controls(),
                     numberFields: Object.fromEntries(Object.keys(NUMBER_CONTROLS).map(name => [name, this.numberField(name)])),
                     view: { ...this.view },
                     visibleServiceIds: SERVICES.filter(service => this.matchesService(service)).map(service => service.id),
                     changedServiceIds: SERVICES.filter(service => this.serviceDirty(service)).map(service => service.id),
-                    changeCount: this.keyDrafts.size + this.engineDrafts.size + new Set([...this.controlDrafts.keys(), ...this.numberDrafts.keys()]).size + (this.transportDraft === undefined ? 0 : 1),
+                    changeCount: this.keyDrafts.size + this.engineDrafts.size + new Set([...this.controlDrafts.keys(), ...this.numberDrafts.keys()]).size + (this.transportDraft === undefined ? 0 : 1) + (this.decisionDraft === undefined ? 0 : 1),
 					transport: this.transport(),
 					transportDirty: this.transportDraft !== void 0,
                     engines: Object.fromEntries(SERVICES.map(service => [service.id, this.serviceEnabled(service.id)])),
@@ -653,8 +668,6 @@ window.__ModuleLoader__.load({
             { id: 'bing', keywords: 'RSS 免费 匿名 free anonymous', mark: 'B', capability: 'search', capabilities: ['search'], keys: [], extension: true },
             { id: 'aihot', keywords: 'AI news 新闻 资讯', mark: 'AI', capability: 'aiNews', capabilities: ['search', 'fetch'], keys: [], extension: true },
             { id: 'siliconflow', mark: '硅', capability: 'rerank', capabilities: ['rerank'], keys: ['siliconflow'] },
-            { id: 'dashscope', mark: '阿', capability: 'decision', capabilities: ['decision'], keys: ['dashscope'] },
-            { id: 'typesafe', mark: 'T', capability: 'decision', capabilities: ['decision'], keys: ['typesafe'] },
             { id: 'http', mark: '↗', capability: 'staticFetch', capabilities: ['fetch'], keys: [] },
         ];
         const SETTINGS_CSS = `
@@ -668,6 +681,9 @@ window.__ModuleLoader__.load({
             .wsf-preference{display:grid;gap:6px;padding-block:12px;border-block-end:.5px solid var(--dsw-alias-border-l2)}
             .wsf-setting-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px 16px}
             .wsf-setting-label{font-weight:500;flex:1 1 70px}
+            .wsf-select{box-sizing:border-box;inline-size:100%;min-inline-size:0;block-size:36px;padding-inline:10px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:inherit;cursor:pointer}
+            .wsf-select:active{background:var(--dsw-alias-interactive-bg-hover)}
+            .wsf-preset-compact{display:none}
             .wsf-setting-row [role=tablist]{max-inline-size:100%}
             .wsf-setting-row [role=tab]{padding-inline:12px}
             .wsf-call-settings>summary strong{font-weight:500}.wsf-current-settings{margin-inline-start:auto;color:var(--dsw-alias-label-tertiary);font-size:12px}.wsf-call-settings{border-block-end:.5px solid var(--dsw-alias-border-l2)}
@@ -717,12 +733,12 @@ window.__ModuleLoader__.load({
             .wsf-link{min-block-size:28px;border:0;border-radius:var(--dsw-radius-sm);background:transparent;color:var(--dsw-alias-label-secondary);padding-inline:0;cursor:pointer;font:inherit;font-size:12px;text-decoration:underline;text-underline-offset:3px}
             .wsf-open:active,.wsf-call-settings>summary:active,.wsf-advanced>summary:active,.wsf-guide>summary:active,.wsf-link:active{background:var(--dsw-alias-interactive-bg-hover)}
             @media(hover:hover) and (pointer:fine){.wsf-open:hover,.wsf-call-settings>summary:hover,.wsf-advanced>summary:hover,.wsf-guide>summary:hover{background:var(--dsw-alias-interactive-bg-hover)}.wsf-link:hover{color:var(--dsw-alias-label-primary)}}
-            @container(max-width:360px){.wsf-row,.wsf-open{gap:6px}.wsf-filters{gap:2px}.wsf-filter{padding-inline:8px!important}.wsf-filter-count{margin-inline-start:4px}.wsf-setting-row [role=tab]{padding-inline:8px}}
+            @container(max-width:360px){.wsf-row,.wsf-open{gap:6px}.wsf-filters{gap:2px}.wsf-filter{padding-inline:8px!important}.wsf-filter-count{margin-inline-start:4px}.wsf-setting-row [role=tab]{padding-inline:8px}.wsf-preset-segments{display:none}.wsf-preset-compact{display:block}}
         `;
-        function KeyField({ t, row, disabled, onEdit }) {
+        function KeyField({ t, row, disabled, onEdit, idPrefix = '' }) {
             const status = row.ready === undefined ? 'checking' : !row.ready ? 'statusFailed' : row.configured ? 'configured' : row.partial ? 'partial' : 'unconfigured';
             return react_jsx_runtime.jsx(_deepseek_ai_dsh_client_ui_primitives.SettingsSecretField, {
-                id: slotDomId(row.id), label: t(row.id), hint: t('keyHint'), disabled: disabled || !row.writable,
+                id: idPrefix + slotDomId(row.id), label: t(row.id), hint: t('keyHint'), disabled: disabled || !row.writable,
                 text: row.text, configured: row.configured,
                 stateLabel: t(row.staged ? 'staged' : status) + (!row.writable ? ` · ${t('readOnly')}` : ''), onEdit,
             });
@@ -746,8 +762,15 @@ window.__ModuleLoader__.load({
             if (anonymousService(service, state)) return 'anonymous';
             return rows.some(row => row.configured) ? 'partial' : 'unconfigured';
         }
+        const DECISION_MODELS = [
+            { value: 'decision-model-preview', label: '阿里 · decision-model-preview', key: 'dashscope' },
+            { value: 'SemIf', label: '硅基流动 · SemIf', key: 'siliconflow' },
+            { value: 'Kev-4b', label: '硅基流动 · Kev-4B', key: 'siliconflow' },
+            { value: 'diffusiongemma', label: '硅基流动 · DiffusionGemma', key: 'siliconflow' },
+            { value: 'jev-latest', label: 'TypeSafe · jev-latest', key: 'typesafe' },
+        ];
         function WebSearchFetchCard(props) {
-            const { t, editKey, editTransport, editService, editControl, editNumber, editParticipation, editView, toggleService, refresh, save, discard } = props;
+            const { t, editKey, editDecision, editTransport, editService, editControl, editNumber, editParticipation, editView, toggleService, refresh, save, discard } = props;
             const state = props.useWebSearchFetch(snapshot => snapshot);
             const onDiscard = React.useRef(props.leave);
             onDiscard.current = props.leave;
@@ -773,8 +796,12 @@ window.__ModuleLoader__.load({
                         jsxs('div', { className: 'wsf-setting-row', children: [
                             jsx('span', { className: 'wsf-setting-label', children: t('presetLabel') }),
                             jsx(ui.SegmentedControl, { id: 'wsf-preset', value: state.controls.preset,
+                                className: 'wsf-preset-segments',
                                 label: t('presetLabel'), disabled, onChange: value => editControl('preset', value),
                                 options: ['auto', 'free', 'balanced', 'deep', 'custom'].map(value => ({ value, label: t(value + 'Preset') })) }),
+                            jsx('select', { className: 'wsf-select wsf-preset-compact', 'aria-label': t('presetLabel'), disabled,
+                                value: state.controls.preset, onChange: event => editControl('preset', event.target.value),
+                                children: ['auto', 'free', 'balanced', 'deep', 'custom'].map(value => jsx('option', { value, children: t(value + 'Preset') }, value)) }),
                         ] }),
                         jsx('p', { id: presetId + '-panel', role: 'tabpanel', 'aria-labelledby': presetId, className: 'wsf-muted',
                             children: t(state.controls.preset === 'free' ? 'freeHint' : state.controls.preset + 'PresetHint') }),
@@ -787,6 +814,17 @@ window.__ModuleLoader__.load({
                                 options: ['organize', 'select'].map(value => ({ value, label: t(value + 'Mode') })) }),
                         ] }),
                         jsx('p', { id: modeId + '-panel', role: 'tabpanel', 'aria-labelledby': modeId, className: 'wsf-muted', children: t(state.controls.mode + 'Hint') }),
+                    ] }),
+                    state.controls.preset === 'auto' && jsxs('div', { className: 'wsf-preference', children: [
+                        jsx('h3', { children: t('decisionTitle') }),
+                        jsx('label', { htmlFor: 'wsf-decision-model', className: 'wsf-setting-label', children: t('decisionModelLabel') }),
+                        jsx('select', { id: 'wsf-decision-model', className: 'wsf-select', value: state.decisionModel, disabled,
+                            'aria-label': t('decisionModelLabel'), onChange: event => editDecision(event.target.value),
+                            children: DECISION_MODELS.map(item => jsx('option', { value: item.value, children: item.label }, item.value)) }),
+                        jsx('p', { className: 'wsf-muted', children: t('decisionKeyHint') }),
+                        jsx(KeyField, { t, idPrefix: 'decision-', row: state.keys.find(row => row.id === DECISION_MODELS.find(item => item.value === state.decisionModel).key), disabled,
+                            onEdit: text => editKey(DECISION_MODELS.find(item => item.value === state.decisionModel).key, text) }),
+                        jsx('p', { className: 'wsf-muted', children: t('decisionFallback') }),
                     ] }),
                     jsxs('details', { className: 'wsf-advanced', children: [
                         jsxs('summary', { children: [
@@ -827,7 +865,7 @@ window.__ModuleLoader__.load({
                             children: ['all', 'needsKey', 'pending', 'noKey'].map(value => jsx('option', { value, children: t(value === 'all' ? 'allStatus' : value) }, value)) }),
                     ] }),
                     jsxs('div', { className: 'wsf-filters', role: 'group', 'aria-label': t('searchLabel'), children: [
-                        ...['all', 'search', 'fetch', 'rerank', 'decision'].map(capability => jsxs(ui.Button, { type: 'button', size: 'sm', variant: state.view.capability === capability ? 'outline' : 'ghost', className: 'wsf-filter',
+                        ...['all', 'search', 'fetch', 'rerank'].map(capability => jsxs(ui.Button, { type: 'button', size: 'sm', variant: state.view.capability === capability ? 'outline' : 'ghost', className: 'wsf-filter',
                             'aria-pressed': state.view.capability === capability, onClick: () => editView({ capability }), children: [
                                 t(capability), jsx('span', { className: 'wsf-filter-count', 'aria-hidden': true,
                                     children: SERVICES.filter(service => capability === 'all' || service.capabilities.includes(capability)).length }),
@@ -923,6 +961,7 @@ window.__ModuleLoader__.load({
 					editKey: (id, text) => {
 						card.editKey(id, text);
 					},
+                    editDecision: model => card.editDecision(model),
                     editView: (next) => card.editView(next),
                     toggleService: (id) => card.toggleService(id),
                     refresh: () => card.readCredentials(),

@@ -21,6 +21,7 @@ export interface RuntimeControls {
 }
 
 export interface DecisionRouter {
+  readonly failureReason?: string;
   decide(request: 'search' | 'fetch', text: string, signal?: AbortSignal): Promise<{ depth: 'fast' | 'balanced' | 'deep'; model: string; confidence?: number } | null>;
 }
 interface Operation {
@@ -98,13 +99,13 @@ export async function resolveAutomaticDepth(signal?: AbortSignal): Promise<'fast
   const controls = currentControls();
   if (controls.preset !== 'auto' || controls.decision === undefined) return undefined;
   try {
-    const outcome = await controls.decision.decide(controls.request ?? 'search', controls.requestText ?? '', signal);
-    if (!outcome) return undefined;
+    const outcome = await controls.decision.decide(controls.request ?? 'search', controls.requestText ?? '', signal ?? operations.getStore()?.signal);
+    if (!outcome) throw new WebError(`自动决策模型不可用（${controls.decision.failureReason ?? 'unavailable'}），请检查所选模型的凭证、网络和限时后重试。`, 'WEB_PROVIDER_ERROR');
     noteOperation(`决策模型 ${outcome.model} 判定为 ${outcome.depth}${outcome.confidence === undefined ? '' : `（置信度 ${(outcome.confidence * 100).toFixed(0)}%）`}。`);
     return outcome.depth;
   } catch (error) {
-    if ((error as { code?: string }).code === 'WEB_ABORTED') throw error;
-    return undefined;
+    if (error instanceof WebError) throw error;
+    throw new WebError('自动决策模型请求失败。', 'WEB_PROVIDER_ERROR', { cause: error });
   }
 }
 

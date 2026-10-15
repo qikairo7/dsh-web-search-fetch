@@ -348,7 +348,7 @@ describe('apply', () => {
 
   it('maxResults 截断并置 truncated', async () => {
     const stub = createStubContext();
-    apply(stub.ctx, Config({ search: { rerank: false, zhihuQuotaCheck: false } }));
+    apply(stub.ctx, Config({ controls: { preset: 'custom' }, search: { rerank: false, zhihuQuotaCheck: false } }));
     const engine = stubEngineFetch();
     try {
       const result = await stub.searchProviders[0]!.search({ query: '测试', maxResults: 2 });
@@ -361,7 +361,7 @@ describe('apply', () => {
 
   it('rerank 用硅基流动；降级时回 RRF 序并记日志', async () => {
     const stub = createStubContext();
-    apply(stub.ctx, Config({ search: { zhihuQuotaCheck: false } }));
+    apply(stub.ctx, Config({ controls: { preset: 'custom' }, search: { zhihuQuotaCheck: false } }));
     // 硅基流动 429 → 客户端降级为 null，管线保持 RRF 序并记降级日志
     const engine = stubEngineFetch({
       rerank: { status: 429, body: '{"code":429,"message":"rate limited"}' },
@@ -378,7 +378,7 @@ describe('apply', () => {
 
   it('rerank 成功时按硅基流动返回的索引重排（首位不再是 RRF 首位）', async () => {
     const stub = createStubContext();
-    apply(stub.ctx, Config({ search: { zhihuQuotaCheck: false } }));
+    apply(stub.ctx, Config({ controls: { preset: 'custom' }, search: { zhihuQuotaCheck: false } }));
     const engine = stubEngineFetch();
     try {
       const result = await stub.searchProviders[0]!.search({ query: '测试', maxResults: 3 });
@@ -402,7 +402,7 @@ describe('apply 凭证回落链与端点透出', () => {
       seen.push(String(ref));
       return { value: 'test-value', source: 'test' };
     };
-    const config = Config({ search: { rerank: false, zhihuQuotaCheck: false }, fetch: {} });
+    const config = Config({ controls: { preset: 'custom' }, search: { rerank: false, zhihuQuotaCheck: false }, fetch: {} });
     let revision = 'OLD';
     Object.assign(config, { apiKeyEnv: { get: () => `${revision}_ZHIPU` } });
     Object.assign(config.search, {
@@ -438,7 +438,7 @@ describe('apply 凭证回落链与端点透出', () => {
       seen.push(String(ref));
       return { value: 'test-value', source: 'test' };
     };
-    apply(stub.ctx, Config({ apiKeyEnv: 'MY_ZHIPU_KEY', search: { rerank: false, zhihuQuotaCheck: false } }));
+    apply(stub.ctx, Config({ controls: { preset: 'custom' }, apiKeyEnv: 'MY_ZHIPU_KEY', search: { rerank: false, zhihuQuotaCheck: false } }));
     const engine = stubEngineFetch();
     try {
       await stub.searchProviders[0]!.search({ query: '测试' });
@@ -465,6 +465,7 @@ describe('apply 凭证回落链与端点透出', () => {
     apply(
       stub.ctx,
       Config({
+        controls: { preset: 'custom' },
         apiKeyEnv: 'ROOT_KEY',
         search: { zhipuApiKeyEnv: 'SEARCH_KEY', rerank: false, zhihuQuotaCheck: false },
       }),
@@ -522,6 +523,7 @@ describe('apply 凭证回落链与端点透出', () => {
     apply(
       stub.ctx,
       Config({
+        controls: { preset: 'custom' },
         search: {
           rerank: false,
           zhihuQuotaCheck: false,
@@ -552,6 +554,7 @@ describe('apply 凭证回落链与端点透出', () => {
     apply(
       stub.ctx,
       Config({
+        controls: { preset: 'custom' },
         search: {
           rerank: false,
           zhihuQuotaCheck: false,
@@ -586,6 +589,7 @@ describe('apply 凭证回落链与端点透出', () => {
     apply(
       stub.ctx,
       Config({
+        controls: { preset: 'custom' },
         search: {
           rerank: false,
           zhihuQuotaCheck: false,
@@ -644,7 +648,7 @@ describe('createAggregatedSearchProvider', () => {
 describe('引擎失败信号经真实客户端转发熔断', () => {
   it('智谱 429 → rate-limit 熔断，该引擎后续被跳过，其余路照常返回', async () => {
     const stub = createStubContext();
-    apply(stub.ctx, Config({ search: { rerank: false, zhihuQuotaCheck: false } }));
+    apply(stub.ctx, Config({ controls: { preset: 'custom' }, search: { rerank: false, zhihuQuotaCheck: false } }));
     const engine = stubEngineFetch({
       zhipu: { status: 429, body: '{"error":{"code":"1301","message":"rate limited"}}' },
     });
@@ -668,7 +672,7 @@ describe('引擎失败信号经真实客户端转发熔断', () => {
 
   it('知乎配额 remaining<=0 → 当日熔断，知乎不派发，其余路照常', async () => {
     const stub = createStubContext();
-    apply(stub.ctx, Config({ search: { rerank: false } }));
+    apply(stub.ctx, Config({ controls: { preset: 'custom' }, search: { rerank: false } }));
     const engine = stubEngineFetch({
       quota: {
         body: JSON.stringify({
@@ -694,7 +698,7 @@ describe('引擎失败信号经真实客户端转发熔断', () => {
 
   it('知乎 30001 → rate-limit 熔断，该路被丢弃其余照常', async () => {
     const stub = createStubContext();
-    apply(stub.ctx, Config({ search: { rerank: false, zhihuQuotaCheck: false } }));
+    apply(stub.ctx, Config({ controls: { preset: 'custom' }, search: { rerank: false, zhihuQuotaCheck: false } }));
     const engine = stubEngineFetch({
       zhihu: { status: 200, body: JSON.stringify({ Code: 30001, Message: '请求过于频繁' }) },
     });
@@ -713,7 +717,7 @@ describe('引擎失败信号经真实客户端转发熔断', () => {
 
   it('一路超时不阻塞其余：限时到点丢弃该路并记日志，其余路结果返回', async () => {
     const stub = createStubContext();
-    apply(stub.ctx, Config({ search: { rerank: false, zhihuQuotaCheck: false, maxFanoutMs: 60 } }));
+    apply(stub.ctx, Config({ controls: { preset: 'custom' }, search: { rerank: false, zhihuQuotaCheck: false, maxFanoutMs: 60 } }));
     const originalFetch = globalThis.fetch;
     const anysearch = readFixtureText('anysearch-search-response.json');
     globalThis.fetch = (async (input, init) => {
@@ -748,7 +752,7 @@ describe('引擎失败信号经真实客户端转发熔断', () => {
 
   it('全败抛 WEB_PROVIDER_ERROR，摘要带各引擎原因', async () => {
     const stub = createStubContext();
-    apply(stub.ctx, Config({ search: { rerank: false, zhihuQuotaCheck: false } }));
+    apply(stub.ctx, Config({ controls: { preset: 'custom' }, search: { rerank: false, zhihuQuotaCheck: false } }));
     const down = { status: 500, body: '{"error":{"code":"500","message":"upstream down"}}' };
     const engine = stubEngineFetch({ anysearch: down, zhipu: down, zhihu: down });
     try {

@@ -3,6 +3,8 @@ import { installProxyFromEnvironment } from '@deepseek-ai/dsh-http-proxy';
 import { DecisionClient } from '../src/engines/decision/client.js';
 import { buildDecisionRequest, parseDecisionDepth } from '../src/engines/decision/wire.js';
 import { startMockServer } from './helpers/mock-server.js';
+import { createServer, request as httpRequest } from 'node:http';
+import { connect } from 'node:net';
 
 describe('wire', () => {
   it('builds one depth question and parses the choice response', () => {
@@ -62,3 +64,50 @@ it('uses the DSH proxy route when one is installed', async () => {
 function failersJoin(values: string[]): string {
   return values.join('\n');
 }
+
+it('sends a real request through the host proxy dispatcher', async () => {
+  const target = await startMockServer((_request, response) => {
+    response.end(JSON.stringify({ model: 'jev-latest', answers: { depth: { choice: 'balanced' } } }));
+  });
+  let tunnels = 0;
+  const sockets = new Set<import('node:net').Socket>();
+  const proxy = createServer((request, response) => {
+    tunnels++;
+    const upstream = httpRequest(target.url, { method: request.method, headers: request.headers }, incoming => {
+      response.writeHead(incoming.statusCode ?? 500, incoming.headers);
+      incoming.pipe(response);
+    });
+    upstream.on('error', () => response.destroy());
+    request.pipe(upstream);
+  });
+  proxy.on('connect', (request, socket, head) => {
+    tunnels++;
+    const address = new URL(`http://${request.url}`);
+    const upstream = connect(Number(address.port), '127.0.0.1', () => {
+      socket.write('HTTP/1.1 200 Connection Established\r\n\r\n');
+      if (head.length) upstream.write(head);
+      upstream.pipe(socket); socket.pipe(upstream);
+    });
+    sockets.add(upstream);
+    upstream.on('error', () => socket.destroy());
+    socket.on('error', () => upstream.destroy());
+  });
+  await new Promise<void>(resolve => proxy.listen(0, '127.0.0.1', resolve));
+  const port = (proxy.address() as import('node:net').AddressInfo).port;
+  const restore = await installProxyFromEnvironment(new Map([['HTTP_PROXY', { value: `http://127.0.0.1:${port}` }]] as never), () => undefined);
+  try {
+    const client = new DecisionClient({ model: 'jev-latest', provider: 'typesafe', baseURL: target.url.replace('127.0.0.1', 'proxy-target.test'), credentialName: 'TEST', resolveApiKey: async () => 'test' });
+    expect(await client.decide('search', 'test')).toMatchObject({ depth: 'balanced' });
+    expect(tunnels).toBe(1);
+  } finally {
+    await restore();
+    for (const socket of sockets) socket.destroy();
+    await new Promise<void>(resolve => proxy.close(() => resolve()));
+    await target.close();
+  }
+});
+
+it('bounds slow credential resolution by the decision deadline', async () => {
+  const client = new DecisionClient({ model: 'jev-latest', provider: 'typesafe', credentialName: 'TEST', timeoutMs: 25, resolveApiKey: () => new Promise(() => {}) });
+  expect(await client.decide('search', 'test')).toBeNull();
+});

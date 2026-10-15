@@ -42,6 +42,7 @@ export const EDITABLE_SETTINGS_PATHS = [
   ['search', 'zhihuAccessSecretEnv'],
   ['search', 'siliconflowApiKeyEnv'],
   ['search', 'zhipuTransport'],
+  ['search', 'decisionModel'],
   ['fetch', 'firecrawlApiKeyEnv'],
 ] as const;
 

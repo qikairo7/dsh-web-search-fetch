@@ -5,33 +5,33 @@
 
 **面向资料研究的 DSH 插件：融合多来源搜索，整理网页正文，保留来源与差异。**
 
-面向 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）的网络搜索与网页提取插件。新安装默认启用 AnySearch、Firecrawl、Tavily，使用官方匿名额度开始，无需注册或填写 API Key；配置更多服务后，通过原生 `web_search` 融合搜索结果，通过原生 `web_fetch` 整理多份正文。适合技术检索与资料研究。
+面向 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）的网络搜索与网页提取插件。新安装默认启用 AnySearch、Firecrawl、Tavily，使用官方匿名额度开始，搜索与提取本身无需填写 API Key；自动预设另需配置决策模型凭证。配置更多服务后，通过原生 `web_search` 融合搜索结果，通过原生 `web_fetch` 整理多份正文。适合技术检索与资料研究。
 
 [快速开始](#快速开始) · [正文整理演示](./docs/content-organization.md#输入与输出演示) · [真实对比](./docs/modsearch-comparison.md) · [配置参考](./docs/configuration.md) · [参与贡献](./CONTRIBUTING.md)
 
 ```sh
-dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.9/dsh-web-search-fetch-0.2.9.tgz
+dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.10/dsh-web-search-fetch-0.2.10.tgz
 ```
 
-安装后重启 DSH，直接请求搜索或读取公开网页。匿名模式受服务方额度与限流约束，不能保证无限使用。未安装 DSH 的环境需先完成[宿主安装](https://github.com/deepseek-ai/deepseek-harness)。
+安装后在设置页选择决策模型并配置对应凭证，再请求搜索或读取公开网页。未配置决策模型时，可使用固定预设体验匿名搜索。匿名模式受服务方额度与限流约束，不能保证无限使用。未安装 DSH 的环境需先完成[宿主安装](https://github.com/deepseek-ai/deepseek-harness)。
 
 ## 项目特点
 
 | 特点 | 当前实现 | 使用价值 |
 | --- | --- | --- |
 | 多来源搜索融合 | 最多 16 个搜索服务并发调用，按 URL 去重，使用 RRF（Reciprocal Rank Fusion）融合排名 | 将多路可用结果整理为统一来源列表 |
-| 无需密钥首次体验 | AnySearch、Firecrawl、Tavily 官方搜索与提取支持匿名额度，无需填写密钥 | 先完成一次搜索与提取，再按需增加服务 |
+| 无需密钥首次体验 | AnySearch、Firecrawl、Tavily 官方搜索与提取支持匿名额度，无需填写密钥 | 固定预设可直接体验；自动预设需先配置决策模型凭证 |
 | 多来源正文整理 | 动态提取按章节和共同内容块去重、互补，保留提取来源及文本差异 | 将说明、表格、代码和独有段落整理到一份正文 |
 | 原生双工具 | 仅注册搜索和提取 provider，不新增模型工具，也不需要额外 MCP 服务、浏览器自动化或外部 CLI | 沿用 DSH 的 `web_search`、`web_fetch` 调用方式 |
 | 可选免费重排 | 调用硅基流动免费模型 `BAAI/bge-reranker-v2-m3`；不可用时保留融合顺序 | 对融合候选进行相关性排序，仍需配置 API Key |
 | 服务统一管理 | DSH 凭证管理、服务开关、智谱通道选择，以及超时、取消、限流冷却和额度熔断 | 一处配置搜索、提取与重排；单路失败时继续使用其他可用结果 |
 | 调用范围与预算 | 自动预设由快速决策模型判断 `fast`／`balanced`／`deep`；也支持免费接口／均衡／深度／自定义 | 不手动切换模式，由请求内容决定速度与覆盖范围 |
 
-插件注册两个 ID 为 `aggregated` 的 provider。设置页覆盖 20 项服务和 18 个凭证位。每项服务均提供独立启停开关。静态资源使用 DSH 内置 HTTP 提取器，AIHOT 专用 API 直接读取；其余 URL 按配置进入多服务提取。
+插件注册两个 ID 为 `aggregated` 的 provider。设置页覆盖 18 项搜索／提取／重排服务和 18 个凭证位，另提供五款决策模型选择。每项服务均提供独立启停开关。静态资源使用 DSH 内置 HTTP 提取器，AIHOT 专用 API 直接读取；其余 URL 按配置进入多服务提取。
 
 动态网页提取默认将同一 URL 的多路结果整理成一份正文：按章节和共同段落去重，补充独有内容，保留提取来源和文本差异。代码、表格、链接和原文数字保留；不同标题、明确版本标记、语言或返回目标的内容放入补充片段，识别出的登录与挑战页面不混入正文。引用式链接与脚注按来源保留完整 Markdown 原文，避免同名定义串用。可切换旧版单份正文模式。规则边界见[网页正文整理](./docs/content-organization.md)。
 
-默认使用自动预设：决策模型先判断 `fast`（3 路）、`balanced`（5 路）或 `deep`（已选服务范围），再派发搜索和提取；模型超时或凭证缺失时，本次退回本地规则，不阻断请求。设置页也可固定为免费接口、均衡、深度或自定义，并独立选择搜索／提取服务、限制服务数量、HTTP 请求数、操作总限时和正文输出长度。保存后下一次调用生效；免费额度与付费服务不会自动纳入免费接口预设。
+默认使用自动预设：决策模型先判断 `fast`（3 路）、`balanced`（5 路）或 `deep`（已选服务范围），再派发搜索和提取；外部决策模型是自动预设的必要依赖；超时或凭证缺失时返回明确错误，本次不派发服务。设置页也可固定为免费接口、均衡、深度或自定义，并独立选择搜索／提取服务、限制服务数量、HTTP 请求数、操作总限时和正文输出长度。保存后下一次调用生效；免费额度与付费服务不会自动纳入免费接口预设。
 
 搜索融合和正文整理不构成事实交叉验证。多路并发会消耗对应服务额度。参数与使用边界见[配置参考](./docs/configuration.md)，离线验证方法见[正文整理](./docs/content-organization.md)。
 
@@ -125,7 +125,7 @@ AIHOT 搜索覆盖近 7 天 AI 资讯；启用后，原生 `web_fetch` 可读取
 在已配置 DSH 的环境中执行：
 
 ```sh
-dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.9/dsh-web-search-fetch-0.2.9.tgz
+dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.10/dsh-web-search-fetch-0.2.10.tgz
 ```
 
 将 `web` 替换为实际使用的 profile，安装后重启宿主。本项目通过 GitHub Release 分发固定版本包；此命令不需要 npm 包发布账号或 GitHub 登录。

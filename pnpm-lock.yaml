@@ -178,6 +178,9 @@ importers:
       turndown:
         specifier: 7.2.4
         version: 7.2.4
+      undici:
+        specifier: 8.11.2
+        version: 8.11.2
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.5-alpha.2

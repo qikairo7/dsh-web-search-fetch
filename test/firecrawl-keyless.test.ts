@@ -68,7 +68,7 @@ it('makes native tools usable with zero configured credentials despite readiness
     for (const component of [SystemPrompt, ToolRuntime, WebRuntime, NoCredentials]) fibers.push(await ctx.plugin(component));
     fibers.push(await ctx.plugin(ToolWeb, { search: true, fetch: true }));
     fibers.push(await ctx.plugin(plugin, {
-      engines: { firecrawl: {} }, controls: { searchServices: ['firecrawl'], fetchServices: ['firecrawl'] },
+      engines: { firecrawl: {} }, controls: { preset: 'custom', searchServices: ['firecrawl'], fetchServices: ['firecrawl'] },
       search: { rerank: false, zhihuQuotaCheck: false },
     }));
     const invoke = (name: string, args: Record<string, unknown>) => ctx.tools.execute({ name, arguments: args, callId: ToolCallId(name), signal: AbortSignal.timeout(5000) });
