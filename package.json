@@ -88,6 +88,7 @@
   "peerDependencies": {
     "@deepseek-ai/cordis": ">=4.0.1-rc.1 <5 || 4.0.5-alpha.1 || 4.0.5-alpha.2",
     "@deepseek-ai/dsh-credentials": "*",
+    "@deepseek-ai/dsh-http-proxy": "*",
     "@deepseek-ai/dsh-tool-web": "*",
     "@deepseek-ai/dsh-tools": "*",
     "@deepseek-ai/dsh-web": "*",

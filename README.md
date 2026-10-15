@@ -78,7 +78,7 @@ AIHOT 搜索覆盖近 7 天 AI 资讯；启用后，原生 `web_fetch` 可读取
 | 免费服务（有用途限制） | AIHOT | 个人非商业、公益非商业及组织内部使用；其他用途按服务规则授权 |
 | 提供免费额度 | AnySearch、知乎、Firecrawl、Tavily、Exa、Keenable、Crawl4AI Cloud、Serply | 免费额度的有效期、重置周期和超额计费以服务方及账号为准 |
 | 按次计费或付费订阅 | 智谱当前搜索通道、Kimi REST 搜索与提取 | Coding Plan 为付费订阅；`tools-api` 使用按次计费的 `search_pro`，套餐额度不属于免费额度；Kimi REST 接口按次计费，账号赠送额度需另行确认 |
-| 按区域限制 | TypeSafe `jev-latest` | 付费模型；本机访问返回 HTTP 451，未完成质量评测 |
+| 按区域限制 | TypeSafe `jev-latest` | 付费模型；直连返回 HTTP 451，配置 DSH 代理后可用 |
 
 推荐服务支持匿名访问，匿名额度仍受 IP、请求频率及服务方额度限制：
 

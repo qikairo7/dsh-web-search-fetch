@@ -1,4 +1,11 @@
+/**
+ * Decision-model transport. Degrade-first: every non-cancellation failure
+ * resolves to `null`, letting the automatic preset use its local rules.
+ * Requests consult DSH's process-wide proxy route, so region-restricted
+ * providers follow the host's outbound policy.
+ */
 import { WebError } from '@deepseek-ai/dsh-web';
+import { proxyRouteFor } from '@deepseek-ai/dsh-http-proxy';
 import { ALIBABA_DECISION_URL, DECISION_TIMEOUT_MS, MAX_DECISION_ERROR_CHARS, SILICONFLOW_SYSTEMONE_URL, TYPESAFE_JEV_URL } from './limits.js';
 import { buildDecisionRequest, parseDecisionDepth } from './wire.js';
 import type { DecisionProvider } from './types.js';
@@ -35,12 +42,17 @@ export class DecisionClient {
     const composed = signal ? AbortSignal.any([signal, deadline]) : deadline;
     let response: Response;
     try {
-      response = await this.fetchImpl(this.endpoint(), {
+      const url = new URL(this.endpoint());
+      const route = proxyRouteFor(url);
+      const init: RequestInit = {
         method: 'POST',
         headers: { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json', accept: 'application/json' },
         body: JSON.stringify(buildDecisionRequest(this.options.model, request, text)),
         signal: composed,
-      });
+      };
+      if (route.proxied) (init as { dispatcher?: unknown }).dispatcher = route.dispatcher;
+      response = await this.fetchImpl(url, init);
+      if (route.proxied) (init as { dispatcher?: unknown }).dispatcher = route.dispatcher;
     } catch (error) {
       if (signal?.aborted) throw new WebError('Decision model aborted', 'WEB_ABORTED', { cause: error });
       return this.fail(deadline.aborted ? 'timeout' : 'transport-error', describe(error));

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { installProxyFromEnvironment } from '@deepseek-ai/dsh-http-proxy';
 import { DecisionClient } from '../src/engines/decision/client.js';
 import { buildDecisionRequest, parseDecisionDepth } from '../src/engines/decision/wire.js';
 import { startMockServer } from './helpers/mock-server.js';
@@ -36,6 +37,26 @@ describe('client', () => {
     expect(failersJoin(failures)).toContain('http-error: HTTP 401');
     await server.close();
   });
+});
+
+it('uses the DSH proxy route when one is installed', async () => {
+  const restore = await installProxyFromEnvironment(new Map([
+    ['HTTPS_PROXY', { value: 'http://127.0.0.1:7897' }],
+  ] as never), () => undefined);
+  const dispatchers: unknown[] = [];
+  const client = new DecisionClient({
+    model: 'jev-latest',
+    provider: 'typesafe',
+    resolveApiKey: async () => 'test-key',
+    credentialName: 'TYPESAFE_API_KEY',
+    fetchImpl: (async (_input, init) => {
+      dispatchers.push((init as { dispatcher?: unknown }).dispatcher);
+      return new Response(JSON.stringify({ model: 'jev-latest', answers: { depth: { choice: 'deep' } } }), { headers: { 'content-type': 'application/json' } });
+    }) as typeof fetch,
+  });
+  expect(await client.decide('search', '对比两个项目')).toMatchObject({ depth: 'deep', model: 'jev-latest' });
+  expect(dispatchers[0]).toBeDefined();
+  await restore();
 });
 
 function failersJoin(values: string[]): string {

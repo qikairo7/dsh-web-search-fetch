@@ -185,7 +185,7 @@
 
 自动预设不需要用户切换模式。默认先调用 `search.decisionModel` 判断 `fast`（3 路）、`balanced`（5 路）或 `deep`（已选服务范围），再统一进入服务筛选；返回说明包含模型、判定结果和置信度。决策请求超时、失败或凭证缺失时，本次退回本地规则：搜索按查询意图判断；提取按 URL 形态判断。自动预设只调整派发数量，不自动开启扩展、提高请求预算或改变正文整理规则。
 
-`Kev-4b`、`SemIf`、`diffusiongemma` 和阿里 `decision-model-preview` 当前由服务方提供免费调用，仍需对应 API Key；TypeSafe `jev-latest` 为付费模型。费用和额度以服务方当前页面为准。硅基流动模型使用 `SILICONFLOW_API_KEY`，阿里使用 `DASHSCOPE_API_KEY`，TypeSafe 使用 `TYPESAFE_API_KEY`。TypeSafe 在部分地区返回 HTTP 451，本机当前无法完成质量评测。
+`Kev-4b`、`SemIf`、`diffusiongemma` 和阿里 `decision-model-preview` 当前由服务方提供免费调用，仍需对应 API Key；TypeSafe `jev-latest` 为付费模型。费用和额度以服务方当前页面为准。硅基流动模型使用 `SILICONFLOW_API_KEY`，阿里使用 `DASHSCOPE_API_KEY`，TypeSafe 使用 `TYPESAFE_API_KEY`。TypeSafe 直连在部分地区返回 HTTP 451；决策请求会复用 DSH 启动时安装的出站代理策略。
 
 均衡预设按参与列表顺序，从已启用、未熔断且具备凭证的适用服务中最多派发三路。深度和自定义预设按指定数量上限派发，不自动开启扩展或提高预算。请求上限计入额度查询、重试和重排，不等于人民币费用上限，也不限制上游服务的内部工具调用次数。HTTP 静态路径沿用宿主响应、重定向和长度限制；插件总限时仍适用。日志记录插件请求次数，返回结果附带自动档判定、预算耗尽、超时或未派发说明。
 

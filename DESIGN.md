@@ -38,7 +38,7 @@
 
 `search.decisionModel` 支持 `Kev-4b`、`SemIf`、`diffusiongemma`、阿里 `decision-model-preview` 和 TypeSafe `jev-latest`。前四个使用各自平台当前提供的免费调用，TypeSafe 为付费模型；费用以服务方为准。硅基流动三款使用 `SILICONFLOW_API_KEY`，阿里使用 `DASHSCOPE_API_KEY`，TypeSafe 使用 `TYPESAFE_API_KEY`。默认模型为 `decision-model-preview`：本机评测中五题四中、延迟约 94～217 毫秒。决策请求限时 1,000 毫秒并计入插件请求预算。
 
-本机同题评测（普通搜索、文档提取、对比调研、新闻核验、静态 JSON）中：`decision-model-preview` 五题四中，单题 94～217 毫秒；`Kev-4b` 三题命中，204～346 毫秒；`SemIf` 三题命中但普通请求偏深，155～358 毫秒；`diffusiongemma` 三题命中，332～739 毫秒。TypeSafe `jev-latest` 因区域限制返回 HTTP 451，未完成质量评测。
+本机同题评测（普通搜索、文档提取、对比调研、新闻核验、静态 JSON）中：`decision-model-preview` 五题四中，单题 94～217 毫秒；TypeSafe `jev-latest` 走本机 DSH 代理后五题四中，414～760 毫秒；`Kev-4b` 三题命中，204～346 毫秒；`SemIf` 三题命中但普通请求偏深，155～358 毫秒；`diffusiongemma` 三题命中，332～739 毫秒。TypeSafe 直连返回 HTTP 451，代理链路可用。
 
 决策失败、超时或凭证缺失时，本次退回本地规则：搜索按查询意图判断，提取按 URL 形态判断。自动档只改变派发数量，不自动开启服务、不提高预算、不改变 URL 分流和正文整理。模型、判定结果和置信度写入操作说明。
 
