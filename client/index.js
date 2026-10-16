@@ -15,7 +15,16 @@ window.__ModuleLoader__.load({
             autoPresetHint: '由决策模型自动判断调用范围，无需手动切换。模型不可用时提示检查配置，本次不派发搜索或提取服务。', customPresetHint: '按服务开关、参与范围与调用限制执行。', balancedPresetHint: '每次最多调用三路服务，兼顾覆盖范围与调用用量。', deepPresetHint: '调用已选择且可用的服务，仍受调用限制约束。',
             invalidNumber: '请输入范围内的整数：', invalidControls: '请先修正调用限制', resetField: '撤销此项', range: '范围',
 
-            title: '网络搜索与提取', intro: '新安装默认启用 AnySearch、Firecrawl、Tavily，使用官方匿名额度，无需填写密钥；其他服务按需开启作为增强。匿名额度有限流，填写密钥后使用账户额度。',
+            title: '网络搜索与提取', intro: '默认自动预设需要决策模型凭证；AnySearch、Firecrawl、Tavily 的官方匿名搜索与提取本身无需密钥。请选择一种开始方式。',
+            startTitle: '选择开始方式', setupAuto: '配置自动决策', tryAnonymous: '直接体验匿名服务',
+            setupAutoHint: '按问题自动选择调用范围。先选择决策模型，填写对应平台凭证并保存。',
+            tryAnonymousHint: '跳过决策模型，仅使用未配密钥的官方推荐服务和直接 HTTP 抓取。选择后保存更改；匿名额度受限流约束。',
+            anonymousUnavailable: '没有可用的匿名推荐服务：请检查端点、凭证状态或待保存的密钥。已有密钥不会被清除。',
+            decisionMissing: '当前为自动预设：尚未配置决策模型凭证，自动搜索与动态提取暂不可用。',
+            decisionChecking: '当前为自动预设：正在确认决策模型凭证状态。',
+            decisionConfigured: '决策模型凭证已配置；实际可用性以请求结果为准。',
+            decisionStaged: '决策模型凭证待保存，保存后才能使用自动预设。',
+            fixedReady: '当前使用固定预设，无需决策模型凭证。',
             controlsTitle: '正文整理与调用控制', modeLabel: '网页正文处理', organizeMode: '整理正文', selectMode: '单份正文',
             presetLabel: '调用预设', autoPreset: '自动', customPreset: '自定义', freePreset: '免费接口', balancedPreset: '均衡', deepPreset: '深度',
             maxSearchServices: '每个查询的搜索服务上限', maxFetchServices: '每个 URL 的提取服务上限', maxRequests: '每次操作的 HTTP 请求上限',
@@ -79,7 +88,16 @@ window.__ModuleLoader__.load({
             autoPresetHint: 'Choose fast or broad fan-out from the query and URL, effective on the next call.', customPresetHint: 'Use service switches, participation and call limits.', balancedPresetHint: 'Use up to three services per operation to balance coverage and usage.', deepPresetHint: 'Use selected, available services within the call limits.',
             invalidNumber: 'Enter an integer within ', invalidControls: 'Correct the call limits first', resetField: 'Undo this field', range: 'Range',
 
-            title: 'Web search & fetch', intro: 'New installations enable AnySearch, Firecrawl and Tavily with official anonymous quotas. Enable other services when needed. Anonymous access is rate-limited; configured keys use account quotas.',
+            title: 'Web search & fetch', intro: 'The default Auto preset requires decision-model credentials. Official anonymous search and extraction from AnySearch, Firecrawl and Tavily need no key. Choose how to start.',
+            startTitle: 'Choose how to start', setupAuto: 'Configure automatic routing', tryAnonymous: 'Try anonymous services',
+            setupAutoHint: 'Let a decision model choose coverage. Select a model, enter its platform key and save.',
+            tryAnonymousHint: 'Skip the decision model. Use only official recommended services without keys, plus direct HTTP fetch. Save to apply; anonymous quotas are rate-limited.',
+            anonymousUnavailable: 'No anonymous recommended service is available. Check endpoints, credential status or unsaved keys. Existing keys are preserved.',
+            decisionMissing: 'Auto is selected, but decision-model credentials are missing. Automatic search and dynamic extraction cannot run yet.',
+            decisionChecking: 'Auto is selected. Checking decision-model credential status.',
+            decisionConfigured: 'Decision-model credentials are configured; requests determine actual availability.',
+            decisionStaged: 'Decision-model credentials are unsaved. Save before using Auto.',
+            fixedReady: 'A fixed preset is selected; no decision-model credentials are required.',
             controlsTitle: 'Content organization and call limits', modeLabel: 'Page content', organizeMode: 'Organize', selectMode: 'Single extract',
             presetLabel: 'Call preset', autoPreset: 'Auto', customPreset: 'Custom', freePreset: 'Free APIs', balancedPreset: 'Balanced', deepPreset: 'Deep',
             maxSearchServices: 'Search services per query', maxFetchServices: 'Extraction services per URL', maxRequests: 'HTTP requests per operation',
@@ -241,6 +259,28 @@ window.__ModuleLoader__.load({
                 this.decisionDraft = model === (this.section()?.search?.decisionModel ?? 'decision-model-preview') ? undefined : model;
                 this.failed = false; this.saved = false; this.publish();
             }
+            anonymousServices() {
+                const state = { section: this.section() };
+                return SERVICES.filter(service => anonymousService(service, state) && service.keys.every(id => {
+                    const info = this.credentials.get(id);
+                    return info?.ready === true && !info.configured && !info.partial && !this.keyDrafts.has(id);
+                })).map(service => service.id);
+            }
+            chooseStart(choice) {
+                if (!this.shell().available || !this.shell().writable || this.saving) return;
+                if (choice === 'auto') {
+                    if (this.controls().preset !== 'auto') this.editControl('preset', 'auto');
+                    this.editView({ callSettingsOpen: true });
+                } else if (choice === 'anonymous') {
+                    const services = this.anonymousServices();
+                    if (!services.length) return;
+                    this.editControl('preset', 'custom');
+                    this.editControl('searchServices', services);
+                    this.editControl('fetchServices', services);
+                    this.editControl('serviceEnabled', Object.fromEntries(SERVICES.map(service => [service.id, services.includes(service.id) || service.id === 'http'])));
+                    for (const id of services) if (EXTENSIONS.includes(id)) this.editEngine(id, true);
+                }
+            }
             engineDrafts = new Map();
             controlDrafts = new Map();
             numberDrafts = new Map();
@@ -329,7 +369,7 @@ window.__ModuleLoader__.load({
             discardAfterSave = false;
             failed = false;
             saved = false;
-            view = { query: '', capability: 'all', status: 'all', expandedId: null };
+            view = { query: '', capability: 'all', status: 'all', expandedId: null, callSettingsOpen: false };
             editView(next) {
                 this.view = { ...this.view, ...next };
                 this.publish();
@@ -609,6 +649,7 @@ window.__ModuleLoader__.load({
 				return {
 					...this.shell(),
                     decisionModel: this.decisionModel(),
+                    anonymousServiceIds: this.anonymousServices(),
                     saved: this.saved,
                     controls: this.controls(),
                     numberFields: Object.fromEntries(Object.keys(NUMBER_CONTROLS).map(name => [name, this.numberField(name)])),
@@ -734,6 +775,14 @@ window.__ModuleLoader__.load({
             .wsf-open:active,.wsf-call-settings>summary:active,.wsf-advanced>summary:active,.wsf-guide>summary:active,.wsf-link:active{background:var(--dsw-alias-interactive-bg-hover)}
             @media(hover:hover) and (pointer:fine){.wsf-open:hover,.wsf-call-settings>summary:hover,.wsf-advanced>summary:hover,.wsf-guide>summary:hover{background:var(--dsw-alias-interactive-bg-hover)}.wsf-link:hover{color:var(--dsw-alias-label-primary)}}
             @container(max-width:360px){.wsf-row,.wsf-open{gap:6px}.wsf-filters{gap:2px}.wsf-filter{padding-inline:8px!important}.wsf-filter-count{margin-inline-start:4px}.wsf-setting-row [role=tab]{padding-inline:8px}.wsf-preset-segments{display:none}.wsf-preset-compact{display:block}}
+            /* The host keeps a desktop sidebar on phones; scope its reflow to this active form. */
+            @media(max-width:600px){
+                [role=dialog]:has(.wsf-settings){flex-direction:column}
+                [role=dialog]:has(.wsf-settings)>nav{inline-size:auto;flex-shrink:0;padding:12px}
+                [role=dialog]:has(.wsf-settings)>nav>div:last-child{flex-direction:row;flex-wrap:wrap;gap:4px}
+                [role=dialog]:has(.wsf-settings)>nav button{inline-size:auto}
+                [role=dialog]:has(.wsf-settings)>nav+div{min-inline-size:0;min-block-size:0;inline-size:100%}
+            }
         `;
         function KeyField({ t, row, disabled, onEdit, idPrefix = '' }) {
             const status = row.ready === undefined ? 'checking' : !row.ready ? 'statusFailed' : row.configured ? 'configured' : row.partial ? 'partial' : 'unconfigured';
@@ -770,23 +819,47 @@ window.__ModuleLoader__.load({
             { value: 'jev-latest', label: 'TypeSafe · jev-latest', key: 'typesafe' },
         ];
         function WebSearchFetchCard(props) {
-            const { t, editKey, editDecision, editTransport, editService, editControl, editNumber, editParticipation, editView, toggleService, refresh, save, discard } = props;
+            const { t, editKey, editDecision, chooseStart, editTransport, editService, editControl, editNumber, editParticipation, editView, toggleService, refresh, save, discard } = props;
             const state = props.useWebSearchFetch(snapshot => snapshot);
             const onDiscard = React.useRef(props.leave);
+            const decisionInput = React.useRef(null);
+            const focusDecision = React.useRef(false);
             onDiscard.current = props.leave;
             React.useEffect(() => () => onDiscard.current(), []);
+            React.useEffect(() => {
+                if (focusDecision.current && decisionInput.current) {
+                    focusDecision.current = false;
+                    decisionInput.current.focus();
+                    decisionInput.current.scrollIntoView({ block: 'center' });
+                }
+            });
             const disabled = !state.available || !state.writable || state.saving;
             const jsx = react_jsx_runtime.jsx, jsxs = react_jsx_runtime.jsxs;
             const ui = _deepseek_ai_dsh_client_ui_primitives;
             const visible = SERVICES.filter(service => state.visibleServiceIds.includes(service.id));
             const modeId = 'wsf-mode-' + state.controls.mode;
             const presetId = 'wsf-preset-' + state.controls.preset;
+            const decisionKey = state.keys.find(row => row.id === DECISION_MODELS.find(item => item.value === state.decisionModel).key);
+            const startStatus = state.controls.preset !== 'auto' ? 'fixedReady' : decisionKey.staged ? 'decisionStaged'
+                : decisionKey.ready !== true ? 'decisionChecking' : decisionKey.configured ? 'decisionConfigured' : 'decisionMissing';
             return jsxs('form', { className: 'wsf-settings', 'aria-label': t('title'), 'aria-busy': state.saving,
                 onSubmit: event => event.preventDefault(), children: [
                     jsx('style', { children: SETTINGS_CSS }),
                     !state.available && jsx('p', { role: 'status', className: 'wsf-notice', children: t('unavailable') }),
                     !state.writable && state.available && jsx('p', { className: 'wsf-notice', children: t('readOnlyHint') }),
-                    jsxs('details', { className: 'wsf-call-settings', children: [
+                    jsxs('section', { className: 'wsf-preference', 'aria-label': t('startTitle'), children: [
+                        jsx('h3', { children: t('startTitle') }),
+                        jsx('p', { className: 'wsf-muted', children: t('intro') }),
+                        jsx('p', { role: 'status', children: (state.dirty ? t('staged') + ' · ' : '') + t(startStatus) }),
+                        jsx(ui.Button, { type: 'button', variant: 'outline', disabled, 'aria-controls': 'wsf-call-settings',
+                            onClick: () => { focusDecision.current = true; chooseStart('auto'); }, children: t('setupAuto') }),
+                        jsx('p', { className: 'wsf-muted', children: t('setupAutoHint') }),
+                        jsx(ui.Button, { type: 'button', variant: 'outline', disabled: disabled || !state.anonymousServiceIds.length,
+                            onClick: () => chooseStart('anonymous'), children: t('tryAnonymous') }),
+                        jsx('p', { className: 'wsf-muted', children: t(state.anonymousServiceIds.length ? 'tryAnonymousHint' : 'anonymousUnavailable') }),
+                    ] }),
+                    jsxs('details', { id: 'wsf-call-settings', className: 'wsf-call-settings', open: state.view.callSettingsOpen,
+                        onToggle: event => { if (event.currentTarget.open !== state.view.callSettingsOpen) editView({ callSettingsOpen: event.currentTarget.open }); }, children: [
                         jsxs('summary', { children: [
                             jsx('strong', { children: t('settingsTitle') }),
                             jsx('span', { className: state.invalid ? 'wsf-current-settings wsf-error' : 'wsf-current-settings', children: state.invalid ? t('invalidControls') : t(state.controls.preset + 'Preset') + ' · ' + t(state.controls.mode + 'Mode') }),
@@ -818,7 +891,7 @@ window.__ModuleLoader__.load({
                     state.controls.preset === 'auto' && jsxs('div', { className: 'wsf-preference', children: [
                         jsx('h3', { children: t('decisionTitle') }),
                         jsx('label', { htmlFor: 'wsf-decision-model', className: 'wsf-setting-label', children: t('decisionModelLabel') }),
-                        jsx('select', { id: 'wsf-decision-model', className: 'wsf-select', value: state.decisionModel, disabled,
+                        jsx('select', { id: 'wsf-decision-model', ref: decisionInput, className: 'wsf-select', value: state.decisionModel, disabled,
                             'aria-label': t('decisionModelLabel'), onChange: event => editDecision(event.target.value),
                             children: DECISION_MODELS.map(item => jsx('option', { value: item.value, children: item.label }, item.value)) }),
                         jsx('p', { className: 'wsf-muted', children: t('decisionKeyHint') }),
@@ -962,6 +1035,7 @@ window.__ModuleLoader__.load({
 						card.editKey(id, text);
 					},
                     editDecision: model => card.editDecision(model),
+                    chooseStart: choice => card.chooseStart(choice),
                     editView: (next) => card.editView(next),
                     toggleService: (id) => card.toggleService(id),
                     refresh: () => card.readCredentials(),

@@ -1,0 +1,98 @@
+{
+  "date": "2026-10-16",
+  "host": "Windows / DSH 0.2.1-alpha.3",
+  "scope": "Real isolated DSH GUI; no provider calls in this follow-up",
+  "sourceBase": "f86792478dbf8fa4ece0f81d4b813d50f2e67e01",
+  "clientSHA256": "dca9f5e82da600cb40bfeac7270e0caa335f394474c3b5dba1e2026e68e29744",
+  "viewports": [
+    {
+      "controlsOverflow": [],
+      "dialogWithinViewport": true,
+      "documentOverflows": false,
+      "footerText": "暂无待保存更改放弃更改保存更改",
+      "footerWithinViewport": true,
+      "formWidth": 219,
+      "navDirection": "column",
+      "viewport": {
+        "height": 740,
+        "width": 320
+      }
+    },
+    {
+      "controlsOverflow": [],
+      "dialogWithinViewport": true,
+      "documentOverflows": false,
+      "footerText": "暂无待保存更改放弃更改保存更改",
+      "footerWithinViewport": true,
+      "formWidth": 289,
+      "navDirection": "column",
+      "viewport": {
+        "height": 844,
+        "width": 390
+      }
+    },
+    {
+      "controlsOverflow": [],
+      "dialogWithinViewport": true,
+      "documentOverflows": false,
+      "footerText": "暂无待保存更改放弃更改保存更改",
+      "footerWithinViewport": true,
+      "formWidth": 419,
+      "navDirection": "column",
+      "viewport": {
+        "height": 800,
+        "width": 520
+      }
+    },
+    {
+      "controlsOverflow": [],
+      "dialogWithinViewport": true,
+      "documentOverflows": false,
+      "footerText": "暂无待保存更改放弃更改保存更改",
+      "footerWithinViewport": true,
+      "formWidth": 559,
+      "navDirection": "row",
+      "viewport": {
+        "height": 884,
+        "width": 1140
+      }
+    }
+  ],
+  "keyboard": {
+    "startEntryEnter": "PASS",
+    "modelFocusId": "wsf-decision-model",
+    "arrowModelChange": "PASS",
+    "tabToEmptyCredential": "PASS",
+    "naturalTabStops": 48,
+    "allStopsInsideDialog": true,
+    "enterSave": "PASS",
+    "spaceAnonymous": "PASS",
+    "discardAndClearFilters": "PASS",
+    "passwordsEmptyAfterRefresh": true
+  },
+  "automaticSaveRefresh": {
+    "preset": "auto",
+    "model": "SemIf",
+    "dirty": false
+  },
+  "anonymousSave": {
+    "preset": "custom",
+    "enabledServices": [
+      "anysearch",
+      "firecrawl",
+      "tavily",
+      "http"
+    ]
+  },
+  "originalHttps": "PAUSED; no live calls or observer activation",
+  "anonymousSaveRefresh": {
+    "preset": "custom",
+    "enabledServices": [
+      "anysearch",
+      "firecrawl",
+      "tavily",
+      "http"
+    ],
+    "dirty": false
+  }
+}

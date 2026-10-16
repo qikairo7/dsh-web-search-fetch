@@ -55,6 +55,7 @@
     "prepack": "pnpm run build",
     "check": "pnpm run build && vitest run && pnpm run typecheck && pnpm run check:repository",
     "benchmark:content": "pnpm run build && node scripts/benchmark-content.mjs",
+    "benchmark:quality": "pnpm run build && node scripts/benchmark-quality.mjs",
     "benchmark:modsearch": "pnpm run build && node --experimental-transform-types scripts/compare-modsearch.mjs",
     "smoke:live": "pnpm run build && node scripts/smoke-engines.mjs --live"
   },
