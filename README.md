@@ -10,7 +10,7 @@
 [快速开始](#快速开始) · [正文整理演示](./docs/content-organization.md#输入与输出演示) · [真实对比](./docs/modsearch-comparison.md) · [配置参考](./docs/configuration.md) · [依赖审阅材料](./docs/dependency-review.md) · [参与贡献](./CONTRIBUTING.md)
 
 ```sh
-dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.12/dsh-web-search-fetch-0.2.12.tgz
+dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.13/dsh-web-search-fetch-0.2.13.tgz
 ```
 
 安装后打开「设置 → 内置插件 → 网络搜索与提取」，在顶部明确选择一种开始方式：
@@ -133,10 +133,10 @@ AIHOT 搜索覆盖近 7 天 AI 资讯；启用后，原生 `web_fetch` 可读取
 在已配置 DSH 的环境中执行：
 
 ```sh
-dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.12/dsh-web-search-fetch-0.2.12.tgz
+dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.13/dsh-web-search-fetch-0.2.13.tgz
 ```
 
-将 `web` 替换为实际使用的 profile，安装后重启宿主。以上命令使用已发布的 `0.2.12` Release 包，不需要 npm 包发布账号或 GitHub 登录。
+将 `web` 替换为实际使用的 profile，安装后重启宿主。以上命令使用 `0.2.13` Release 包，不需要 npm 包发布账号或 GitHub 登录。
 
 自 `0.2.11` 起，Git 固定提交同时包含完整的 `lib/**/*.js` 与 `lib/**/*.d.ts`，安装方无需先编译 TypeScript。固定源码仍需安装运行依赖并满足宿主 peer 依赖；产物齐全不等于 Store 已批准或实际 profile 已完成验收。分发检查方法见[贡献指南](./CONTRIBUTING.md#测试与提交)，运行依赖、完整性与审阅边界见[依赖审阅材料](./docs/dependency-review.md)。
 
