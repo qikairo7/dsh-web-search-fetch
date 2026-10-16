@@ -36,7 +36,9 @@
 
 跨站、路径或查询变化、非默认端口、带用户信息的升级，以及 HTTPS → HTTP 降级继续拒绝。登录／挑战检查继续生效。不可用候选的错误附服务 ID 与 `target-mismatch`／`login-or-challenge` 等原因，不附 URL、凭证或正文；下一次失败无需再从同一条笼统错误猜测是哪一类拒绝。
 
-新增 13 项回归检查：升级、最终 URL、HTTP／HTTPS 正文隔离、七种目标边界、结构化结果、挑战页不遮蔽正常正文、诊断不泄露 URL 参数，以及真实适配器至 provider 的集成路径。旧代码运行新增独立回归文件得到 7 PASS／5 FAIL；修复后全量 39 个文件、759 项测试、类型与仓库检查通过。
+新增 14 项回归检查：升级、最终 URL、HTTP／HTTPS 正文隔离、七种目标边界、结构化结果与非 2xx 正文、挑战页不遮蔽正常正文、诊断不泄露 URL 参数，以及真实适配器至 provider 的集成路径。最初 12 项独立回归在旧代码得到 7 PASS／5 FAIL；随后补充适配器集成及非 2xx 检查，修复后全量 39 个文件、760 项测试、类型与仓库检查通过。
+
+独立 Spec 审阅无阻断性发现；Standards 指出的非 2xx 升级例外文档精度已修正，并补充回归。严格目标归一化与带方向的升级判定各保留其当前职责；非法状态的诊断兜底保留，不为审阅中的低优先级复用建议增加额外抽象。
 
 ```sh
 pnpm exec vitest run test/fetch-redirect.test.ts test/additional-engines.test.ts test/content-organization.test.ts

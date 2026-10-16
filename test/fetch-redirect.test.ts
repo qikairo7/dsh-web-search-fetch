@@ -43,6 +43,14 @@ it('preserves structured content and its final URL on an HTTPS upgrade', () => {
   expect(organizeDocuments(request, [{ engineId: 'doubao', result: fetched }])).toEqual(fetched);
 });
 
+it('preserves a non-2xx body and final URL on an allowed HTTPS upgrade', () => {
+  const fetched = { ...result(), statusCode: 404 };
+  const output = organizeDocuments(request, [{ engineId: 'doubao', result: fetched }]);
+  expect(output.url).toBe('https://example.com/');
+  expect(output.statusCode).toBe(404);
+  expect(output.body.content).toContain('Public example content.');
+});
+
 it('does not let an upgraded challenge hide a usable original document', () => {
   const output = organizeDocuments(request, [
     { engineId: 'blocked', result: result('https://example.com/', 'Just a moment...') },
