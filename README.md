@@ -131,7 +131,7 @@ AIHOT 搜索覆盖近 7 天 AI 资讯；启用后，原生 `web_fetch` 可读取
 dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.12/dsh-web-search-fetch-0.2.12.tgz
 ```
 
-将 `web` 替换为实际使用的 profile，安装后重启宿主。以上命令使用已发布的 `0.2.10` Release 包，不需要 npm 包发布账号或 GitHub 登录。
+将 `web` 替换为实际使用的 profile，安装后重启宿主。以上命令使用已发布的 `0.2.12` Release 包，不需要 npm 包发布账号或 GitHub 登录。
 
 自 `0.2.11` 起，Git 固定提交同时包含完整的 `lib/**/*.js` 与 `lib/**/*.d.ts`，安装方无需先编译 TypeScript。固定源码仍需安装运行依赖并满足宿主 peer 依赖；产物齐全不等于 Store 已批准或实际 profile 已完成验收。分发检查方法见[贡献指南](./CONTRIBUTING.md#测试与提交)，运行依赖、完整性与审阅边界见[依赖审阅材料](./docs/dependency-review.md)。
 
@@ -241,6 +241,8 @@ flowchart LR
 | [架构说明](./DESIGN.md) | 模块职责、数据流、错误处理和扩展方式 |
 | [术语表](./GLOSSARY.md) | 项目术语与接口含义 |
 | [常见问题](./docs/troubleshooting.md) | 装载、凭证、超时和熔断排查 |
+| [卸载与回滚](./docs/lifecycle.md) | 配置备份、移除保存的设置与恢复原 provider |
+| [隔离 profile 验收](./docs/verification/profile-lifecycle-20261016.md) | 0.2.12 安装、启动、原生工具、设置保存、卸载与版本回滚实测 |
 | [贡献指南](./CONTRIBUTING.md) | 本地开发、测试和提交要求 |
 | [安全说明](./SECURITY.md) | 外部请求、凭证保护和漏洞报告 |
 

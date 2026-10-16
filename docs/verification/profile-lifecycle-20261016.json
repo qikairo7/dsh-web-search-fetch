@@ -1,0 +1,198 @@
+{
+  "date": "2026-10-16",
+  "source": "1b854af9bb28360afcfe90b08a30aa88cd31ce6c",
+  "rollbackSource": "ab6387f04a85debff70e89f07925703cdb933cb1",
+  "release": {
+    "version": "0.2.12",
+    "sha256": "d61d465c4b8fadd6f95d849367d9887efa3210f34276818067c6c8bc67bdd243",
+    "bytes": 256833
+  },
+  "environment": {
+    "os": "Windows 11 10.0.26300",
+    "node": "v24.20.0",
+    "dsh": "0.2.1-alpha.3",
+    "pnpm": "12.10.1"
+  },
+  "startup": {
+    "authExchange": 303,
+    "page": 200,
+    "title": "DeepSeek Harness",
+    "assets": [
+      {
+        "path": "./assets/index-CN7NIWNw.js",
+        "status": 200
+      },
+      {
+        "path": "./assets/vendor-DcuzkuQH.js",
+        "status": 200
+      },
+      {
+        "path": "./assets/vendor-DV2921Zo.css",
+        "status": 200
+      },
+      {
+        "path": "./assets/index-BxpfOGf3.css",
+        "status": 200
+      }
+    ]
+  },
+  "uninstall": {
+    "baseline": {
+      "searchProvider": "deepseek-official",
+      "fetchProvider": "http"
+    },
+    "after": {
+      "searchProvider": "deepseek-official",
+      "fetchProvider": "http"
+    },
+    "same": true,
+    "pluginAbsent": true
+  },
+  "stages": [
+    {
+      "stage": "fixed-commit",
+      "state": {
+        "plugin": [
+          {
+            "id": "web-search-fetch",
+            "state": 2
+          }
+        ],
+        "web": [
+          {
+            "searchProvider": "aggregated",
+            "fetchProvider": "aggregated"
+          }
+        ],
+        "toolsReady": true
+      },
+      "checks": [
+        {
+          "name": "web_search",
+          "status": 200,
+          "ms": 2562,
+          "isError": false,
+          "sources": 8,
+          "bodyChars": 9321,
+          "hasSourceMarkers": false,
+          "http200": false
+        },
+        {
+          "name": "web_fetch",
+          "status": 200,
+          "ms": 2546,
+          "isError": false,
+          "sources": 0,
+          "bodyChars": 1491,
+          "hasSourceMarkers": true,
+          "http200": true
+        }
+      ]
+    },
+    {
+      "stage": "rollback-0211",
+      "state": {
+        "plugin": [
+          {
+            "id": "web-search-fetch",
+            "state": 2
+          }
+        ],
+        "web": [
+          {
+            "searchProvider": "aggregated",
+            "fetchProvider": "aggregated"
+          }
+        ],
+        "toolsReady": true
+      },
+      "checks": [
+        {
+          "name": "web_search",
+          "status": 200,
+          "ms": 5436,
+          "isError": false,
+          "sources": 8,
+          "bodyChars": 9196,
+          "hasSourceMarkers": false,
+          "http200": false
+        },
+        {
+          "name": "web_fetch",
+          "status": 200,
+          "ms": 1016,
+          "isError": false,
+          "sources": 0,
+          "bodyChars": 1640,
+          "hasSourceMarkers": true,
+          "http200": true
+        }
+      ]
+    },
+    {
+      "stage": "restored-0212",
+      "state": {
+        "plugin": [
+          {
+            "id": "web-search-fetch",
+            "state": 2
+          }
+        ],
+        "web": [
+          {
+            "searchProvider": "aggregated",
+            "fetchProvider": "aggregated"
+          }
+        ],
+        "toolsReady": true
+      },
+      "checks": [
+        {
+          "name": "web_search",
+          "status": 200,
+          "ms": 4388,
+          "isError": false,
+          "sources": 8,
+          "bodyChars": 9393,
+          "hasSourceMarkers": false,
+          "http200": false
+        },
+        {
+          "name": "web_fetch",
+          "status": 200,
+          "ms": 1108,
+          "isError": false,
+          "sources": 0,
+          "bodyChars": 1491,
+          "hasSourceMarkers": true,
+          "http200": true
+        }
+      ]
+    },
+    {
+      "stage": "final-uninstalled",
+      "state": {
+        "plugin": [],
+        "web": [
+          {
+            "searchProvider": "deepseek-official",
+            "fetchProvider": "http"
+          }
+        ],
+        "toolsReady": true
+      },
+      "checks": [
+        {
+          "name": "web_fetch",
+          "status": 200,
+          "ms": 570,
+          "isError": false,
+          "sources": 0,
+          "bodyChars": 290,
+          "hasSourceMarkers": false,
+          "http200": true
+        }
+      ]
+    }
+  ]
+}
