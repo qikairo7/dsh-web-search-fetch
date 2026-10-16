@@ -1,6 +1,5 @@
 .scratch/
 node_modules/
-lib/
 .env
 .env.*
 !.env.example

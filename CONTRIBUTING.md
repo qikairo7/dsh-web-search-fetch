@@ -17,6 +17,7 @@ pnpm run check
 | `pnpm test` | 运行 Vitest 测试 |
 | `pnpm run typecheck` | 检查源码与测试类型 |
 | `pnpm run check:repository` | 检查公开文件、文档链接和包入口 |
+| `pnpm run check:distribution` | 检查 Git 索引包含完整编译产物及分发入口，需先暂存新文件 |
 | `pnpm run check` | 构建、测试、类型检查与仓库检查 |
 | `pnpm run benchmark:content` | 同一组合成提取结果的正文保留、去重和差异评估，不访问网络 |
 | `npm pack --dry-run` | 检查 npm 分发文件清单，不发布包 |
@@ -40,7 +41,9 @@ pnpm run check
 
 提交前运行 `pnpm run check`，确认文档与实际配置一致。涉及分发文件时检查 `npm pack --dry-run` 的清单。涉及 DSH 宿主交互或 UI 时，还需在独立 profile 中验证，并在 PR 中说明实际验证范围。
 
-PR 描述应说明问题、最终行为、验证命令和未验证部分。不要提交本机路径、开发会话、凭证、日志、临时报告、`node_modules/` 或编译产物。
+`lib/` 是固定 Git Commit 安装所需的分发文件，必须随源码一并提交。修改 `src/` 后运行 `pnpm run build`，暂存对应的 `lib/` 文件，再运行 `pnpm run check:distribution`。CI 在构建前检查文件是否已跟踪，构建后用 `git diff --exit-code -- lib` 检查源码与产物是否一致。
+
+PR 描述应说明问题、最终行为、验证命令和未验证部分。不要提交本机路径、开发会话、凭证、日志、临时报告或 `node_modules/`。
 
 ## 问题反馈
 

@@ -6,6 +6,8 @@
 *.json text eol=lf
 *.yml text eol=lf
 *.yaml text eol=lf
+# Keep TypeScript's generated declaration formatting verbatim.
+lib/** linguist-generated=true whitespace=-blank-at-eol
 AGENTS.md export-ignore
 CLAUDE.md export-ignore
 docs/agents export-ignore
