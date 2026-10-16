@@ -158,7 +158,7 @@
 
 ## 提取路由
 
-静态扩展名和 `staticDomains` 按 URL 匹配，命中时走内置 HTTP。`staticExtensions` 省略时使用内置表；显式配置会替换整张表。没有预先的 Content-Type 探测。
+`staticDomains` 按 URL 匹配，命中时走内置 HTTP。GitHub 仓库／blob URL 若匹配已启用、已选中、凭证可用且未熔断的 GitHub 服务，则优先使用动态提取；blob 的 `.md` 等扩展名不视为原始静态文件。其余 URL 命中静态扩展名时走内置 HTTP。`staticExtensions` 省略时使用内置表；显式配置会替换整张表。没有预先的 Content-Type 探测。
 
 这里的 HTTP 是聚合插件复用的 DSH 抓取组件，直接访问目标网站，不调用 DeepSeek 模型 API。模型处理工具结果时仍会产生模型 token 用量；直接抓取本身不消耗 DeepSeek 模型额度。
 
@@ -195,7 +195,7 @@
 
 插件的 API 请求拒绝 HTTP 重定向，避免额外请求绕过计数或把鉴权信息转交其他端点；自定义端点应填写最终 API 地址。操作总限时到期时返回已完成的搜索或提取结果，并标记 `truncated`；搜索重排未完成时保留 RRF 顺序。尚无可用结果时返回对应超时错误，调用方主动取消则返回 `WEB_ABORTED`。
 
-GitHub 提取只识别仓库根 URL 与 `/blob/<ref>/<path>`，不提供任意 GitHub 网页解析。含斜杠的分支名暂未专门解析，二进制内容不作为正文返回。
+GitHub 提取只识别仓库根 URL 与 `/blob/<ref>/<path>`，通过 README／contents API 读取正文。同仓库 README 归属请求的仓库根页，其他仓库的返回地址仍由正文整理拒绝。该专用路径保留显式 HTTP 路由与静态域名配置的优先级，不提供任意 GitHub 网页解析。含斜杠的分支名暂未专门解析，二进制内容不作为正文返回。
 
 ## 工具超时配置
 
