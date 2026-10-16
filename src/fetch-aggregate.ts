@@ -26,7 +26,9 @@
  */
 import { createHash } from 'node:crypto';
 import { organizeDocuments } from './fetch-document/organize.js';
-import { operationNotes, requestCount, deadlineReached } from './request-budget.js';
+import { operationNotes, requestCount, deadlineReached, currentDecisionDepth, noteOperation } from './request-budget.js';
+import { SettlementWindow } from './settlement-window.js';
+import { markdown, splitBlocks, cleanBlocks, challengeBlocks } from './fetch-document/blocks.js';
 import { WebError } from '@deepseek-ai/dsh-web';
 import type { WebFetchResult } from '@deepseek-ai/dsh-web';
 import type { BreakerSignal, CircuitBreaker } from './breaker/index.js';
@@ -356,6 +358,7 @@ export interface FetchPipelineLogger {
 
 /** Inputs of {@link aggregateDynamicFetch}. */
 export interface AggregateDynamicFetchOptions {
+  readonly settleEarly?: boolean;
   readonly mode?: 'organize' | 'select';
   readonly maxOutputChars?: number;
   readonly url: string;
@@ -423,10 +426,12 @@ export async function aggregateDynamicFetch(
 
   const candidatesByLeg: (FetchCandidate | undefined)[] = new Array(active.length);
   const notes: LegFailureNote[] = [];
+  const window = new SettlementWindow(signal, currentDecisionDepth() === 'deep');
+  const substantial = new Map<string, { title: string; anchors: Set<string> }>();
 
   const runLeg = async (leg: FetchEngineLeg, index: number): Promise<void> => {
     const deadline = AbortSignal.timeout(timeoutMs);
-    const composed = signal === undefined ? deadline : AbortSignal.any([signal, deadline]);
+    const composed = AbortSignal.any([window.signal, deadline]);
     try {
       const result = await raceWithAbort(leg.extract(url, composed), composed);
       if (!isUsableCandidate(result)) {
@@ -435,8 +440,24 @@ export async function aggregateDynamicFetch(
         return;
       }
       candidatesByLeg[index] = { engineId: leg.engineId, result, receivedAt: new Date().toISOString() };
+      if (options.mode === 'organize' && options.settleEarly !== false && result.statusCode >= 200 && result.statusCode < 300 && result.url === url) {
+        const blocks = cleanBlocks(splitBlocks(markdown(bodyText(result), result.body.kind)));
+        const paragraphs = blocks.filter(block => block.kind === 'paragraph').map(block => block.text.replace(/\s+/g, ' ').trim());
+        if (!challengeBlocks(blocks) && paragraphs.join(' ').length >= 1200) substantial.set(leg.engineId, {
+          title: (blocks.find(block => block.kind === 'heading')?.key ?? '').split(/\s+(?:—|\||-)\s+/)[0]!.toLowerCase(),
+          anchors: new Set(blocks.filter(block => block.kind === 'paragraph' && block.text.length >= 100).map(block => block.key)),
+        });
+        const bodies = [...substantial.values()];
+        const agreement = new Map<string, number>();
+        for (const body of bodies) for (const anchor of body.anchors) {
+          const key = `${body.title}\n${anchor}`;
+          agreement.set(key, (agreement.get(key) ?? 0) + 1);
+        }
+        window.observe([...agreement.values()].some(count => count >= 3));
+      }
       logger?.info(`[提取] 服务 ${leg.engineId} 成功：状态 ${result.statusCode}，正文 ${bodyText(result).length} 字符`);
     } catch (error) {
+      if (window.endedEarly && !isAborted(signal)) return;
       if (isAborted(signal)) {
         // The outer abort wins; classification happens after all legs settle.
         notes.push({ engineId: leg.engineId, code: 'WEB_ABORTED', description: 'aborted' });
@@ -461,7 +482,9 @@ export async function aggregateDynamicFetch(
   };
 
   // Each lane races its own signal, so all settle promptly on total cancellation.
-  await Promise.allSettled(active.map(runLeg));
+  try { await Promise.allSettled(active.map(runLeg)); }
+  finally { window.finish(); }
+  if (window.endedEarly) noteOperation('已有至少三路可互补且有共同正文的提取，宽限等待结束后提前取消慢渠道；未完成内容未纳入整理。');
 
   if (isAborted(signal) && !deadlineReached()) {
     throw new WebError('fetch aborted', 'WEB_ABORTED', { cause: signal?.reason });
@@ -474,10 +497,11 @@ export async function aggregateDynamicFetch(
 
   if (options.mode === 'organize') {
     const output = organizeDocuments(url, candidates, options.maxOutputChars, [
-      ...notes.map(note => `${note.engineId}: ${note.code}`), ...operationNotes(), `本插件 HTTP 请求：${requestCount()} 次。`,
+      ...notes.map(note => `${note.engineId}: ${note.code}`), ...operationNotes(),
+      ...(window.endedEarly ? ['多路正文充分后提前结束等待，保留已完成结果。'] : []), `本插件 HTTP 请求：${requestCount()} 次。`,
     ]);
     logger?.info(`[提取] 已整理 ${candidates.length} 路结果，输出 ${output.body.content.length} 字符；请求 ${requestCount()} 次。`);
-    return { ...output, truncated: output.truncated || deadlineReached() || notes.some(note => note.code === 'WEB_FETCH_TIMEOUT') };
+    return { ...output, truncated: window.endedEarly || output.truncated || deadlineReached() || notes.some(note => note.code === 'WEB_FETCH_TIMEOUT') };
   }
 
   const selection = selectBestCandidate(url, candidates, weights);

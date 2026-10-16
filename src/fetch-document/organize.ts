@@ -1,7 +1,7 @@
 import type { WebFetchResult } from '@deepseek-ai/dsh-web';
 import { WebError } from '@deepseek-ai/dsh-web';
 import type { FetchCandidate } from '../fetch-aggregate.js';
-import { markdown, splitBlocks, structured } from './blocks.js';
+import { markdown, splitBlocks, cleanBlocks, challengeBlocks, structured } from './blocks.js';
 import type { ContentBlock } from './blocks.js';
 
 interface Node { block: ContentBlock; refs: string[]; removed?: boolean }
@@ -128,13 +128,16 @@ export function organizeDocuments(url: string, candidates: readonly FetchCandida
     if (raw.result.body.content.length > maxChars) throw new WebError('structured response too large', 'WEB_FETCH_TOO_LARGE');
     return raw.result;
   }
+  let removedNoise = 0;
   const documents: Document[] = candidates.map((candidate, index) => {
-    const content = markdown(candidate.result.body.content, candidate.result.body.kind);
-    const blocks = splitBlocks(content);
-    if (blocks.length > 2000) throw new WebError('too many extraction blocks', 'WEB_FETCH_TOO_LARGE');
+    const original = splitBlocks(markdown(candidate.result.body.content, candidate.result.body.kind));
+    if (original.length > 2000) throw new WebError('too many extraction blocks', 'WEB_FETCH_TOO_LARGE');
+    const blocks = cleanBlocks(original);
+    removedNoise += original.length - blocks.length;
+    const content = blocks.map(block => block.text).join('\n\n');
     return { candidate, id: `F${index + 1}`, blocks, sections: sections(blocks, `F${index + 1}`), content };
   });
-  const challenge = (doc: Document) => /^(?:#{1,6}\s*)?(?:403 Forbidden|Access Denied|Login required|Just a moment[.!…]*|Attention Required!?\s*\|\s*Cloudflare|请先登录|请输入验证码)\s*$/i.test(doc.blocks[0]?.text ?? '');
+  const challenge = (doc: Document) => challengeBlocks(doc.blocks);
   const successful = documents.filter(doc => target(doc.candidate.result.url) === target(url) && doc.candidate.result.statusCode >= 200 && doc.candidate.result.statusCode < 300 && !challenge(doc));
   const firstHeading = successful[0] && titleBlock(successful[0].blocks)?.key;
   const firstVersion = successful[0] && version(successful[0]);
@@ -185,10 +188,23 @@ export function organizeDocuments(url: string, candidates: readonly FetchCandida
     }
   }
   const chunks: string[] = [];
+  // Different extractors can disagree about section levels. Merge substantial
+  // identical blocks across those sections, while retaining every occurrence
+  // that appears more than once within any one original extraction.
+  const seenBlocks = new Map<string, Node[]>();
+  for (const node of [...main.flatMap(section => section.nodes), ...additions.flatMap(addition => addition.nodes)]) {
+    if (node.removed || node.block.kind === 'heading' || node.block.text.length < 32) continue;
+    const previous = seenBlocks.get(node.block.key) ?? [];
+    const origins = new Set(node.refs.map(ref => ref.split(':')[0]));
+    const match = previous.find(item => item.refs.every(ref => !origins.has(ref.split(':')[0])));
+    if (match) { match.refs.push(...node.refs); node.removed = true; }
+    else { previous.push(node); seenBlocks.set(node.block.key, previous); }
+  }
   let length = 0;
   let omitted = 0;
   const footer = '\n\n## 提取来源与处理说明\n\n' + documents.map(doc => `${doc.id}: ${doc.candidate.engineId}; 状态 ${doc.candidate.result.statusCode}; ${doc.candidate.result.truncated ? '上游已截断' : '上游未标记截断'}; 接收时间：${doc.candidate.receivedAt ?? '未提供'}; 返回 URL：${JSON.stringify(doc.candidate.result.url)}`).join('\n\n')
     + '\n\n来源标记 F#:B# 对应提取服务及原始内容块；多份提取不是独立事实佐证。'
+    + (removedNoise ? `\n\n已移除 ${removedNoise} 个明确的导航或页面控件内容块。` : '')
     + (referenceDefinitions ? '\n\n检测到引用定义：按来源分别展示原始 Markdown，避免链接或脚注串用。' : '')
     + (notes.length ? `\n\n${notes.join('\n')}` : '');
   const room = Math.max(0, maxChars - footer.length - 100);

@@ -24,7 +24,9 @@
  * @module search-aggregate
  */
 import { WebError } from '@deepseek-ai/dsh-web';
-import { runOperation, selectServices, currentControls, serviceEnabled, noteOperation, operationNotes, requestCount, deadlineReached, abortable, resolveRuntimeRequest } from './request-budget.js';
+import { runOperation, selectServices, currentControls, currentDecisionDepth, serviceEnabled, noteOperation, operationNotes, requestCount, deadlineReached, abortable, resolveRuntimeRequest } from './request-budget.js';
+import { SettlementWindow } from './settlement-window.js';
+import { officialHosts, isOfficial, topicMatches, preferOfficial, contentVariantKey } from './search-quality.js';
 import type { RuntimeControls } from './request-budget.js';
 import type { WebSearchProvider, WebSearchRequest, WebSearchResult, WebSearchSource } from '@deepseek-ai/dsh-web';
 import { anySearchFailureSignal } from './engines/anysearch/index.js';
@@ -202,9 +204,34 @@ export class AggregatedSearchProvider implements WebSearchProvider {
     await this.sweepDailyQuota(engines, signal);
     if (isAborted(signal)) throw abortedError(signal);
 
-    const outcomes = await Promise.all(
-      engines.map((engine) => this.dispatch(engine, request, signal)),
-    );
+    const hosts = officialHosts(request.query);
+    const supplementary = /\bsite:/i.test(request.query) ? [] : hosts.flatMap(host => {
+      const priority = ['tavily', 'anysearch', 'exa', 'firecrawl', 'bing'];
+      const rank = (id: string) => priority.includes(id) ? priority.indexOf(id) : priority.length;
+      const preferred = [...engines].sort((a, b) => rank(a.id) - rank(b.id));
+      return preferred.slice(0, hosts.length > 1 ? 1 : 2).map(engine => ({ engine, query: `${request.query} site:${host}` }));
+    });
+    if (supplementary.length) noteOperation(`增加 ${supplementary.length} 次限定官方域名的补充检索，仍受请求预算约束。`);
+    const window = new SettlementWindow(signal, currentDecisionDepth() === 'deep');
+    const completed: EngineOutcome[] = [];
+    const accept = (outcome: EngineOutcome): EngineOutcome => {
+      completed.push(outcome);
+      const successes = completed.filter((item): item is Extract<EngineOutcome, { kind: 'ok' }> => item.kind === 'ok');
+      const candidates = rrfFuse(successes.map(item => ({ engineId: item.engineId, sources: item.result.sources })), this.rrfK);
+      const enough = new Set(successes.filter(item => item.result.sources.length).map(item => item.engineId)).size >= 3
+        && candidates.filter(item => topicMatches(request.query, item)).length >= (request.maxResults ?? 8)
+        && (!hosts.length || candidates.some(item => isOfficial(item.url, hosts) && topicMatches(request.query, item)));
+      window.observe(currentControls().preset === 'auto' && enough);
+      return outcome;
+    };
+    let outcomes: EngineOutcome[];
+    try {
+      outcomes = await Promise.all([
+        ...engines.map(engine => this.dispatch(engine, request, window.signal).then(accept)),
+        ...supplementary.map(({ engine, query }) => this.dispatch(engine, { ...request, query }, window.signal).then(accept)),
+      ]);
+    } finally { window.finish(); }
+    if (window.endedEarly) noteOperation('已有多路相关结果，宽限等待结束后提前取消未完成渠道；可能仍有未返回内容。');
     if (isAborted(signal) && !deadlineReached()) throw abortedError(signal);
 
     const rankings = outcomes.flatMap((outcome) =>
@@ -215,13 +242,15 @@ export class AggregatedSearchProvider implements WebSearchProvider {
       throw allEnginesFailedError([...outcomes, ...broken.map(engine => ({ kind: 'skipped' as const, engineId: engine.id }))]);
     }
 
-    const fused = rrfFuse(rankings, this.rrfK);
+    const perService = new Map<string, WebSearchSource[]>();
+    for (const ranking of rankings) perService.set(ranking.engineId, [...(perService.get(ranking.engineId) ?? []), ...ranking.sources]);
+    const fused = preferOfficial(request.query, rrfFuse([...perService].map(([engineId, sources]) => ({ engineId, sources })), this.rrfK));
     const pool = fused.slice(0, this.rerankPool);
     const reranked = await this.applyRerank(request, pool, signal);
     // Candidates past the rerank pool keep their RRF order behind the reranked
     // ones, so a `maxResults` larger than the pool is still satisfiable instead
     // of silently shorting the caller.
-    const ordered = [...reranked, ...fused.slice(pool.length)];
+    const ordered = preferOfficial(request.query, [...reranked, ...fused.slice(pool.length)]);
 
     const maxResults = request.maxResults;
     const selected = maxResults === undefined ? ordered : ordered.slice(0, Math.max(0, maxResults));
@@ -230,7 +259,7 @@ export class AggregatedSearchProvider implements WebSearchProvider {
     return {
       ...(notes.length ? { content: `搜索处理说明：${notes.join(' ')} 本插件 HTTP 请求 ${requestCount()} 次。` } : {}),
       sources: selected.map(toSeamSource),
-      truncated: deadlineReached() || outcomes.some(outcome => outcome.kind === 'ok' && outcome.result.truncated)
+      truncated: window.endedEarly || deadlineReached() || outcomes.some(outcome => outcome.kind === 'ok' && outcome.result.truncated)
         || (maxResults !== undefined && ordered.length > maxResults),
     };
   }
@@ -422,9 +451,8 @@ const LANE_ABORTED = Symbol('search-lane-aborted');
  * Normalize a result URL into its deduplication key (DESIGN.md): every `utm_*`
  * parameter is dropped, the `#fragment` is dropped, scheme and hostname are
  * lowercased (which `URL` already does), and a root path is normalized so `/`
- * and `''` share one key. Every other query parameter is kept, in place, and
- * participates in equality; a non-root trailing slash is also kept, because
- * `/path/` and `/path` are different resources.
+ * and `''` share one key. Other parameters and non-root trailing slashes stay
+ * significant except for the verified MDN and TypeScript aliases below.
  *
  * A URL that does not parse is returned verbatim: deduplication may then miss a
  * merge, but the source is never dropped or rewritten into something the engine
@@ -438,9 +466,15 @@ export function normalizeSearchUrl(url: string): string {
     return url;
   }
   parsed.hash = '';
+  if (parsed.hostname === 'developer.mozilla.org' && parsed.protocol === 'http:') parsed.protocol = 'https:';
+  if (parsed.hostname === 'www.typescriptlang.org' && parsed.pathname.startsWith('/docs/handbook/') && parsed.pathname.endsWith('.html')) {
+    parsed.pathname = parsed.pathname.slice(0, -5);
+  }
   const kept: Array<[string, string]> = [];
   for (const [key, value] of parsed.searchParams) {
     if (key.toLowerCase().startsWith('utm_')) continue;
+    if (parsed.hostname === 'developer.mozilla.org' && key === 'retiredLocale') continue;
+    if (parsed.hostname === 'developer.mozilla.org' && key === 'source' && value.startsWith('post_page')) continue;
     kept.push([key, value]);
   }
   parsed.search = '';
@@ -463,13 +497,17 @@ export function normalizeSearchUrl(url: string): string {
  */
 export function rrfFuse(rankings: readonly EngineRanking[], k: number): FusedCandidate[] {
   const merged = new Map<string, { candidate: FusedCandidate; sequence: number }>();
+  const variants = new Map<string, string>();
   let sequence = 0;
 
   for (const ranking of rankings) {
     const seenInEngine = new Set<string>();
     let rank = 0;
     for (const source of ranking.sources) {
-      const key = normalizeSearchUrl(source.url);
+      const normalized = normalizeSearchUrl(source.url);
+      const identity = contentVariantKey(normalized, source.title, source.snippet);
+      const key = variants.get(identity) ?? normalized;
+      variants.set(identity, key);
       if (seenInEngine.has(key)) continue;
       seenInEngine.add(key);
       rank += 1;

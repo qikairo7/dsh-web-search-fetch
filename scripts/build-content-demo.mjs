@@ -22,7 +22,7 @@ if (liveIndex >= 0) {
     assert.equal(input.url, capture.url);
   }
   scenarios.unshift({ name: 'Example Domain 实际提取', kind: '真实接口采集', url: capture.url,
-    capturedAt: capture.capturedAt, note: 'Firecrawl 无标题且包含多语言内容；Tavily 与 Exa 的同章节正文已合并。跨章节的共同英文段落保留两次，展示当前对齐规则的限制。输出的接收时间与请求数属于离线重放，不代表接口采集耗时或请求数。',
+    capturedAt: capture.capturedAt, note: 'Firecrawl 无标题且包含多语言内容；Tavily 与 Exa 的共同正文合并来源。不同章节中满足规则的相同长段落也会去重，其他语言内容保留。输出的接收时间与请求数属于离线重放，不代表接口采集耗时或请求数。',
     inputs: capture.inputs.map(({ service, content }) => ({ service, content })) });
 }
 for (const scenario of scenarios) {

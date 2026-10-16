@@ -146,6 +146,7 @@ export class AggregatedFetchProvider implements WebFetchProvider {
       return this.http.fetch(request, signal);
     }
     return aggregateDynamicFetch({
+      settleEarly: controls.preset === 'auto',
       url: request.url,
       legs: await selectServices([...(this.options.legs ?? []), ...additionalExtractionLegs(this.options.additionalEngines ?? [], request.url)]
         .filter(leg => !this.options.breaker?.isBroken(leg.engineId)), leg => leg.engineId, 'fetch', this.options.ready),

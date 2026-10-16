@@ -32,12 +32,14 @@ interface Operation {
   requests: number;
   maxRequests: number;
   notes: string[];
+  decisionDepth?: 'fast' | 'balanced' | 'deep';
 }
 const operations = new AsyncLocalStorage<Operation>();
 export function operationNotes(): readonly string[] { return operations.getStore()?.notes ?? []; }
 export function noteOperation(note: string): void { operations.getStore()?.notes.push(note); }
 export function requestCount(): number { return operations.getStore()?.requests ?? 0; }
 export function currentControls(): RuntimeControls { return operations.getStore()?.controls ?? {}; }
+export function currentDecisionDepth(): 'fast' | 'balanced' | 'deep' | undefined { return operations.getStore()?.decisionDepth; }
 export function serviceEnabled(id: string, fallback = true): boolean { return currentControls().serviceEnabled?.[id] ?? fallback; }
 export function deadlineReached(): boolean {
   const operation = operations.getStore();
@@ -101,6 +103,8 @@ export async function resolveAutomaticDepth(signal?: AbortSignal): Promise<'fast
   try {
     const outcome = await controls.decision.decide(controls.request ?? 'search', controls.requestText ?? '', signal ?? operations.getStore()?.signal);
     if (!outcome) throw new WebError(`自动决策模型不可用（${controls.decision.failureReason ?? 'unavailable'}），请检查所选模型的凭证、网络和限时后重试。`, 'WEB_PROVIDER_ERROR');
+    const operation = operations.getStore();
+    if (operation) operation.decisionDepth = outcome.depth;
     noteOperation(`决策模型 ${outcome.model} 判定为 ${outcome.depth}${outcome.confidence === undefined ? '' : `（置信度 ${(outcome.confidence * 100).toFixed(0)}%）`}。`);
     return outcome.depth;
   } catch (error) {
@@ -139,6 +143,7 @@ export async function selectServices<T>(items: readonly T[], id: (item: T) => st
   const available = await Promise.all(allowed.map(async item => !ready || await ready(id(item), face)));
   const usable = allowed.filter((_, index) => available[index]);
   const selected = usable.slice(0, cap);
+  noteOperation(`实际选择 ${selected.length} 路${face === 'search' ? '搜索' : '提取'}服务。`);
   if (usable.length > selected.length) noteOperation(`服务数量上限：仅派发 ${selected.length} 路，未派发 ${usable.length - selected.length} 路。`);
   return selected;
 }
@@ -158,7 +163,7 @@ export function resolveAutoCap(controls: RuntimeControls, face: 'search' | 'fetc
   if (decisionDepth !== undefined) {
     const caps = { fast: 3, balanced: 5, deep: limit } as const;
     const cap = Math.min(limit, caps[decisionDepth]);
-    noteOperation(`自动档按决策结果派发 ${cap} 路。`);
+    noteOperation(`自动档按决策结果使用 ${cap} 路上限。`);
     return cap;
   }
   if (face === 'search') {
