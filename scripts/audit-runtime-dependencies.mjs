@@ -8,8 +8,9 @@ const documents = parseAllDocuments(readFileSync(new URL('pnpm-lock.yaml', root)
 for (const document of documents) {
   if (document.errors.length) throw document.errors[0];
 }
-const lock = documents.map(document => document.toJSON()).find(value => value.importers?.['.']?.dependencies?.undici);
-if (!lock) throw new Error('Project dependency lock not found');
+const projectLocks = documents.map(document => document.toJSON()).filter(value => value?.importers?.['.']?.dependencies && value.snapshots);
+if (projectLocks.length !== 1) throw new Error(`Expected one project dependency lock, found ${projectLocks.length}`);
+const lock = projectLocks[0];
 const direct = lock.importers['.'].dependencies;
 for (const [name, version] of Object.entries(pkg.dependencies)) {
   if (direct[name]?.specifier !== version) throw new Error(`Manifest/lock mismatch: ${name}`);

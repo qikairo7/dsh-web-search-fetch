@@ -34,6 +34,7 @@
     "client/**/*.js",
     "cordis.patch.yml",
     "docs/*.md",
+    "docs/dependency-inventory.json",
     "docs/assets/*.jpg",
     "docs/assets/*.png",
     "docs/assets/*.html",
