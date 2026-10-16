@@ -1,0 +1,345 @@
+{
+  "checkedAt": "2026-10-16T05:29:26.144Z",
+  "packageName": "dsh-web-search-fetch",
+  "packageVersion": "0.2.11",
+  "method": "Author-provided registry metadata, lock integrity comparison and npm advisory lookup; not an independent security approval.",
+  "scope": "Direct runtime dependencies and their locked transitive closure; host peer dependencies and development dependencies excluded.",
+  "advisoryEndpoint": "https://registry.npmjs.org/-/npm/v1/security/advisories/bulk",
+  "packages": [
+    {
+      "name": "@deepseek-ai/schemastery",
+      "version": "3.18.5-alpha.2",
+      "direct": true,
+      "integrity": "sha512-W+2TSjdeKOEKqaii9BNpw7ev2Yf8C+J74i/BE/VBx56O7BX0zxV2zQKwRY4ADLTXD5O69iJ+/Skm91/ES7iMgw==",
+      "metadataUrl": "https://registry.npmjs.org/%40deepseek-ai%2Fschemastery/3.18.5-alpha.2",
+      "license": "MIT",
+      "repository": {
+        "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+        "type": "git",
+        "directory": "vendor/schemastery"
+      },
+      "tarball": "https://registry.npmjs.org/@deepseek-ai/schemastery/-/schemastery-3.18.5-alpha.2.tgz",
+      "engines": {},
+      "installScripts": {},
+      "sourceBuildScripts": {},
+      "attestations": null,
+      "dependencies": {
+        "@deepseek-ai/cosmokit": "~1.8.6-alpha.2",
+        "@standard-schema/spec": "^1.1.0"
+      }
+    },
+    {
+      "name": "@joplin/turndown-plugin-gfm",
+      "version": "1.0.68",
+      "direct": true,
+      "integrity": "sha512-m8DfAQNC/V7g0j5H6Jv60WhekBBjodD+zTPGrU+g2m+ux/z8ZX07KQIl6kaAmbKwfvsQhC04op52g63I78sVgg==",
+      "metadataUrl": "https://registry.npmjs.org/%40joplin%2Fturndown-plugin-gfm/1.0.68",
+      "license": "MIT",
+      "repository": {
+        "url": "git+https://github.com/laurent22/joplin-turndown-plugin-gfm.git",
+        "type": "git"
+      },
+      "tarball": "https://registry.npmjs.org/@joplin/turndown-plugin-gfm/-/turndown-plugin-gfm-1.0.68.tgz",
+      "engines": {},
+      "installScripts": {},
+      "sourceBuildScripts": {
+        "prepare": "npm run build"
+      },
+      "attestations": null,
+      "dependencies": {}
+    },
+    {
+      "name": "fast-xml-parser",
+      "version": "5.11.2",
+      "direct": true,
+      "integrity": "sha512-R9iDuNrQYeQut46cn2r2wHKn4HYzVDvDm5J1wW+koZewykv0yuO2HChTYeZtrULyHIDM9cj9TUXloCsueCQUog==",
+      "metadataUrl": "https://registry.npmjs.org/fast-xml-parser/5.11.2",
+      "license": "MIT",
+      "repository": {
+        "url": "git+https://github.com/NaturalIntelligence/fast-xml-parser.git",
+        "type": "git"
+      },
+      "tarball": "https://registry.npmjs.org/fast-xml-parser/-/fast-xml-parser-5.11.2.tgz",
+      "engines": {},
+      "installScripts": {},
+      "sourceBuildScripts": {},
+      "attestations": {
+        "url": "https://registry.npmjs.org/-/npm/v1/attestations/fast-xml-parser@5.11.2",
+        "provenance": {
+          "predicateType": "https://slsa.dev/provenance/v1"
+        }
+      },
+      "dependencies": {
+        "strnum": "^2.4.2",
+        "is-unsafe": "^2.0.0",
+        "xml-naming": "^0.3.0",
+        "fast-xml-builder": "^1.2.0",
+        "@nodable/entities": "^3.0.1",
+        "path-expression-matcher": "^1.6.2"
+      }
+    },
+    {
+      "name": "turndown",
+      "version": "7.2.4",
+      "direct": true,
+      "integrity": "sha512-I8yFsfRzmzK0WV1pNNOA4A7y4RDfFxPRxb3t+e3ui14qSGOxGtiSP6GjeX+Y6CHb7HYaFj7ECUD7VE5kQMZWGQ==",
+      "metadataUrl": "https://registry.npmjs.org/turndown/7.2.4",
+      "license": "MIT",
+      "repository": {
+        "url": "git+https://github.com/mixmark-io/turndown.git",
+        "type": "git"
+      },
+      "tarball": "https://registry.npmjs.org/turndown/-/turndown-7.2.4.tgz",
+      "engines": {
+        "npm": ">=9",
+        "node": ">=18"
+      },
+      "installScripts": {},
+      "sourceBuildScripts": {
+        "prepare": "npm run build"
+      },
+      "attestations": null,
+      "dependencies": {
+        "@mixmark-io/domino": "^2.2.0"
+      }
+    },
+    {
+      "name": "undici",
+      "version": "8.11.2",
+      "direct": true,
+      "integrity": "sha512-u4UB2/IrKdU6lFxumHmmo1a3fCQO5tzQllRorfoRS63txhrB7xTpSn1PftwC4qEHkOaqP95fCWW4lJzwErwzhQ==",
+      "metadataUrl": "https://registry.npmjs.org/undici/8.11.2",
+      "license": "MIT",
+      "repository": {
+        "url": "git+https://github.com/nodejs/undici.git",
+        "type": "git"
+      },
+      "tarball": "https://registry.npmjs.org/undici/-/undici-8.11.2.tgz",
+      "engines": {
+        "node": ">=22.19.0"
+      },
+      "installScripts": {},
+      "sourceBuildScripts": {
+        "prepare": "husky && node ./scripts/platform-shell.js"
+      },
+      "attestations": {
+        "url": "https://registry.npmjs.org/-/npm/v1/attestations/undici@8.11.2",
+        "provenance": {
+          "predicateType": "https://slsa.dev/provenance/v1"
+        }
+      },
+      "dependencies": {}
+    },
+    {
+      "name": "@deepseek-ai/cosmokit",
+      "version": "1.8.6-alpha.2",
+      "direct": false,
+      "integrity": "sha512-FcxdMUal80CeFURh3lPYsw9TPDMVSGpovWnA3JtTGrBG15XFli4k38z1Egso1lgvifKpIW4Hx42X6UTelLEOAA==",
+      "metadataUrl": "https://registry.npmjs.org/%40deepseek-ai%2Fcosmokit/1.8.6-alpha.2",
+      "license": "MIT",
+      "repository": {
+        "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+        "type": "git",
+        "directory": "vendor/cosmokit"
+      },
+      "tarball": "https://registry.npmjs.org/@deepseek-ai/cosmokit/-/cosmokit-1.8.6-alpha.2.tgz",
+      "engines": {},
+      "installScripts": {},
+      "sourceBuildScripts": {},
+      "attestations": null,
+      "dependencies": {}
+    },
+    {
+      "name": "@standard-schema/spec",
+      "version": "1.1.0",
+      "direct": false,
+      "integrity": "sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==",
+      "metadataUrl": "https://registry.npmjs.org/%40standard-schema%2Fspec/1.1.0",
+      "license": "MIT",
+      "repository": {
+        "url": "git+https://github.com/standard-schema/standard-schema.git",
+        "type": "git"
+      },
+      "tarball": "https://registry.npmjs.org/@standard-schema/spec/-/spec-1.1.0.tgz",
+      "engines": {},
+      "installScripts": {},
+      "sourceBuildScripts": {},
+      "attestations": {
+        "url": "https://registry.npmjs.org/-/npm/v1/attestations/@standard-schema%2fspec@1.1.0",
+        "provenance": {
+          "predicateType": "https://slsa.dev/provenance/v1"
+        }
+      },
+      "dependencies": {}
+    },
+    {
+      "name": "@nodable/entities",
+      "version": "3.1.0",
+      "direct": false,
+      "integrity": "sha512-LsS/DjHr+uDM647Gru/cA8+J3a3HfhttwCKLyuoyN7yXTFCxKBtSgMQBvrW9yNPa2/zDRUNuGPaH5QUFoa4arQ==",
+      "metadataUrl": "https://registry.npmjs.org/%40nodable%2Fentities/3.1.0",
+      "license": "MIT",
+      "repository": {
+        "url": "git+https://github.com/nodable/val-parsers.git",
+        "type": "git"
+      },
+      "tarball": "https://registry.npmjs.org/@nodable/entities/-/entities-3.1.0.tgz",
+      "engines": {},
+      "installScripts": {},
+      "sourceBuildScripts": {},
+      "attestations": null,
+      "dependencies": {}
+    },
+    {
+      "name": "fast-xml-builder",
+      "version": "1.3.1",
+      "direct": false,
+      "integrity": "sha512-pIM/1n3ntFXKYrUZwW7QCK0gAW7XY+wzj1YMIV3tLDvPj/V+zTGJK5e3/4WJfwj0qWw2ElNXiTixda/R+3YSug==",
+      "metadataUrl": "https://registry.npmjs.org/fast-xml-builder/1.3.1",
+      "license": "MIT",
+      "repository": {
+        "url": "git+https://github.com/NaturalIntelligence/fast-xml-builder.git",
+        "type": "git"
+      },
+      "tarball": "https://registry.npmjs.org/fast-xml-builder/-/fast-xml-builder-1.3.1.tgz",
+      "engines": {},
+      "installScripts": {},
+      "sourceBuildScripts": {},
+      "attestations": {
+        "url": "https://registry.npmjs.org/-/npm/v1/attestations/fast-xml-builder@1.3.1",
+        "provenance": {
+          "predicateType": "https://slsa.dev/provenance/v1"
+        }
+      },
+      "dependencies": {
+        "xml-naming": "^0.3.0",
+        "path-expression-matcher": "^1.6.2"
+      }
+    },
+    {
+      "name": "is-unsafe",
+      "version": "2.0.2",
+      "direct": false,
+      "integrity": "sha512-HgbIHPBH0KHHCcjLfGsCvhtPTVxjaAZlXjwdz7/GQC40SjSe4sfQsar8J5VFo8JOSbarkpV0OLG95bbaNd9aAQ==",
+      "metadataUrl": "https://registry.npmjs.org/is-unsafe/2.0.2",
+      "license": "MIT",
+      "repository": {
+        "url": "git+https://github.com/NaturalIntelligence/is-unsafe.git",
+        "type": "git"
+      },
+      "tarball": "https://registry.npmjs.org/is-unsafe/-/is-unsafe-2.0.2.tgz",
+      "engines": {},
+      "installScripts": {},
+      "sourceBuildScripts": {},
+      "attestations": {
+        "url": "https://registry.npmjs.org/-/npm/v1/attestations/is-unsafe@2.0.2",
+        "provenance": {
+          "predicateType": "https://slsa.dev/provenance/v1"
+        }
+      },
+      "dependencies": {}
+    },
+    {
+      "name": "path-expression-matcher",
+      "version": "1.6.2",
+      "direct": false,
+      "integrity": "sha512-enSlaiat05iasnzmgNxRj8reFdj3puY2QpNgP1aPIaVfT6nn9ICuPoFlKHk8EN22HcwewshO+mN2DGbkCEOtqQ==",
+      "metadataUrl": "https://registry.npmjs.org/path-expression-matcher/1.6.2",
+      "license": "MIT",
+      "repository": {
+        "url": "git+https://github.com/NaturalIntelligence/path-expression-matcher.git",
+        "type": "git"
+      },
+      "tarball": "https://registry.npmjs.org/path-expression-matcher/-/path-expression-matcher-1.6.2.tgz",
+      "engines": {
+        "node": ">=14.0.0"
+      },
+      "installScripts": {},
+      "sourceBuildScripts": {},
+      "attestations": null,
+      "dependencies": {}
+    },
+    {
+      "name": "strnum",
+      "version": "2.5.1",
+      "direct": false,
+      "integrity": "sha512-UM4nTLWzQiDBseVxUGxN0wJzIk0UU89Qi7pKXz9qISo+lhviJikTuikBsK/oFRlpvYHvSdz0TVoLyQ+sEpYwxA==",
+      "metadataUrl": "https://registry.npmjs.org/strnum/2.5.1",
+      "license": "MIT",
+      "repository": {
+        "url": "git+https://github.com/NaturalIntelligence/strnum.git",
+        "type": "git"
+      },
+      "tarball": "https://registry.npmjs.org/strnum/-/strnum-2.5.1.tgz",
+      "engines": {},
+      "installScripts": {},
+      "sourceBuildScripts": {},
+      "attestations": {
+        "url": "https://registry.npmjs.org/-/npm/v1/attestations/strnum@2.5.1",
+        "provenance": {
+          "predicateType": "https://slsa.dev/provenance/v1"
+        }
+      },
+      "dependencies": {
+        "anynum": "^1.0.1"
+      }
+    },
+    {
+      "name": "xml-naming",
+      "version": "0.3.0",
+      "direct": false,
+      "integrity": "sha512-ghig2TBE/H11aOVgmahA3MhimvkBr6JIYknH/Dhdk10nXwdbIqBJsbfMxpvFPG8bAw77gN29aQWvKpmVoPlvPQ==",
+      "metadataUrl": "https://registry.npmjs.org/xml-naming/0.3.0",
+      "license": "MIT",
+      "repository": {
+        "url": "git+https://github.com/NaturalIntelligence/xml-naming.git",
+        "type": "git"
+      },
+      "tarball": "https://registry.npmjs.org/xml-naming/-/xml-naming-0.3.0.tgz",
+      "engines": {
+        "node": ">=16.0.0"
+      },
+      "installScripts": {},
+      "sourceBuildScripts": {},
+      "attestations": null,
+      "dependencies": {}
+    },
+    {
+      "name": "@mixmark-io/domino",
+      "version": "2.2.0",
+      "direct": false,
+      "integrity": "sha512-Y28PR25bHXUg88kCV7nivXrP2Nj2RueZ3/l/jdx6J9f8J4nsEGcgX0Qe6lt7Pa+J79+kPiJU3LguR6O/6zrLOw==",
+      "metadataUrl": "https://registry.npmjs.org/%40mixmark-io%2Fdomino/2.2.0",
+      "license": "BSD-2-Clause",
+      "repository": {
+        "url": "https://github.com/mixmark-io/domino.git",
+        "type": "git"
+      },
+      "tarball": "https://registry.npmjs.org/@mixmark-io/domino/-/domino-2.2.0.tgz",
+      "engines": {},
+      "installScripts": {},
+      "sourceBuildScripts": {},
+      "attestations": null,
+      "dependencies": {}
+    },
+    {
+      "name": "anynum",
+      "version": "1.0.1",
+      "direct": false,
+      "integrity": "sha512-N6//FLET/tXYNM/F6ABca1oH6fWB+KlTt909Le28WMDBk8oaT4vY17DCrwg2MvmuqUKt3Ni4N5dGJ/EoBgcO6A==",
+      "metadataUrl": "https://registry.npmjs.org/anynum/1.0.1",
+      "license": "MIT",
+      "repository": {
+        "url": "git+https://github.com/NaturalIntelligence/anynum.git",
+        "type": "git"
+      },
+      "tarball": "https://registry.npmjs.org/anynum/-/anynum-1.0.1.tgz",
+      "engines": {},
+      "installScripts": {},
+      "sourceBuildScripts": {},
+      "attestations": null,
+      "dependencies": {}
+    }
+  ],
+  "advisories": {}
+}
