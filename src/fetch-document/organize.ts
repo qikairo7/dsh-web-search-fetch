@@ -47,6 +47,19 @@ function sections(blocks: ContentBlock[], id: string): Section[] {
 function target(raw: string): string {
   try { const value = new URL(raw); value.hash = ''; return value.href; } catch { return raw; }
 }
+
+/** A same-resource HTTPS upgrade is allowed; other final-target changes stay isolated. */
+function matchesTarget(request: string, returned: string): boolean {
+  try {
+    const expected = new URL(request), actual = new URL(returned);
+    expected.hash = ''; actual.hash = '';
+    if (expected.protocol === 'http:' && actual.protocol === 'https:'
+      && !expected.port && !actual.port && !expected.username && !expected.password && !actual.username && !actual.password) {
+      expected.protocol = 'https:';
+    }
+    return expected.href === actual.href;
+  } catch { return request === returned; }
+}
 function language(blocks: ContentBlock[]): string {
   const text = blocks.filter(block => block.kind === 'paragraph').map(block => block.text).join('');
   const cjk = text.match(/[\u3400-\u9fff]/g)?.length ?? 0;
@@ -123,7 +136,7 @@ export function organizeDocuments(url: string, candidates: readonly FetchCandida
   if (!candidates.length) throw new WebError('no extraction candidates', 'WEB_PROVIDER_ERROR');
   // Bound synchronous conversion and alignment work independently of output size.
   if (candidates.some(candidate => candidate.result.body.content.length > 1_000_000)) throw new WebError('extraction input too large', 'WEB_FETCH_TOO_LARGE');
-  const raw = candidates.find(candidate => candidate.result.statusCode >= 200 && candidate.result.statusCode < 300 && target(candidate.result.url) === target(url) && structured(candidate.result.body.content));
+  const raw = candidates.find(candidate => candidate.result.statusCode >= 200 && candidate.result.statusCode < 300 && matchesTarget(url, candidate.result.url) && structured(candidate.result.body.content));
   if (raw) {
     if (raw.result.body.content.length > maxChars) throw new WebError('structured response too large', 'WEB_FETCH_TOO_LARGE');
     return raw.result;
@@ -138,15 +151,19 @@ export function organizeDocuments(url: string, candidates: readonly FetchCandida
     return { candidate, id: `F${index + 1}`, blocks, sections: sections(blocks, `F${index + 1}`), content };
   });
   const challenge = (doc: Document) => challengeBlocks(doc.blocks);
-  const successful = documents.filter(doc => target(doc.candidate.result.url) === target(url) && doc.candidate.result.statusCode >= 200 && doc.candidate.result.statusCode < 300 && !challenge(doc));
+  const matched = documents.filter(doc => matchesTarget(url, doc.candidate.result.url) && doc.candidate.result.statusCode >= 200 && doc.candidate.result.statusCode < 300 && !challenge(doc));
+  // Prefer the secure final target, without mixing a different HTTP representation into it.
+  const finalTarget = matched.find(doc => target(doc.candidate.result.url) !== target(url))?.candidate.result.url ?? url;
+  const successful = matched.filter(doc => target(doc.candidate.result.url) === target(finalTarget));
   const firstHeading = successful[0] && titleBlock(successful[0].blocks)?.key;
   const firstVersion = successful[0] && version(successful[0]);
   const compatible = successful.filter(doc => (!firstHeading || !doc.blocks.some(block => block.kind === 'heading') || sameHeading(firstHeading, titleBlock(doc.blocks)?.key))
     && (!firstVersion || !version(doc) || version(doc) === firstVersion));
-  const errors = documents.filter(doc => target(doc.candidate.result.url) === target(url) && !challenge(doc) && (doc.candidate.result.statusCode < 200 || doc.candidate.result.statusCode >= 300));
+  const errors = documents.filter(doc => matchesTarget(url, doc.candidate.result.url) && !challenge(doc) && (doc.candidate.result.statusCode < 200 || doc.candidate.result.statusCode >= 300));
   const usable = compatible.length ? compatible : errors;
   if (!usable.length) {
-    throw new WebError('没有可整理的目标网页正文：返回目标不同或属于登录、挑战页面', 'WEB_PROVIDER_ERROR');
+    const reasons = documents.map(doc => `${doc.candidate.engineId}: ${!matchesTarget(url, doc.candidate.result.url) ? 'target-mismatch' : challenge(doc) ? 'login-or-challenge' : 'incompatible-document'}`);
+    throw new WebError(`没有可整理的目标网页正文：返回目标不同或属于登录、挑战页面 (${reasons.join('; ')})`, 'WEB_PROVIDER_ERROR');
   }
   const reference = [...usable].sort((a, b) => b.sections.length - a.sections.length || b.blocks.length - a.blocks.length)[0]!;
   const referenceDefinitions = documents.some(doc => !challenge(doc) && doc.blocks.some(block => block.kind !== 'code' && /^ {0,3}\[[^\]\n]+\]:/m.test(block.text)));
@@ -165,7 +182,7 @@ export function organizeDocuments(url: string, candidates: readonly FetchCandida
     const shared = doc.blocks.some(block => referenceKeys.has(block.key));
     const reason = challenge(doc) ? '登录或挑战页面，未加入主正文'
       : doc.candidate.result.statusCode < 200 || doc.candidate.result.statusCode >= 300 ? '非成功状态，未加入主正文'
-      : target(doc.candidate.result.url) !== target(url) ? '返回页面目标不同，未加入主正文'
+      : target(doc.candidate.result.url) !== target(reference.candidate.result.url) ? '返回页面目标不同，未加入主正文'
       : heading && otherHeading && !sameHeading(heading, otherHeading) ? '标题或版本不同，未加入主正文'
       : referenceVersion && version(doc) && version(doc) !== referenceVersion ? '版本标记不同，未加入主正文'
       : referenceLanguage && otherLanguage && referenceLanguage !== otherLanguage ? '语言不同，未加入主正文'
@@ -248,5 +265,5 @@ export function organizeDocuments(url: string, candidates: readonly FetchCandida
   }
   const content = chunks.join('\n\n') + footer + (omitted ? `\n\n输出预算不足，已省略 ${omitted} 个完整内容块或说明。` : '');
   if (content.length > maxChars) throw new WebError('正文输出预算不足以容纳来源说明', 'WEB_FETCH_TOO_LARGE');
-  return { url, statusCode: reference.candidate.result.statusCode, body: { kind: 'text', content }, truncated: omitted > 0 || documents.some(doc => !challenge(doc) && doc.candidate.result.truncated) };
+  return { url: reference.candidate.result.url, statusCode: reference.candidate.result.statusCode, body: { kind: 'text', content }, truncated: omitted > 0 || documents.some(doc => !challenge(doc) && doc.candidate.result.truncated) };
 }

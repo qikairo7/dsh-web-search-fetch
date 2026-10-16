@@ -104,6 +104,8 @@ HTTP 路径复用 `@deepseek-ai/dsh-web-fetch-http` 的校验与限制：默认�
 
 明确版本标记不同的内容保留为独立片段。引用式链接与脚注按整份 Markdown 原文隔离，避免定义名称冲突；此路径仅合并完全相同的原文。来源说明记录接收时间；没有成功状态时，仅目标 URL 的非 2xx 正文可进入带预算和来源的整理输出。
 
+正文整理允许同主机、同路径／查询、默认端口且不含用户信息的 HTTP → HTTPS 升级，并返回最终地址；有正常 HTTPS 正文时，原 HTTP 内容按不同目标隔离。其他地址变化及 HTTPS 降级仍拒绝。无可用正文时，错误附服务 ID 和不含 URL／凭证／正文的拒绝原因。
+
 `controls.mode: select` 保留旧版单份正文评分。仅此模式使用 `fetch.engineWeights`：Firecrawl 默认 `3`、AnySearch 和扩展服务默认 `2`，同分按派发顺序选择。
 
 目标网页的非 2xx 状态可随有效正文返回。全部服务失败时，优先保留 `WEB_BLOCKED_URL`、`WEB_INVALID_URL`、`WEB_FETCH_TOO_LARGE`、`WEB_UNSUPPORTED_CONTENT_TYPE`、`WEB_FETCH_TIMEOUT` 等具体错误。调用方取消使用 `WEB_ABORTED`。
