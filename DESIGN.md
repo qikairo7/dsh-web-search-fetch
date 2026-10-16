@@ -84,10 +84,13 @@ Kimi 默认使用 `POST /v1/tools/search_pro`；`engines.kimi.searchMode: basic`
 | `staticRouting: false` | 其他 URL 全部交给 DSH HTTP 提取器 |
 | URL 无法解析或非 HTTP(S) | 交给 HTTP 提取器执行 URL 校验 |
 | 命中静态域名或其子域 | HTTP 提取 |
+| GitHub 仓库／blob URL，匹配已启用、已选中、凭证可用且未熔断的 GitHub 服务 | 动态提取；blob 的 `.md` 等扩展名不视为原始静态文件 |
 | 命中静态扩展名表 | HTTP 提取 |
 | 其他 URL | Firecrawl / AnySearch 与已启用、适用于该 URL 的其他提取服务并发 |
 
 域名匹配按标签边界判断，例如 `example.com` 包含 `docs.example.com`，不包含 `otherexample.com`。分流只检查 URL，不发起 Content-Type 预探测。两种路径之间不自动回退。
+
+GitHub 仓库根页通过 README API 读取正文。同一仓库的 README 文件地址归属请求的仓库根页；返回其他仓库地址时，正文整理仍拒绝将其作为目标页。
 
 HTTP 路径复用 `@deepseek-ai/dsh-web-fetch-http` 的校验与限制：默认响应最多 5,000,000 字节、正文最多 100,000 字符、限时 30 秒、最多 5 次重定向。动态路径由第三方服务提取网页，不继承这些本地 HTTP 限制。
 
@@ -99,7 +102,9 @@ HTTP 路径复用 `@deepseek-ai/dsh-web-fetch-http` 的校验与限制：默认�
 
 默认输出上限 100,000 字符，按完整内容块省略并标注截断；不裁断代码围栏或表格。每份输入最多 1,000,000 字符、2,000 个内容块，超限报错。JSON 对象／数组及识别出的 XML 内容保持原样，超出输出预算时报错。AIHOT 专用读取和静态 HTTP 路径保持宿主原始格式。规则与限制见[正文整理](./docs/content-organization.md)。
 
-明确版本标记不同的内容保留为独立片段。引用式链接与脚注按整份 Markdown 原文隔离，避免定义名称冲突；此路径仅合并完全相同的原文。来源说明记录接收时间；没有成功状态时，仅目标 URL 的非 2xx 正文可进入带预算和来源的整理输出。
+明确版本标记不同的内容保留为独立片段。引用式链接与脚注按整份 Markdown 原文隔离，避免定义名称冲突；此路径仅合并完全相同的原文。来源说明记录接收时间；没有成功状态时，仅目标 URL 或其允许的 HTTPS 升级地址的非 2xx 正文可进入带预算和来源的整理输出。
+
+正文整理允许同主机、同路径／查询、默认端口且不含用户信息的 HTTP → HTTPS 升级，并返回最终地址；有正常 HTTPS 正文时，原 HTTP 内容按不同目标隔离。其他地址变化及 HTTPS 降级仍拒绝。无可用正文时，错误附服务 ID 和不含 URL／凭证／正文的拒绝原因。
 
 `controls.mode: select` 保留旧版单份正文评分。仅此模式使用 `fetch.engineWeights`：Firecrawl 默认 `3`、AnySearch 和扩展服务默认 `2`，同分按派发顺序选择。
 

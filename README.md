@@ -13,7 +13,12 @@
 dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.12/dsh-web-search-fetch-0.2.12.tgz
 ```
 
-安装后在设置页选择决策模型并配置对应凭证，再请求搜索或读取公开网页。未配置决策模型时，可使用固定预设体验匿名搜索。匿名模式受服务方额度与限流约束，不能保证无限使用。未安装 DSH 的环境需先完成[宿主安装](https://github.com/deepseek-ai/deepseek-harness)。
+安装后打开「设置 → 内置插件 → 网络搜索与提取」，在顶部明确选择一种开始方式：
+
+- **配置自动决策**：展开模型与凭证设置，配置对应平台密钥并保存，使用默认自动预设。
+- **直接体验匿名服务**：切换为自定义固定预设，仅选择官方端点且未配密钥的推荐服务和直接 HTTP 抓取，关闭其他服务；保存后即可使用，无需决策模型凭证。已有密钥与自定义端点不会被清除。
+
+匿名模式受服务方额度与限流约束，不能保证无限使用。未安装 DSH 的环境需先完成[宿主安装](https://github.com/deepseek-ai/deepseek-harness)。
 
 ## 项目特点
 
@@ -36,7 +41,7 @@ dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/re
 
 自动预设不会等到第一路返回就结束：搜索需至少三路服务返回充分的相关结果；正文提取需至少三路较长正文具有相同标题和共同段落。满足条件后继续等待短暂宽限期，再取消未完成渠道，并标记结果可能不完整。明确的导航和主题控件不进入整理正文；代码、表格、有效链接与文本差异保留。
 
-搜索融合和正文整理不构成事实交叉验证。多路并发及补充检索会消耗对应服务额度。参数与使用边界见[配置参考](./docs/configuration.md)，离线验证方法见[正文整理](./docs/content-organization.md)。
+搜索融合和正文整理不构成事实交叉验证。多路并发及补充检索会消耗对应服务额度。参数与使用边界见[配置参考](./docs/configuration.md)，离线验证方法见[正文整理](./docs/content-organization.md)，中文、新闻、长文、挑战页及慢渠道的指标见[质量评测](./docs/quality-evaluation.md)。
 
 与 ModSearch 5.10.6 的 48 次真实调用均成功。多服务搜索中，ModSearch 的耗时与请求次数更低；本插件融合来源并整理多份提取，适合需要来源与差异记录的资料研究。样本与限制见[真实对比](./docs/modsearch-comparison.md)。
 
@@ -93,7 +98,7 @@ AIHOT 搜索覆盖近 7 天 AI 资讯；启用后，原生 `web_fetch` 可读取
 
 自定义端点仍需配置密钥；已有密钥失效时不自动降级为匿名请求。匿名模式不表示无限免费，也不保证结果质量或可用性。AnySearch 匿名额度耗尽的响应可能包含自动生成的账号信息，插件不记录、不保存，也不自动使用。接口依据：[AnySearch Search](https://anysearch.com/docs/api-endpoints/v1-search)、[AnySearch Extract](https://anysearch.com/docs/api-endpoints/v1-extract)、[Firecrawl 官方 Keyless 说明](https://www.firecrawl.dev/blog/firecrawl-keyless-launch)、[Tavily 官方 SDK](https://github.com/tavily-ai/tavily-python#keyless-mode)。
 
-免费接口预设仍排除 AnySearch、Firecrawl、Tavily 等额度型服务；推荐默认组合使用自定义预设。
+免费接口预设仍排除 AnySearch、Firecrawl、Tavily 等额度型服务；「直接体验匿名服务」使用自定义预设，新安装默认仍为自动预设。
 
 百度千帆和豆包 Custom 的免费额度、赠送额度及开通条件需按对应账号确认。选择服务时，同时检查搜索与提取接口是否都在免费范围内。插件按配置并发调用，不自动按价格排序，也不保证只使用免费额度。
 
@@ -131,7 +136,7 @@ AIHOT 搜索覆盖近 7 天 AI 资讯；启用后，原生 `web_fetch` 可读取
 dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.12/dsh-web-search-fetch-0.2.12.tgz
 ```
 
-将 `web` 替换为实际使用的 profile，安装后重启宿主。以上命令使用已发布的 `0.2.10` Release 包，不需要 npm 包发布账号或 GitHub 登录。
+将 `web` 替换为实际使用的 profile，安装后重启宿主。以上命令使用已发布的 `0.2.12` Release 包，不需要 npm 包发布账号或 GitHub 登录。
 
 自 `0.2.11` 起，Git 固定提交同时包含完整的 `lib/**/*.js` 与 `lib/**/*.d.ts`，安装方无需先编译 TypeScript。固定源码仍需安装运行依赖并满足宿主 peer 依赖；产物齐全不等于 Store 已批准或实际 profile 已完成验收。分发检查方法见[贡献指南](./CONTRIBUTING.md#测试与提交)，运行依赖、完整性与审阅边界见[依赖审阅材料](./docs/dependency-review.md)。
 
@@ -241,6 +246,10 @@ flowchart LR
 | [架构说明](./DESIGN.md) | 模块职责、数据流、错误处理和扩展方式 |
 | [术语表](./GLOSSARY.md) | 项目术语与接口含义 |
 | [常见问题](./docs/troubleshooting.md) | 装载、凭证、超时和熔断排查 |
+| [卸载与回滚](./docs/lifecycle.md) | 配置备份、移除保存的设置与恢复原 provider |
+| [隔离 profile 验收](./docs/verification/profile-lifecycle-20261016.md) | 0.2.12 安装、启动、原生工具、设置保存、卸载与版本回滚实测 |
+| [全服务隔离实测](./docs/verification/all-services-20261016.md) | 18 项服务配置、16 路单独搜索、11 路提取、五种决策模型及失败历史；包含未发布 PR 修复 |
+| [豆包提取追查](./docs/verification/doubao-fetch-20261016.md) | 已证实的 HTTPS 升级缺陷、修复前后原生工具对照，以及尚未归因的历史 HTTPS 失败 |
 | [贡献指南](./CONTRIBUTING.md) | 本地开发、测试和提交要求 |
 | [安全说明](./SECURITY.md) | 外部请求、凭证保护和漏洞报告 |
 

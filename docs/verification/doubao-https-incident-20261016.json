@@ -1,0 +1,320 @@
+{
+  "date": "2026-10-16",
+  "source": "61c6e0f2e106c96abcc16ab9b8fe99d79870aaa4",
+  "status": "UNRESOLVED",
+  "originalHttpsFailure": {
+    "input": "https://example.com",
+    "failedCalls": 2,
+    "adapterStatus": 200,
+    "adapterChars": 919,
+    "returnedUrl": null,
+    "requestId": null,
+    "challenge": null,
+    "reason": "Historical failed responses were not recorded. New successful responses cannot recover these fields."
+  },
+  "oldCandidate": {
+    "sha256": "ecc4a140509e5d7b7afd12505aa2d93d82bed6e7476a85f1c86ab0d1165bf6e8",
+    "unmodifiedModuleSHA256": {
+      "engines/additional/adapters.js": "18c64ec1018476ff0294897b82a8cb970147ff1f3d33c53743aaea8954d1bd5f",
+      "fetch-document/organize.js": "f2d74d737cf70dff980f9e732aed34be436fe80165ad90c9df52e4874f137f07"
+    }
+  },
+  "experiments": {
+    "boundaryCapture": {
+      "calls": 175,
+      "httpsDoubaoCalls": 121,
+      "originalHttpsReproduced": false,
+      "scope": "Original service prefix followed by service/setting transitions; adapter and organizer instrumented."
+    },
+    "freshConnections": {
+      "calls": 12,
+      "originalHttpsReproduced": false
+    },
+    "directRoute": {
+      "calls": 12,
+      "outcome": "Transport failures before a usable vendor response; a different failure mode, not an HTTPS organizer reproduction."
+    },
+    "repeatedNativeCallId": {
+      "tested": [
+        "lifecycle-1",
+        "lifecycle-25",
+        "lifecycle-1000"
+      ],
+      "originalHttpsReproduced": false
+    },
+    "overlap": {
+      "httpCalls": 15,
+      "httpsCalls": 16,
+      "originalHttpsReproduced": false,
+      "scope": "Per-call AsyncLocalStorage capture; known HTTP failures did not contaminate concurrent HTTPS candidates."
+    },
+    "originalPrefixWithoutOrganizerEdits": {
+      "calls": 25,
+      "originalHttpsReproduced": false,
+      "scope": "Fresh process, original lifecycle-N call IDs and service sequence; adapter-only capture, organizer unchanged."
+    },
+    "parser": {
+      "observed": "globalThis.URL equals node:url URL in sampled organizer calls",
+      "historicalState": "UNKNOWN"
+    },
+    "evidenceDigests": [
+      {
+        "name": "settings-prefix",
+        "rawEvidenceSHA256": "81a2a9f1e30d659e025d9a6ac4f88446ecc6bc1dc46537fca6dadbd70815bf75"
+      },
+      {
+        "name": "transport",
+        "rawEvidenceSHA256": "e9b89d65388be3fbb911f31d34df23763210e98b753bbb4dcc2293bb6982cf9f"
+      },
+      {
+        "name": "call-id",
+        "rawEvidenceSHA256": "5da39af30dcd4395506f7d127a2a0ccf0d0220922734d0a1130840009c418db7"
+      },
+      {
+        "name": "overlap",
+        "rawEvidenceSHA256": "9fed9caf7c36f28ba224ba884bb20f6d1911a5383c8068c17d751fceb102d707"
+      }
+    ]
+  },
+  "debuggerValidation": {
+    "scope": "Separate control for capture correctness, not the historical HTTPS failure.",
+    "modulesModified": false,
+    "networkDebuggerPortOpened": false,
+    "oldCandidate": [
+      {
+        "callId": "https-54928-1",
+        "input": "https://example.com",
+        "status": "PASS",
+        "ms": 1595,
+        "events": [
+          "[提取] 服务 doubao 成功：状态 200，正文 919 字符",
+          "[提取] 已整理 1 路结果，输出 1118 字符；请求 1 次。"
+        ],
+        "trace": [
+          {
+            "eventId": "54928-3",
+            "time": "2026-10-16T08:20:59.793Z",
+            "phase": "doubao-response",
+            "requestUrl": "https://example.com",
+            "originalUrl": {
+              "url": "https://example.com",
+              "redacted": false,
+              "sha256": "100680ad546ce6a577f42f52df33b4cfdca756859e664b8d7de329b150d09ce9"
+            },
+            "redirectedUrl": {
+              "url": "https://example.com/",
+              "redacted": false,
+              "sha256": "0f115db062b7c0dd030b16878c99dea5c354b49dc37b38eb8846179c7783e9d7"
+            },
+            "status": 200,
+            "contentChars": 901,
+            "contentSHA256": "cc7eba83f7bac2ddf12f544ed9909bb0c91615270386e8970ed731ffdf4dac97",
+            "requestId": "20261016162105CF1C049F8A3613951888",
+            "logId": "20261016162105CF1C049F8A3613951888"
+          }
+        ]
+      },
+      {
+        "callId": "https-54928-2",
+        "input": "http://example.com",
+        "status": "FAIL",
+        "ms": 1388,
+        "events": [
+          "[提取] 服务 doubao 成功：状态 200，正文 919 字符"
+        ],
+        "trace": [
+          {
+            "eventId": "54928-4",
+            "time": "2026-10-16T08:21:01.322Z",
+            "phase": "doubao-response",
+            "requestUrl": "http://example.com",
+            "originalUrl": {
+              "url": "http://example.com",
+              "redacted": false,
+              "sha256": "f0e6a6a97042a4f1f1c87f5f7d44315b2d852c2df5c7991cc66241bf7072d1c4"
+            },
+            "redirectedUrl": {
+              "url": "https://example.com/",
+              "redacted": false,
+              "sha256": "0f115db062b7c0dd030b16878c99dea5c354b49dc37b38eb8846179c7783e9d7"
+            },
+            "status": 200,
+            "contentChars": 901,
+            "contentSHA256": "cc7eba83f7bac2ddf12f544ed9909bb0c91615270386e8970ed731ffdf4dac97",
+            "requestId": "2026101616210681527ADCD480704CCD44",
+            "logId": "2026101616210681527ADCD480704CCD44"
+          },
+          {
+            "eventId": "54928-5",
+            "time": "2026-10-16T08:21:01.328Z",
+            "phase": "organizer-rejection",
+            "requestUrl": "http://example.com",
+            "requestTarget": {
+              "url": "http://example.com/",
+              "redacted": false,
+              "sha256": "2a1b402420ef46577471cdc7409b0fa2c6a204db316e59ade2d805435489a067"
+            },
+            "usable": 0,
+            "documents": [
+              {
+                "engineId": "doubao",
+                "url": {
+                  "url": "https://example.com/",
+                  "redacted": false,
+                  "sha256": "0f115db062b7c0dd030b16878c99dea5c354b49dc37b38eb8846179c7783e9d7"
+                },
+                "target": {
+                  "url": "https://example.com/",
+                  "redacted": false,
+                  "sha256": "0f115db062b7c0dd030b16878c99dea5c354b49dc37b38eb8846179c7783e9d7"
+                },
+                "status": 200,
+                "challenge": false,
+                "successful": false,
+                "compatible": false,
+                "errorUsable": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "callId": "https-54928-3",
+        "input": "https://example.com",
+        "status": "PASS",
+        "ms": 1825,
+        "events": [
+          "[提取] 服务 doubao 成功：状态 200，正文 919 字符",
+          "[提取] 已整理 1 路结果，输出 1118 字符；请求 1 次。"
+        ],
+        "trace": [
+          {
+            "eventId": "54928-6",
+            "time": "2026-10-16T08:21:03.168Z",
+            "phase": "doubao-response",
+            "requestUrl": "https://example.com",
+            "originalUrl": {
+              "url": "https://example.com",
+              "redacted": false,
+              "sha256": "100680ad546ce6a577f42f52df33b4cfdca756859e664b8d7de329b150d09ce9"
+            },
+            "redirectedUrl": {
+              "url": "https://example.com/",
+              "redacted": false,
+              "sha256": "0f115db062b7c0dd030b16878c99dea5c354b49dc37b38eb8846179c7783e9d7"
+            },
+            "status": 200,
+            "contentChars": 901,
+            "contentSHA256": "cc7eba83f7bac2ddf12f544ed9909bb0c91615270386e8970ed731ffdf4dac97",
+            "requestId": "2026101616210835DE6A3445FBDF2D384C",
+            "logId": "2026101616210835DE6A3445FBDF2D384C"
+          }
+        ]
+      }
+    ],
+    "fixedCandidate": {
+      "sha256": "9d726afceb203b5e012c4a5c99da80e2be88984accf00499983a10804bea3721",
+      "samples": [
+        {
+          "callId": "https-57936-1",
+          "input": "http://example.com",
+          "status": "PASS",
+          "ms": 2562,
+          "events": [
+            "[提取] 服务 doubao 成功：状态 200，正文 919 字符",
+            "[提取] 已整理 1 路结果，输出 1118 字符；请求 1 次。"
+          ],
+          "trace": [
+            {
+              "eventId": "57936-3",
+              "time": "2026-10-16T08:12:10.955Z",
+              "phase": "doubao-response",
+              "requestUrl": "http://example.com",
+              "originalUrl": {
+                "url": "http://example.com/",
+                "redacted": false,
+                "sha256": "f0e6a6a97042a4f1f1c87f5f7d44315b2d852c2df5c7991cc66241bf7072d1c4"
+              },
+              "redirectedUrl": {
+                "url": "https://example.com/",
+                "redacted": false,
+                "sha256": "0f115db062b7c0dd030b16878c99dea5c354b49dc37b38eb8846179c7783e9d7"
+              },
+              "status": 200,
+              "contentChars": 901,
+              "contentSHA256": "cc7eba83f7bac2ddf12f544ed9909bb0c91615270386e8970ed731ffdf4dac97",
+              "requestId": "20261016161215FD9DEE017C89717E595E",
+              "logId": "20261016161215FD9DEE017C89717E595E"
+            }
+          ]
+        },
+        {
+          "callId": "https-57936-2",
+          "input": "https://example.com",
+          "status": "PASS",
+          "ms": 1337,
+          "events": [
+            "[提取] 服务 doubao 成功：状态 200，正文 919 字符",
+            "[提取] 已整理 1 路结果，输出 1118 字符；请求 1 次。"
+          ],
+          "trace": [
+            {
+              "eventId": "57936-4",
+              "time": "2026-10-16T08:12:12.306Z",
+              "phase": "doubao-response",
+              "requestUrl": "https://example.com",
+              "originalUrl": {
+                "url": "https://example.com/",
+                "redacted": false,
+                "sha256": "100680ad546ce6a577f42f52df33b4cfdca756859e664b8d7de329b150d09ce9"
+              },
+              "redirectedUrl": {
+                "url": "https://example.com/",
+                "redacted": false,
+                "sha256": "0f115db062b7c0dd030b16878c99dea5c354b49dc37b38eb8846179c7783e9d7"
+              },
+              "status": 200,
+              "contentChars": 901,
+              "contentSHA256": "cc7eba83f7bac2ddf12f544ed9909bb0c91615270386e8970ed731ffdf4dac97",
+              "requestId": "202610161612174D0019009DF939B046DB",
+              "logId": "202610161612174D0019009DF939B046DB"
+            }
+          ]
+        }
+      ]
+    },
+    "regressionTests": {
+      "file": "test/incident-capture.test.ts",
+      "passed": 5,
+      "scope": "Real organizer target/challenge rejection; private input exclusion; URL credential/query/fragment and body omission; existing evidence preservation; malformed debugger result handling; exact spelling with a synthetically broken global URL parser (not historical reproduction)."
+    }
+  },
+  "checks": {
+    "command": "pnpm run check",
+    "testFiles": 40,
+    "tests": 765,
+    "passed": 765,
+    "distributionFiles": 106
+  },
+  "cleanup": {
+    "pluginAbsent": true,
+    "providers": {
+      "searchProvider": "deepseek-official",
+      "fetchProvider": "http"
+    },
+    "nativeHttp": {
+      "name": "web_fetch",
+      "status": 200,
+      "ms": 678,
+      "isError": false,
+      "sources": 0,
+      "bodyChars": 290,
+      "hasSourceMarkers": false,
+      "http200": true
+    },
+    "isolatedPortsReleased": true,
+    "isolatedCredentialCopiesRemoved": true,
+    "formalDshPackageAndConfigurationReplaced": false
+  },
+  "completionGate": "Not met: a real HTTPS-input failure with its returned URL and rejection locals is still required before root-cause/fix claims. The HTTP control is a separate confirmed defect."
+}

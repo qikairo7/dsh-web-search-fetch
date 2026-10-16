@@ -367,6 +367,97 @@ describe('card controller', () => {
     expect(state.writable).toBe(true);
   });
 
+  it('首次匿名选择暂存固定预设与匿名参与范围，保存不写任何凭证', async () => {
+    const writes: string[] = [];
+    const { face, scope } = mount({ value: {}, set: ref => { writes.push(ref); return { ok: true }; } });
+    expect(face.hooks.webSearchFetch.getSnapshot().controls.preset).toBe('auto');
+    expect(face.hooks.webSearchFetch.getSnapshot().anonymousServiceIds).toEqual([]);
+    await face.refresh();
+    face.chooseStart('anonymous');
+    const state = face.hooks.webSearchFetch.getSnapshot();
+    expect(state.controls.preset).toBe('custom');
+    expect(state.controls.searchServices).toEqual(['anysearch', 'firecrawl', 'tavily']);
+    expect(state.controls.fetchServices).toEqual(state.controls.searchServices);
+    expect(Object.entries(state.controls.serviceEnabled).filter(([, enabled]) => enabled).map(([id]) => id))
+      .toEqual(['anysearch', 'firecrawl', 'tavily', 'http']);
+    expect(scope.mutations).toHaveLength(0);
+    face.discard();
+    expect(face.hooks.webSearchFetch.getSnapshot().controls.preset).toBe('auto');
+    face.chooseStart('anonymous');
+    await face.save();
+    expect(writes).toEqual([]);
+    expect(scope.mutations.flat()).toContainEqual({ op: 'set', path: ['controls', 'preset'], value: 'custom' });
+  });
+
+  it('匿名选择排除已有或部分凭证、自定义端点与密钥草稿，保留原设置字段', async () => {
+    const { face, scope } = mount({ value: {
+      engines: { tavily: { baseURL: 'https://custom.example', apiKeyEnv: 'CUSTOM_TV' } },
+      search: { anysearchApiKeyEnv: 'AS_SEARCH' }, fetch: { anysearchApiKeyEnv: 'AS_FETCH' },
+    }, describe: refs => ({ ok: true, value: Object.fromEntries(refs.map(ref => [ref, { configured: ref === 'AS_SEARCH', writable: true }])) }) });
+    await face.refresh();
+    expect(face.hooks.webSearchFetch.getSnapshot().anonymousServiceIds).toEqual(['firecrawl']);
+    face.editKey('firecrawl', 'fixture-draft');
+    face.chooseStart('anonymous');
+    expect(face.hooks.webSearchFetch.getSnapshot().controls.preset).toBe('auto');
+    face.editKey('firecrawl', '');
+    face.chooseStart('anonymous');
+    expect(face.hooks.webSearchFetch.getSnapshot().controls.fetchServices).toEqual(['firecrawl']);
+    await face.save();
+    expect(scope.mutations.flat().some(op => op.path.includes('baseURL') || op.path.includes('apiKeyEnv'))).toBe(false);
+  });
+
+  it('自动配置入口展开调用设置，沿用模型和凭证的分阶段保存', async () => {
+    const { face } = mount({ value: { controls: { preset: 'custom' } } });
+    face.chooseStart('auto');
+    expect(face.hooks.webSearchFetch.getSnapshot().view.callSettingsOpen).toBe(true);
+    expect(face.hooks.webSearchFetch.getSnapshot().controls.preset).toBe('auto');
+    face.editDecision('jev-latest');
+    face.editKey('typesafe', 'fixture-draft');
+    face.discard();
+    expect(face.hooks.webSearchFetch.getSnapshot().decisionModel).toBe('decision-model-preview');
+    expect(face.hooks.webSearchFetch.getSnapshot().keys.every((row: { text: string }) => row.text === '')).toBe(true);
+  });
+
+  it('自动配置入口只在激活后聚焦模型，不在其他更新时抢走焦点', () => {
+    const { face, page } = mount({ value: { controls: { preset: 'auto' } } });
+    const effects: (() => unknown)[] = [];
+    const originalEffect = reactStub.useEffect;
+    reactStub.useEffect = effect => { effects.push(effect); };
+    try {
+      const tab = page.registrations.find(entry => entry.options.name === 'settings.plugins.tab')!;
+      const tree = (tab.component as (props: unknown) => unknown)({ ...face, t: (key: string) => key,
+        useWebSearchFetch: (select: (value: unknown) => unknown) => select(face.hooks.webSearchFetch.getSnapshot()) });
+      const nodes: any[] = [];
+      const visit = (node: any): void => {
+        if (Array.isArray(node)) { node.forEach(visit); return; }
+        if (!node || typeof node !== 'object') return;
+        nodes.push(node); visit(node.props?.children);
+      };
+      visit(tree);
+      const calls: string[] = [];
+      nodes.find(node => node.props?.id === 'wsf-decision-model').props.ref.current = {
+        focus: () => calls.push('focus'), scrollIntoView: ({ block }: { block: string }) => calls.push(block),
+      };
+      effects[1]!();
+      expect(calls).toEqual([]);
+      nodes.find(node => node.props?.children === 'setupAuto').props.onClick();
+      effects[1]!();
+      effects[1]!();
+      expect(calls).toEqual(['focus', 'center']);
+    } finally { reactStub.useEffect = originalEffect; }
+  });
+
+  it('只读或状态读取失败时不能选择匿名配置', async () => {
+    const { face, scope } = mount({ value: {}, writable: false });
+    await face.refresh();
+    face.chooseStart('anonymous');
+    expect(face.hooks.webSearchFetch.getSnapshot().dirty).toBe(false);
+    expect(scope.mutations).toEqual([]);
+    const broken = mount({ value: {}, describe: () => ({ ok: false }) });
+    await broken.face.refresh();
+    expect(broken.face.hooks.webSearchFetch.getSnapshot().anonymousServiceIds).toEqual([]);
+  });
+
   it('五款决策模型暂存、撤销并保存到独立字段，不修改服务开关', async () => {
     const { face, scope } = mount({ value: { search: { decisionModel: 'decision-model-preview' } } });
     for (const model of ['Kev-4b', 'SemIf', 'diffusiongemma', 'decision-model-preview', 'jev-latest']) {

@@ -1,0 +1,342 @@
+{
+  "schemaVersion": 1,
+  "scope": "Offline rule evaluation and live anonymous aggregate availability; live relevance metrics are proxies, news freshness is UNKNOWN without dates; no vendor billing evidence",
+  "offline": {
+    "schemaVersion": 1,
+    "generatedAt": "2026-10-16T09:43:20.907Z",
+    "node": "v24.20.0",
+    "commit": "f86792478dbf8fa4ece0f81d4b813d50f2e67e01",
+    "workingTree": "dirty",
+    "scope": "Synthetic judgments test pipeline rules; live anonymous rows measure current availability and relevance proxies, not human relevance scores. Requests count dispatched attempts, including cancelled lanes; no currency estimate.",
+    "rows": [
+      {
+        "id": "chinese-question",
+        "category": "chinese",
+        "scope": "synthetic replay",
+        "status": "PASS",
+        "cost": {
+          "requests": 3,
+          "completed": 3,
+          "cancelled": 0,
+          "byKind": {
+            "search": 3
+          },
+          "monetaryCost": null
+        },
+        "precisionAt5": 0.8,
+        "ndcgAt5": 1,
+        "truncated": true,
+        "ms": 24
+      },
+      {
+        "id": "dated-news",
+        "category": "news",
+        "scope": "synthetic replay",
+        "status": "PASS",
+        "cost": {
+          "requests": 3,
+          "completed": 3,
+          "cancelled": 0,
+          "byKind": {
+            "search": 3
+          },
+          "monetaryCost": null
+        },
+        "precisionAt5": 0.6,
+        "ndcgAt5": 1,
+        "datedSources": 4,
+        "inWindowSources": 3,
+        "truncated": true,
+        "ms": 4
+      },
+      {
+        "id": "long-chinese-select",
+        "category": "long-article",
+        "scope": "synthetic replay",
+        "status": "PASS",
+        "cost": {
+          "requests": 3,
+          "completed": 3,
+          "cancelled": 0,
+          "byKind": {
+            "extract": 3
+          },
+          "monetaryCost": null
+        },
+        "markerHits": 4,
+        "markerTotal": 12,
+        "markerRecall": 0.3333333333333333,
+        "retainedSections": 60,
+        "sectionTotal": 60,
+        "bodyChars": 36743,
+        "truncated": false,
+        "ms": 11
+      },
+      {
+        "id": "long-chinese-organize",
+        "category": "long-article",
+        "scope": "synthetic replay",
+        "status": "PASS",
+        "cost": {
+          "requests": 3,
+          "completed": 3,
+          "cancelled": 0,
+          "byKind": {
+            "extract": 3
+          },
+          "monetaryCost": null
+        },
+        "markerHits": 12,
+        "markerTotal": 12,
+        "markerRecall": 1,
+        "retainedSections": 60,
+        "sectionTotal": 60,
+        "bodyChars": 41331,
+        "truncated": false,
+        "ms": 13
+      },
+      {
+        "id": "long-chinese-budget",
+        "category": "long-article",
+        "scope": "synthetic replay",
+        "status": "PASS",
+        "cost": {
+          "requests": 3,
+          "completed": 3,
+          "cancelled": 0,
+          "byKind": {
+            "extract": 3
+          },
+          "monetaryCost": null
+        },
+        "markerHits": 0,
+        "markerTotal": 12,
+        "markerRecall": 0,
+        "retainedSections": 11,
+        "sectionTotal": 60,
+        "bodyChars": 922,
+        "truncated": true,
+        "ms": 8
+      },
+      {
+        "id": "challenge-with-article",
+        "category": "challenge",
+        "scope": "synthetic replay",
+        "status": "PASS",
+        "cost": {
+          "requests": 2,
+          "completed": 2,
+          "cancelled": 0,
+          "byKind": {
+            "extract": 2
+          },
+          "monetaryCost": null
+        },
+        "challengeExcluded": true,
+        "articleRetained": true,
+        "truncated": false,
+        "ms": 5
+      },
+      {
+        "id": "all-challenged",
+        "category": "challenge",
+        "scope": "synthetic replay",
+        "status": "PASS",
+        "cost": {
+          "requests": 1,
+          "completed": 1,
+          "cancelled": 0,
+          "byKind": {
+            "extract": 1
+          },
+          "monetaryCost": null
+        },
+        "challengeRejected": true,
+        "truncated": false,
+        "ms": 1
+      },
+      {
+        "id": "slow-search-custom",
+        "category": "slow-channel",
+        "scope": "synthetic replay",
+        "status": "PASS",
+        "cost": {
+          "requests": 4,
+          "completed": 4,
+          "cancelled": 0,
+          "byKind": {
+            "search": 4
+          },
+          "monetaryCost": null
+        },
+        "sourceCount": 5,
+        "truncated": true,
+        "ms": 2201
+      },
+      {
+        "id": "slow-search-auto",
+        "category": "slow-channel",
+        "scope": "synthetic replay",
+        "status": "PASS",
+        "cost": {
+          "requests": 5,
+          "completed": 4,
+          "cancelled": 1,
+          "byKind": {
+            "decision": 1,
+            "search": 4
+          },
+          "monetaryCost": null
+        },
+        "sourceCount": 5,
+        "truncated": true,
+        "ms": 1203
+      },
+      {
+        "id": "slow-fetch-custom",
+        "category": "slow-channel",
+        "scope": "synthetic replay",
+        "status": "PASS",
+        "cost": {
+          "requests": 4,
+          "completed": 4,
+          "cancelled": 0,
+          "byKind": {
+            "extract": 4
+          },
+          "monetaryCost": null
+        },
+        "slowContentRetained": true,
+        "truncated": false,
+        "ms": 2202
+      },
+      {
+        "id": "slow-fetch-auto",
+        "category": "slow-channel",
+        "scope": "synthetic replay",
+        "status": "PASS",
+        "cost": {
+          "requests": 5,
+          "completed": 4,
+          "cancelled": 1,
+          "byKind": {
+            "decision": 1,
+            "extract": 4
+          },
+          "monetaryCost": null
+        },
+        "slowContentRetained": false,
+        "truncated": true,
+        "ms": 1202
+      }
+    ]
+  },
+  "live": {
+    "generatedAt": "2026-10-16T09:37:19.631Z",
+    "node": "v24.20.0",
+    "commit": "f86792478dbf8fa4ece0f81d4b813d50f2e67e01",
+    "workingTree": "dirty",
+    "rows": [
+      {
+        "id": "live-chinese",
+        "scope": "live anonymous core API",
+        "status": "PASS",
+        "ms": 5269,
+        "truncated": true,
+        "sourceCount": 5,
+        "topicMatchAt5": 1,
+        "datedSources": 0,
+        "inWindowSources": null,
+        "markerHits": null,
+        "markerTotal": null,
+        "markerRecall": null,
+        "bodyChars": null,
+        "cost": {
+          "requests": 5,
+          "byKind": {
+            "search": 5
+          },
+          "monetaryCost": null
+        }
+      },
+      {
+        "id": "live-news",
+        "scope": "live anonymous core API",
+        "status": "PASS",
+        "ms": 3534,
+        "truncated": true,
+        "sourceCount": 5,
+        "topicMatchAt5": 1,
+        "datedSources": 0,
+        "inWindowSources": null,
+        "markerHits": null,
+        "markerTotal": null,
+        "markerRecall": null,
+        "bodyChars": null,
+        "cost": {
+          "requests": 3,
+          "byKind": {
+            "search": 3
+          },
+          "monetaryCost": null
+        }
+      },
+      {
+        "id": "live-current-news",
+        "scope": "live anonymous core API",
+        "status": "PASS",
+        "ms": 3715,
+        "truncated": true,
+        "sourceCount": 5,
+        "topicMatchAt5": 1,
+        "datedSources": 0,
+        "inWindowSources": 0,
+        "markerHits": null,
+        "markerTotal": null,
+        "markerRecall": null,
+        "bodyChars": null,
+        "cost": {
+          "requests": 3,
+          "byKind": {
+            "search": 3
+          },
+          "monetaryCost": null
+        }
+      },
+      {
+        "id": "live-long-article",
+        "scope": "live anonymous core API",
+        "status": "PASS",
+        "ms": 2162,
+        "truncated": true,
+        "sourceCount": null,
+        "topicMatchAt5": null,
+        "datedSources": null,
+        "inWindowSources": null,
+        "markerHits": 5,
+        "markerTotal": 5,
+        "markerRecall": 1,
+        "bodyChars": 49919,
+        "cost": {
+          "requests": 3,
+          "byKind": {
+            "scrape": 1,
+            "extract": 2
+          },
+          "monetaryCost": null
+        }
+      }
+    ]
+  },
+  "firstUse": {
+    "scope": "real isolated DSH settings and native tools driven through actual card controller; GUI NOT_RUN",
+    "autoMissingCredentialRejected": true,
+    "autoEntryOpensSettings": true,
+    "anonymousSaved": true,
+    "readBackPreset": "custom",
+    "searchPassed": true,
+    "fetchPassed": true,
+    "credentialWrites": 0,
+    "gui": "NOT_RUN"
+  }
+}

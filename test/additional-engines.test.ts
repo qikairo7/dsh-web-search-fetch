@@ -42,6 +42,61 @@ const fetchPayloads: Partial<Record<AdditionalEngineId, unknown>> = {
 };
 
 describe('新增引擎 HTTP 契约', () => {
+  it('豆包 HTTPS 升级经过实际适配器和正文整理后返回最终地址', async () => {
+    server = await startMockServer((_request, response) => {
+      response.end(JSON.stringify({ ResponseMetadata: {}, Result: { Data: { Url: 'http://example.com', RedirectedUrl: 'https://example.com/', ContentText: 'Public example content.', Title: 'Example Domain', StatusCode: 200 } } }));
+    });
+    const engines = createAdditionalEngines({ doubao: { baseURL: server.url } }, async () => 'test-key', { searchTimeoutMs: 500, fetchTimeoutMs: 500 });
+    const provider = new AggregatedFetchProvider({ additionalEngines: engines, legs: [], resolveControls: () => ({ preset: 'custom', fetchServices: ['doubao'], mode: 'organize' }) });
+    const output = await provider.fetch({ url: 'http://example.com' });
+    expect(output.url).toBe('https://example.com/');
+    expect(output.body.content).toContain('Public example content.');
+    expect(output.body.content).toContain('doubao');
+    expect(JSON.parse(server.requests[0]!.body)).toEqual({ Url: 'http://example.com' });
+  });
+
+  it('GitHub 仓库根页的 README 进入正文整理，保留目标仓库 URL', async () => {
+    server = await startMockServer((_request, response) => {
+      response.end(JSON.stringify(fetchPayloads.github));
+    });
+    const engines = createAdditionalEngines({ github: { baseURL: server.url } }, async () => 'test-key', { searchTimeoutMs: 500, fetchTimeoutMs: 500 });
+    const provider = new AggregatedFetchProvider({ additionalEngines: engines, legs: [], resolveControls: () => ({ preset: 'custom', fetchServices: ['github'], mode: 'organize' }) });
+    const output = await provider.fetch({ url: 'https://github.com/owner/repo' });
+    expect(output.url).toBe('https://github.com/owner/repo');
+    expect(output.body.content).toContain('Body');
+    expect(output.body.content).toContain('github');
+    expect(server.requests[0]?.url).toBe('/repos/owner/repo/readme');
+  });
+
+  it('GitHub README 返回其他仓库时仍拒绝正文整理', async () => {
+    server = await startMockServer((_request, response) => {
+      response.end(JSON.stringify({ ...fetchPayloads.github as object, html_url: 'https://github.com/other/repo/blob/main/README.md' }));
+    });
+    const engines = createAdditionalEngines({ github: { baseURL: server.url } }, async () => 'test-key', { searchTimeoutMs: 500, fetchTimeoutMs: 500 });
+    const provider = new AggregatedFetchProvider({ additionalEngines: engines, legs: [], resolveControls: () => ({ preset: 'custom', fetchServices: ['github'], mode: 'organize' }) });
+    await expect(provider.fetch({ url: 'https://github.com/owner/repo' })).rejects.toMatchObject({ code: 'WEB_PROVIDER_ERROR' });
+  });
+
+  it('GitHub blob 文本扩展名通过内容 API 提取，不误判为静态 HTTP 资源', async () => {
+    server = await startMockServer((_request, response) => {
+      response.end(JSON.stringify(fetchPayloads.github));
+    });
+    const engines = createAdditionalEngines({ github: { baseURL: server.url } }, async () => 'test-key', { searchTimeoutMs: 500, fetchTimeoutMs: 500 });
+    const provider = new AggregatedFetchProvider({ additionalEngines: engines, legs: [], resolveControls: () => ({ preset: 'custom', fetchServices: ['github'], mode: 'organize' }),
+      resolveAddresses: async () => { throw new Error('must use GitHub content API'); } });
+    const output = await provider.fetch({ url: 'https://github.com/owner/repo/blob/main/README.md' });
+    expect(output.body.content).toContain('Body');
+    expect(output.body.content).toContain('github');
+    expect(server.requests[0]?.url).toBe('/repos/owner/repo/contents/README.md?ref=main');
+  });
+
+  it.each([{ enabled: false }, { staticDomains: ['github.com'] }])('GitHub blob 保留显式 HTTP 路由配置 %j', async route => {
+    const engines = createAdditionalEngines({ github: {} }, async () => 'test-key', { searchTimeoutMs: 500, fetchTimeoutMs: 500 });
+    const provider = new AggregatedFetchProvider({ additionalEngines: engines, route,
+      resolveAddresses: async () => { throw new Error('explicit HTTP route'); } });
+    await expect(provider.fetch({ url: 'https://github.com/owner/repo/blob/main/README.md' })).rejects.toThrow('explicit HTTP route');
+  });
+
   it('AIHOT 无需凭证，保留原文、canonical、署名与截断信号', async () => {
     server = await startMockServer((_request, response) => {
       response.end(JSON.stringify({ ...(searchPayloads.aihot as object), page: { hasMore: true } }));
