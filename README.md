@@ -251,6 +251,7 @@ flowchart LR
 | [全服务隔离实测](./docs/verification/all-services-20261016.md) | 18 项服务配置、16 路单独搜索、11 路提取、五种决策模型及失败历史；包含未发布 PR 修复 |
 | [豆包提取追查](./docs/verification/doubao-fetch-20261016.md) | 已证实的 HTTPS 升级缺陷、修复前后原生工具对照，以及尚未归因的历史 HTTPS 失败 |
 | [正式 DSH 会话实战验收](./docs/verification/live-session-20261016.md) | 0.2.13 正式会话中模型自主调用原生工具、deep / fast 自动切换与「不读取网页」约束 |
+| [0.2.14 正式 profile 安装验证](./docs/verification/formal-profile-v0.2.14-20261016.md) | 正式 Web profile 升级、宿主重启与原生 `web_fetch` 三路提取实测 |
 | [贡献指南](./CONTRIBUTING.md) | 本地开发、测试和提交要求 |
 | [安全说明](./SECURITY.md) | 外部请求、凭证保护和漏洞报告 |
 
