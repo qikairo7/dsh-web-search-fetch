@@ -46,4 +46,4 @@
 
 需要完整恢复依赖时，在停止 profile 后恢复配套的 `package.json` 和锁文件，再通过 `dsh plugin --profile <profile> install --frozen-lockfile --ignore-scripts` 安装依赖。备份中的本地包路径也必须仍然可用。
 
-本次实际验证了 `0.2.12 → 0.2.11 → 0.2.12`，以及最终卸载后恢复宿主默认 provider。该结果不扩展其他 DSH 版本的兼容声明。
+本次实际验证了 `0.2.12 → 0.2.11 → 0.2.12`，以及最终卸载后恢复宿主默认 provider。后续 `0.2.14` 另完成正式 Web profile 升级与宿主重启验证；本轮未重测卸载和回滚。该结果不扩展其他 DSH 版本的兼容声明。

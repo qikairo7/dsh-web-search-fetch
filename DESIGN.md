@@ -1,5 +1,13 @@
 # 架构说明
 
+## 当前交付状态
+
+当前正式 Release 为 `0.2.14`。该版本与 `0.2.13` 的运行代码一致，用于补充交付文档；`0.2.14` 已在正式 Web profile 完成下载校验、升级、宿主重启和原生 `web_fetch` 验证。仓库门禁覆盖 771 项测试、构建、类型检查、仓库与分发检查，以及 Windows／Ubuntu × Node.js 22.19／24 的 CI 矩阵。
+
+历史运行修复已进入正式分发包：GitHub 仓库根页与 blob Markdown 的专用路由、同资源 HTTP → HTTPS 升级的正文归属修正包含在 `0.2.13` 及之后版本。原 HTTPS 输入的历史整理拒绝仍未归因，issue #3 保持开放；后续成功调用不作为该问题关闭依据。DSH Store 的独立供应链审阅与准入仍由 Store 维护者决定。
+
+本文件描述当前架构。各验证报告按其记录的版本和资产单独生效，后续版本不自动继承运行结论。
+
 ## 项目定位
 
 `dsh-web-search-fetch` 是运行在 DSH 进程中的 Cordis 插件。插件向 `ctx.web` 注册搜索和网页提取 provider，两者的 ID 均为 `aggregated`，分别供原生 `web_search` 和 `web_fetch` 工具使用。
