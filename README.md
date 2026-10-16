@@ -10,7 +10,7 @@
 [快速开始](#快速开始) · [项目定位与证据](#项目定位与证据) · [配置参考](./docs/configuration.md) · [正文整理演示](./docs/content-organization.md#输入与输出演示) · [真实对比](./docs/modsearch-comparison.md) · [依赖审阅材料](./docs/dependency-review.md) · [参与贡献](./CONTRIBUTING.md)
 
 ```sh
-dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.14/dsh-web-search-fetch-0.2.14.tgz
+dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.15/dsh-web-search-fetch-0.2.15.tgz
 ```
 
 安装后打开「设置 → 内置插件 → 网络搜索与提取」，在顶部明确选择一种开始方式：
@@ -51,7 +51,7 @@ dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/re
 
 | 证据 | 结果与边界 |
 | --- | --- |
-| 当前交付版本 | `0.2.14`；运行代码与 `0.2.13` 一致，主要是交付文档版 |
+| 当前交付版本 | `0.2.15`；以文档梳理为主，并声明 DSH `0.2.1-alpha.4` 兼容 |
 | 仓库门禁 | 771 项测试、构建、类型检查、仓库与分发检查、双 OS × 双 Node CI |
 | 隔离生命周期 | `0.2.12` 完成安装、启动、原生工具、设置保存、重启持久化、卸载与回滚 |
 | 全服务实测 | 18 项服务配置；16 路搜索与最多 11 路提取逐项验证，保留失败历史 |
@@ -134,12 +134,13 @@ AIHOT 搜索覆盖近 7 天 AI 资讯；启用后，原生 `web_fetch` 可读取
 | 开发工具 | pnpm 12.10.1 |
 | 外部服务 | 网络连通性；推荐的 AnySearch、Firecrawl、Tavily 官方匿名模式无需凭证，增强服务按需启用 |
 
-已在 Windows、Node.js 24.20.0、DSH `0.2.1-alpha.2` / `0.2.1-alpha.3` 的正式环境及隔离 profile 中验证安装、原生搜索和网页提取。`0.2.14` 另在正式 Web profile 完成升级、重启和原生提取验证。`alpha.3` 的 `@deepseek-ai/dsh-tool-web` 与 `@deepseek-ai/dsh-web` 运行时代码和类型声明相对 `alpha.2` 未变化，新增 locale 资源与依赖版本。CI 覆盖 Windows／Ubuntu、Node.js 22.19／24 的构建、类型检查与测试；CI 通过不表示这些组合均完成 DSH 实机验收。
+已在 Windows、Node.js 24.20.0、DSH `0.2.1-alpha.2` / `0.2.1-alpha.3` 的正式环境及隔离 profile 中验证安装、原生搜索和网页提取。`0.2.14` 另在正式 Web profile 完成升级、重启和原生提取验证。`alpha.4` 的 `@deepseek-ai/dsh-web` provider 接口与 `alpha.3` 一致，本版本按 alpha.4 运行时执行离线适配检查；实机验收见版本发布说明。CI 覆盖 Windows／Ubuntu、Node.js 22.19／24 的构建、类型检查与测试；CI 通过不表示这些组合均完成 DSH 实机验收。
 
 | DSH 版本 | 兼容声明 | 验证范围 |
 | --- | --- | --- |
 | `0.2.1-alpha.2` | compatible | 上述 Windows 环境的安装、搜索与提取 |
 | `0.2.1-alpha.3` | compatible | 上述 Windows 环境的安装、搜索与提取 |
+| `0.2.1-alpha.4` | compatible | 按 alpha.4 运行时完成离线适配检查；实机验收以发布记录为准 |
 | `0.2.1-alpha.1` | unknown | 尚未执行该版本运行验收 |
 | `0.2.0-rc.2` | unknown | 尚未执行该版本运行验收 |
 
@@ -150,10 +151,10 @@ AIHOT 搜索覆盖近 7 天 AI 资讯；启用后，原生 `web_fetch` 可读取
 在已配置 DSH 的环境中执行：
 
 ```sh
-dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.14/dsh-web-search-fetch-0.2.14.tgz
+dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.15/dsh-web-search-fetch-0.2.15.tgz
 ```
 
-将 `web` 替换为实际使用的 profile，安装后重启宿主。以上命令使用 `0.2.14` Release 包，不需要 npm 包发布账号或 GitHub 登录。
+将 `web` 替换为实际使用的 profile，安装后重启宿主。以上命令使用 `0.2.15` Release 包，不需要 npm 包发布账号或 GitHub 登录。
 
 自 `0.2.11` 起，Git 固定提交同时包含完整的 `lib/**/*.js` 与 `lib/**/*.d.ts`，安装方无需先编译 TypeScript。固定源码仍需安装运行依赖并满足宿主 peer 依赖；产物齐全不等于 Store 已批准或实际 profile 已完成验收。分发检查方法见[贡献指南](./CONTRIBUTING.md#测试与提交)，运行依赖、完整性与审阅边界见[依赖审阅材料](./docs/dependency-review.md)。
 

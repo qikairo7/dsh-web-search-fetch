@@ -1,6 +1,6 @@
 # 卸载与回滚
 
-以下步骤适用于 DSH profile 安装。操作前停止目标 profile；同一宿主的其他 profile 无需停止。首次执行时，可先使用独立 `DSH_HOME` 验证。已完成的版本和环境见[隔离验收记录](./verification/profile-lifecycle-20261016.md)；`0.2.14` 的正式 Web profile 升级与重启见[正式安装验证](./verification/formal-profile-v0.2.14-20261016.md)。
+以下步骤适用于 DSH profile 安装。操作前停止目标 profile；同一宿主的其他 profile 无需停止。首次执行时，可先使用独立 `DSH_HOME` 验证。已完成的版本和环境见[隔离验收记录](./verification/profile-lifecycle-20261016.md)；`0.2.14` 的正式 Web profile 升级与重启见[正式安装验证](./verification/formal-profile-v0.2.14-20261016.md)。`0.2.15` 的 alpha.4 实机安装证据以对应 Release 记录为准。
 
 ## 安装或升级前备份
 
