@@ -5,9 +5,9 @@
 
 **面向资料研究的 DSH 插件：融合多来源搜索，整理网页正文，保留来源与差异。**
 
-面向 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）的网络搜索与网页提取插件。新安装默认启用 AnySearch、Firecrawl、Tavily，使用官方匿名额度开始，搜索与提取本身无需填写 API Key；自动预设另需配置决策模型凭证。配置更多服务后，通过原生 `web_search` 融合搜索结果，通过原生 `web_fetch` 整理多份正文。适合技术检索与资料研究。
+面向 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）的网络搜索与网页提取插件。它把多个服务聚合到原生 `web_search` / `web_fetch` 两个 provider 后面，不新增模型工具、MCP 服务、常驻浏览器或外部 CLI。新安装默认启用 AnySearch、Firecrawl、Tavily，使用官方匿名额度开始；自动预设另需配置决策模型凭证。配置更多服务后，搜索结果经过 URL 去重与 RRF 融合，动态网页按多路正文整理，并保留来源与差异。
 
-[快速开始](#快速开始) · [正文整理演示](./docs/content-organization.md#输入与输出演示) · [真实对比](./docs/modsearch-comparison.md) · [配置参考](./docs/configuration.md) · [依赖审阅材料](./docs/dependency-review.md) · [参与贡献](./CONTRIBUTING.md)
+[快速开始](#快速开始) · [项目定位与证据](#项目定位与证据) · [配置参考](./docs/configuration.md) · [正文整理演示](./docs/content-organization.md#输入与输出演示) · [真实对比](./docs/modsearch-comparison.md) · [依赖审阅材料](./docs/dependency-review.md) · [参与贡献](./CONTRIBUTING.md)
 
 ```sh
 dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.14/dsh-web-search-fetch-0.2.14.tgz
@@ -44,6 +44,23 @@ dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/re
 搜索融合和正文整理不构成事实交叉验证。多路并发及补充检索会消耗对应服务额度。参数与使用边界见[配置参考](./docs/configuration.md)，离线验证方法见[正文整理](./docs/content-organization.md)，中文、新闻、长文、挑战页及慢渠道的指标见[质量评测](./docs/quality-evaluation.md)。
 
 与 ModSearch 5.10.6 的 48 次真实调用均成功。多服务搜索中，ModSearch 的耗时与请求次数更低；本插件融合来源并整理多份提取，适合需要来源与差异记录的资料研究。样本与限制见[真实对比](./docs/modsearch-comparison.md)。
+
+## 项目定位与证据
+
+这个项目面向的是资料研究和可治理的多源调用，不是零配置联网的最小方案。它优先解决四件事：模型仍只用 DSH 原生双工具；搜索结果来自多路融合；动态网页提取保留来源、差异和预算边界；服务、凭证、预设、请求量和熔断可以在设置页统一管理。
+
+| 证据 | 结果与边界 |
+| --- | --- |
+| 当前交付版本 | `0.2.14`；运行代码与 `0.2.13` 一致，主要是交付文档版 |
+| 仓库门禁 | 771 项测试、构建、类型检查、仓库与分发检查、双 OS × 双 Node CI |
+| 隔离生命周期 | `0.2.12` 完成安装、启动、原生工具、设置保存、重启持久化、卸载与回滚 |
+| 全服务实测 | 18 项服务配置；16 路搜索与最多 11 路提取逐项验证，保留失败历史 |
+| 正式会话 | `0.2.13` 四轮模型自主调用原生双工具，覆盖 deep / fast 自动切换和「不读取网页」约束 |
+| 正式 profile 升级 | `0.2.14` 完成 Release 下载校验、升级、宿主重启和 `web_fetch` 三路提取 |
+| 已知未归因问题 | 原 HTTPS 输入的历史整理拒绝未复现；issue #3 保持开放，不以后续成功关闭 |
+| 外部流程 | DSH Store 独立供应链审阅与准入不由本项目宣布通过 |
+
+建议按需求选择：需要开箱即用、最低请求成本或 X 搜索时，ModSearch 是合理选择；需要来源融合、正文整理、服务级治理和可控预设时，优先考虑本插件。
 
 ## 完整接入清单
 
@@ -117,7 +134,7 @@ AIHOT 搜索覆盖近 7 天 AI 资讯；启用后，原生 `web_fetch` 可读取
 | 开发工具 | pnpm 12.10.1 |
 | 外部服务 | 网络连通性；推荐的 AnySearch、Firecrawl、Tavily 官方匿名模式无需凭证，增强服务按需启用 |
 
-已在 Windows、Node.js 24.20.0、DSH `0.2.1-alpha.2` / `0.2.1-alpha.3` 的正式环境及隔离 profile 中验证安装、原生搜索和网页提取。`alpha.3` 的 `@deepseek-ai/dsh-tool-web` 与 `@deepseek-ai/dsh-web` 运行时代码和类型声明相对 `alpha.2` 未变化，新增 locale 资源与依赖版本。CI 覆盖 Windows／Ubuntu、Node.js 22.19／24 的构建、类型检查与测试；CI 通过不表示这些组合均完成 DSH 实机验收。
+已在 Windows、Node.js 24.20.0、DSH `0.2.1-alpha.2` / `0.2.1-alpha.3` 的正式环境及隔离 profile 中验证安装、原生搜索和网页提取。`0.2.14` 另在正式 Web profile 完成升级、重启和原生提取验证。`alpha.3` 的 `@deepseek-ai/dsh-tool-web` 与 `@deepseek-ai/dsh-web` 运行时代码和类型声明相对 `alpha.2` 未变化，新增 locale 资源与依赖版本。CI 覆盖 Windows／Ubuntu、Node.js 22.19／24 的构建、类型检查与测试；CI 通过不表示这些组合均完成 DSH 实机验收。
 
 | DSH 版本 | 兼容声明 | 验证范围 |
 | --- | --- | --- |
@@ -242,11 +259,13 @@ flowchart LR
 | [配置参考](./docs/configuration.md) | 参数、端点、凭证回落关系和工具预算 |
 | [网页正文整理](./docs/content-organization.md) | 整理规则、来源标记、差异处理和限制 |
 | [与 ModSearch 的真实对比](./docs/modsearch-comparison.md) | 方法、逐次指标、请求成本与证据边界 |
+| [质量评测](./docs/quality-evaluation.md) | 中文、新闻、长文、挑战页与慢渠道的离线／真实指标 |
 | [AIHOT 接入](./docs/aihot.md) | 原生工具读取 Markdown、结构化报告及精选 API |
 | [架构说明](./DESIGN.md) | 模块职责、数据流、错误处理和扩展方式 |
 | [术语表](./GLOSSARY.md) | 项目术语与接口含义 |
 | [常见问题](./docs/troubleshooting.md) | 装载、凭证、超时和熔断排查 |
 | [卸载与回滚](./docs/lifecycle.md) | 配置备份、移除保存的设置与恢复原 provider |
+| [运行依赖审阅材料](./docs/dependency-review.md) | 直接依赖来源、许可证、安装脚本、分发完整性与复核命令 |
 | [隔离 profile 验收](./docs/verification/profile-lifecycle-20261016.md) | 0.2.12 安装、启动、原生工具、设置保存、卸载与版本回滚实测 |
 | [全服务隔离实测](./docs/verification/all-services-20261016.md) | 18 项服务配置、16 路单独搜索、11 路提取、五种决策模型及失败历史；包含未发布 PR 修复 |
 | [豆包提取追查](./docs/verification/doubao-fetch-20261016.md) | 已证实的 HTTPS 升级缺陷、修复前后原生工具对照，以及尚未归因的历史 HTTPS 失败 |

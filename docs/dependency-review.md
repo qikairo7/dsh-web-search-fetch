@@ -2,11 +2,13 @@
 
 ## 范围与状态
 
-本文回应 [DSH Store #1415 的复检意见](https://github.com/AI-Scarlett/DSH-Store/issues/1415#issuecomment-6195716034)，提供 `0.2.11` 的作者侧分发修复与依赖材料。固定 Git 树缺少入口的问题已补齐；Store 的独立供应链审阅及准入决定仍待完成。
+本文回应 [DSH Store #1415 的复检意见](https://github.com/AI-Scarlett/DSH-Store/issues/1415#issuecomment-6195716034)，提供 `0.2.11` 的作者侧分发修复与依赖材料。固定 Git 树缺少入口的问题已补齐；Store 的独立供应链审阅及准入决定仍待完成。依赖清单和审阅边界适用于后续同依赖树的文档版本，不因版本号提升而自动免除复核。
 
 后续已完成 `0.2.12` 在 DSH `0.2.1-alpha.3` 上的隔离安装、启动、原生工具、设置保存、卸载与版本回滚，见[生命周期验收记录](./verification/profile-lifecycle-20261016.md)。后续运行证据与本文的依赖审阅材料分别记录，均不代替 Store 的独立审阅。
 
 全部服务配置、逐路原生搜索／提取与五种决策模型的后续验证见[全服务实测](./verification/all-services-20261016.md)。该记录还包含未发布 PR 候选包对 GitHub 提取的两处修复及失败历史，与正式 Release 身份分别标注。
+
+`0.2.14` 已完成正式 Web profile 升级、宿主重启和原生 `web_fetch` 验证，见[正式 profile 安装验证](./verification/formal-profile-v0.2.14-20261016.md)。该运行证据不替代本页的依赖审阅，也不改变 Store 的独立结论。
 
 [依赖清单](./dependency-inventory.json) 记录 2026-10-16 查询 npm 官方 Registry 得到的版本、来源仓库、许可证、tarball URL、SHA-512 integrity、安装脚本、源码构建脚本及公告响应。它覆盖 5 个直接运行依赖及其锁定传递依赖，共 15 个包；宿主提供的 peer 依赖与开发依赖不在此范围内。
 
