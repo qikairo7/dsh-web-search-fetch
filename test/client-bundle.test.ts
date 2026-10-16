@@ -251,11 +251,12 @@ describe('client bundle', () => {
     // The bundle registers under its own package name, which is the id the
     // scanner addresses it by.
     expect(manifest.name).toBe('dsh-web-search-fetch');
-    expect(manifest.dsh?.compatibility?.dsh).toBe('0.2.1-alpha.4');
+    expect(manifest.dsh?.compatibility?.dsh).toBe('0.2.1-alpha.5');
     expect(manifest.dsh?.compatibility?.dshReleases).toMatchObject({
       '0.2.1-alpha.2': 'compatible',
       '0.2.1-alpha.3': 'compatible',
       '0.2.1-alpha.4': 'compatible',
+      '0.2.1-alpha.5': 'compatible',
     });
   });
 

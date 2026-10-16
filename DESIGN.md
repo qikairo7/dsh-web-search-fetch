@@ -2,7 +2,7 @@
 
 ## 当前交付状态
 
-当前正式 Release 为 `0.2.15`。该版本整理架构、生命周期与历史验证记录，并适配 DSH `0.2.1-alpha.4`：开发运行时升级到 alpha.4，`engines.dsh` 声明 `>=0.2.1-alpha.2`，兼容矩阵加入 alpha.4。`@deepseek-ai/dsh-web` 的 provider 注册接口在 alpha.3 与 alpha.4 间未变化。仓库门禁覆盖 771 项测试、构建、类型检查、仓库与分发检查，以及 Windows／Ubuntu × Node.js 22.19／24 的 CI 矩阵。
+当前正式 Release 为 `0.2.16`。该版本适配 DSH `0.2.1-alpha.5`：开发运行时升级到 alpha.5，兼容矩阵加入 alpha.5。`@deepseek-ai/dsh-web` 的 provider 注册接口在 alpha.3 至 alpha.5 间保持一致，插件运行代码无需因该接口变化修改。仓库门禁覆盖 771 项测试、构建、类型检查、仓库与分发检查，以及 Windows／Ubuntu × Node.js 22.19／24 的 CI 矩阵。
 
 历史运行修复已进入正式分发包：GitHub 仓库根页与 blob Markdown 的专用路由、同资源 HTTP → HTTPS 升级的正文归属修正包含在 `0.2.13` 及之后版本。原 HTTPS 输入的历史整理拒绝仍未归因，issue #3 保持开放；后续成功调用不作为该问题关闭依据。DSH Store 的独立供应链审阅与准入仍由 Store 维护者决定。
 
