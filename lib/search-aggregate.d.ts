@@ -148,9 +148,8 @@ export declare class AggregatedSearchProvider implements WebSearchProvider {
  * Normalize a result URL into its deduplication key (DESIGN.md): every `utm_*`
  * parameter is dropped, the `#fragment` is dropped, scheme and hostname are
  * lowercased (which `URL` already does), and a root path is normalized so `/`
- * and `''` share one key. Every other query parameter is kept, in place, and
- * participates in equality; a non-root trailing slash is also kept, because
- * `/path/` and `/path` are different resources.
+ * and `''` share one key. Other parameters and non-root trailing slashes stay
+ * significant except for the verified MDN and TypeScript aliases below.
  *
  * A URL that does not parse is returned verbatim: deduplication may then miss a
  * merge, but the source is never dropped or rewritten into something the engine

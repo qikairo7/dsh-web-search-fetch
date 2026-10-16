@@ -28,6 +28,7 @@ export declare function operationNotes(): readonly string[];
 export declare function noteOperation(note: string): void;
 export declare function requestCount(): number;
 export declare function currentControls(): RuntimeControls;
+export declare function currentDecisionDepth(): 'fast' | 'balanced' | 'deep' | undefined;
 export declare function serviceEnabled(id: string, fallback?: boolean): boolean;
 export declare function deadlineReached(): boolean;
 /** A cancelled lane must settle even if its injected transport ignores the signal. */

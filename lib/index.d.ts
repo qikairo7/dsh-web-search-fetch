@@ -158,7 +158,7 @@ export interface Config {
 export declare const Config: z<Schemastery.ObjectS<NoInfer<{
     controls: z<NoInfer<Schemastery.ObjectS<NoInfer<{
         serviceEnabled: z<Dict<boolean, string>, Dict<boolean, string>, "defined">;
-        mode: z<"organize" | "select", "organize" | "select", "defined">;
+        mode: z<"select" | "organize", "select" | "organize", "defined">;
         preset: z<"auto" | "custom" | "free" | "balanced" | "deep", "auto" | "custom" | "free" | "balanced" | "deep", "defined">;
         searchServices: z<string[], string[], "defined">;
         fetchServices: z<string[], string[], "defined">;
@@ -170,7 +170,7 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
         maxOutputChars: z<number, number, "defined">;
     }>>>, NoInfer<Schemastery.ObjectT<NoInfer<{
         serviceEnabled: z<Dict<boolean, string>, Dict<boolean, string>, "defined">;
-        mode: z<"organize" | "select", "organize" | "select", "defined">;
+        mode: z<"select" | "organize", "select" | "organize", "defined">;
         preset: z<"auto" | "custom" | "free" | "balanced" | "deep", "auto" | "custom" | "free" | "balanced" | "deep", "defined">;
         searchServices: z<string[], string[], "defined">;
         fetchServices: z<string[], string[], "defined">;
@@ -266,7 +266,7 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
 }>>, Schemastery.ObjectT<NoInfer<{
     controls: z<NoInfer<Schemastery.ObjectS<NoInfer<{
         serviceEnabled: z<Dict<boolean, string>, Dict<boolean, string>, "defined">;
-        mode: z<"organize" | "select", "organize" | "select", "defined">;
+        mode: z<"select" | "organize", "select" | "organize", "defined">;
         preset: z<"auto" | "custom" | "free" | "balanced" | "deep", "auto" | "custom" | "free" | "balanced" | "deep", "defined">;
         searchServices: z<string[], string[], "defined">;
         fetchServices: z<string[], string[], "defined">;
@@ -278,7 +278,7 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
         maxOutputChars: z<number, number, "defined">;
     }>>>, NoInfer<Schemastery.ObjectT<NoInfer<{
         serviceEnabled: z<Dict<boolean, string>, Dict<boolean, string>, "defined">;
-        mode: z<"organize" | "select", "organize" | "select", "defined">;
+        mode: z<"select" | "organize", "select" | "organize", "defined">;
         preset: z<"auto" | "custom" | "free" | "balanced" | "deep", "auto" | "custom" | "free" | "balanced" | "deep", "defined">;
         searchServices: z<string[], string[], "defined">;
         fetchServices: z<string[], string[], "defined">;

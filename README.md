@@ -10,7 +10,7 @@
 [快速开始](#快速开始) · [正文整理演示](./docs/content-organization.md#输入与输出演示) · [真实对比](./docs/modsearch-comparison.md) · [配置参考](./docs/configuration.md) · [依赖审阅材料](./docs/dependency-review.md) · [参与贡献](./CONTRIBUTING.md)
 
 ```sh
-dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.11/dsh-web-search-fetch-0.2.11.tgz
+dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.12/dsh-web-search-fetch-0.2.12.tgz
 ```
 
 安装后在设置页选择决策模型并配置对应凭证，再请求搜索或读取公开网页。未配置决策模型时，可使用固定预设体验匿名搜索。匿名模式受服务方额度与限流约束，不能保证无限使用。未安装 DSH 的环境需先完成[宿主安装](https://github.com/deepseek-ai/deepseek-harness)。
@@ -128,7 +128,7 @@ AIHOT 搜索覆盖近 7 天 AI 资讯；启用后，原生 `web_fetch` 可读取
 在已配置 DSH 的环境中执行：
 
 ```sh
-dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.11/dsh-web-search-fetch-0.2.11.tgz
+dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.12/dsh-web-search-fetch-0.2.12.tgz
 ```
 
 将 `web` 替换为实际使用的 profile，安装后重启宿主。以上命令使用已发布的 `0.2.10` Release 包，不需要 npm 包发布账号或 GitHub 登录。

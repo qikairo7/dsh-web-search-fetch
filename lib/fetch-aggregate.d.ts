@@ -123,6 +123,7 @@ export interface FetchPipelineLogger {
 }
 /** Inputs of {@link aggregateDynamicFetch}. */
 export interface AggregateDynamicFetchOptions {
+    readonly settleEarly?: boolean;
     readonly mode?: 'organize' | 'select';
     readonly maxOutputChars?: number;
     readonly url: string;
