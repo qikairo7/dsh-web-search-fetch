@@ -6,7 +6,6 @@
     - id: web-search-fetch
       name: dsh-web-search-fetch
       config:
-        apiKeyEnv: ZHIPU_API_KEY
         engines:
           tavily:
             enabled: true
@@ -36,6 +35,5 @@
             anysearch: true
             firecrawl: true
             tavily: true
-            zhipu: false
             siliconflow: false
             http: true

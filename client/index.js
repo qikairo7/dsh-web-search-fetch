@@ -33,10 +33,10 @@ window.__ModuleLoader__.load({
             controlsHint: '整理保留原文和提取来源；差异不会自动判定真伪。请求上限包括重试、额度检查与重排，不是金额上限；宿主 HTTP 抓取另有独立限制。处理情况见本次工具结果和日志。',
             freeHint: '免费预设仅使用 Bing RSS、TinyFish、GitHub 公开 API 和已启用的 AIHOT；部分仍需密钥，AIHOT 仍受用途限制。不调用免费额度用尽后收费的接口。',
             keysHint: '留空保留原密钥。保存后只显示配置状态。', keyHint: '留空保留原密钥',
-            anysearch: 'AnySearch API Key', zhipu: '智谱 API Key',
+            anysearch: 'AnySearch API Key',
             firecrawl: 'Firecrawl API Key', tavily: 'Tavily API Key', exa: 'Exa API Key', keenable: 'Keenable API Key',
             crawl4ai: 'Crawl4AI Cloud API Key', github: 'GitHub Token', tinyfish: 'TinyFish API Key', serply: 'Serply API Key', kimi: 'Kimi API Key', siliconflow: '硅基流动 API Key',
-            'anysearch-service': 'AnySearch AI', 'zhipu-service': '智谱',
+            'anysearch-service': 'AnySearch AI',
             'firecrawl-service': 'Firecrawl', 'tavily-service': 'Tavily', 'exa-service': 'Exa', 'keenable-service': 'Keenable',
             'crawl4ai-service': 'Crawl4AI Cloud', 'github-service': 'GitHub', 'tinyfish-service': 'TinyFish', 'serply-service': 'Serply', 'kimi-service': 'Kimi',
             'bing-service': 'Bing RSS', 'aihot-service': 'AIHOT', 'siliconflow-service': '硅基流动', 'http-service': '直接 HTTP 抓取',
@@ -49,8 +49,6 @@ window.__ModuleLoader__.load({
             statusFilter: '筛选配置状态', allStatus: '全部状态', needsKey: '未配置凭证', pending: '有未保存修改',
             servicesCount: '个服务', keysCount: '个凭证位', matches: '项匹配', noMatches: '没有匹配的服务',
             noMatchesHint: '试试其他关键词，或清除筛选条件。', resetFilters: '清除筛选',
-            transportLabel: '智谱搜索通道', transportAnthropic: '套餐额度', transportToolsApi: '按次计费',
-            transportHint: 'GLM Coding Plan 为付费订阅；tools-api 使用按次计费的 search_pro。套餐额度不属于免费额度，两条通道共用此密钥。',
             baseHint: '启用后按参与范围调用。关闭会保留凭证与参与范围。',
             extensionHint: '启用并保存后，参与下一次搜索或适用网页的提取。',
             anysearchHint: '推荐服务。官方搜索与提取支持匿名额度，按 IP 限流；配置 API Key 后使用账户额度。自定义端点需要密钥。',
@@ -102,10 +100,10 @@ window.__ModuleLoader__.load({
             controlsHint: 'Retains original text and extraction provenance without deciding which variant is true. Request limits include retries, quota checks and reranking, not monetary costs. Host HTTP retrieval has separate limits. Processing notes appear in tool results and logs.',
             freeHint: 'Free preset uses Bing RSS, TinyFish, public GitHub APIs and enabled AIHOT only. Keys may still be required; AIHOT usage terms apply. APIs with paid overages are excluded.',
             keysHint: 'Leave blank to keep a key. Saved keys show status only.', keyHint: 'Leave blank to keep the key',
-            anysearch: 'AnySearch API key', zhipu: 'Zhipu API key',
+            anysearch: 'AnySearch API key',
             firecrawl: 'Firecrawl API key', tavily: 'Tavily API key', exa: 'Exa API key', keenable: 'Keenable API key',
             crawl4ai: 'Crawl4AI Cloud API key', github: 'GitHub token', tinyfish: 'TinyFish API key', serply: 'Serply API key', kimi: 'Kimi API key', siliconflow: 'SiliconFlow API key',
-            'anysearch-service': 'AnySearch AI', 'zhipu-service': 'Zhipu',
+            'anysearch-service': 'AnySearch AI',
             'firecrawl-service': 'Firecrawl', 'tavily-service': 'Tavily', 'exa-service': 'Exa', 'keenable-service': 'Keenable',
             'crawl4ai-service': 'Crawl4AI Cloud', 'github-service': 'GitHub', 'tinyfish-service': 'TinyFish', 'serply-service': 'Serply', 'kimi-service': 'Kimi',
             'bing-service': 'Bing RSS', 'aihot-service': 'AIHOT', 'siliconflow-service': 'SiliconFlow', 'http-service': 'Direct HTTP fetch',
@@ -118,8 +116,6 @@ window.__ModuleLoader__.load({
             statusFilter: 'Filter configuration status', allStatus: 'All statuses', needsKey: 'Needs credentials', pending: 'Unsaved changes',
             servicesCount: 'services', keysCount: 'credential inputs', matches: 'matches', noMatches: 'No matching services',
             noMatchesHint: 'Try another keyword or clear the filters.', resetFilters: 'Clear filters',
-            transportLabel: 'Zhipu search transport', transportAnthropic: 'Coding Plan', transportToolsApi: 'Pay per call',
-            transportHint: 'Coding Plan is a paid subscription; tools-api uses pay-per-call search_pro. Plan credits are not free credits. Both share this key.',
             baseHint: 'Enable to use the selected capabilities. Disabling preserves credentials and participation settings.',
             extensionHint: 'Enable and save to join the next search or supported page extraction.',
             anysearchHint: 'Recommended. Official search and extraction support anonymous quotas with IP rate limits. A configured key uses account quotas; custom endpoints require a key.',
@@ -155,10 +151,8 @@ window.__ModuleLoader__.load({
 		const SETTINGS_NS = "web-search-fetch";
 		/** Dictionary namespace owned by this plugin. */
 		const NS = "settings.webSearchFetch";
-		/** Config path of the one control this card edits through the settings form. */
-		const TRANSPORT_PATH = ["search", "zhipuTransport"];
         const NUMBER_CONTROLS = {
-            maxSearchServices: { initial: 13, min: 1, max: 13 },
+            maxSearchServices: { initial: 12, min: 1, max: 12 },
             maxFetchServices: { initial: 10, min: 1, max: 10 },
             maxRequests: { initial: 32, min: 1, max: 256 },
             searchDeadlineMs: { initial: 15000, min: 1, max: 3600000 },
@@ -177,7 +171,6 @@ window.__ModuleLoader__.load({
 		*/
 		const CREDENTIAL_SLOTS = [
 			{"id": "anysearch", "overridePaths": [["search", "anysearchApiKeyEnv"]], "defaultRef": "ANYSEARCH_API_KEY", "additionalPaths": [["fetch", "anysearchApiKeyEnv"]]},
-			{"id": "zhipu", "overridePaths": [["search", "zhipuApiKeyEnv"], ["apiKeyEnv"]], "defaultRef": "ZHIPU_API_KEY"},
 			{"id": "firecrawl", "overridePaths": [["fetch", "firecrawlApiKeyEnv"]], "defaultRef": "FIRECRAWL_API_KEY", "additionalPaths": [["engines", "firecrawl", "apiKeyEnv"]]},
 			{"id": "tavily", "overridePaths": [["engines", "tavily", "apiKeyEnv"]], "defaultRef": "TAVILY_API_KEY"},
 			{"id": "exa", "overridePaths": [["engines", "exa", "apiKeyEnv"]], "defaultRef": "EXA_API_KEY"},
@@ -222,10 +215,7 @@ window.__ModuleLoader__.load({
 		* The page's staged form over the `web-search-fetch` settings namespace and
 		* the credentials domain.
 		*
-		* Two kinds of control, deliberately kept apart. The Zhipu transport is a
-		* settings field, so a save writes it as one path-addressed mutation — a
-		* nested path, which is why this stages its own edits rather than using the
-		* shared `SettingsFormModel` (that model addresses top-level fields only).
+		* Service configuration and credential controls are deliberately kept apart.
 		* The service credentials are credential values: their literal never rides a
 		* response, so the page learns only whether one is configured, and writes
 		* them through the credentials domain addressed by the reference the served
@@ -237,8 +227,6 @@ window.__ModuleLoader__.load({
 			ctx;
 			store;
 			unsubscribe;
-			/** Staged transport, or undefined while the served value stands. */
-			transportDraft;
             decisionDraft;
             decisionModel() { return this.decisionDraft ?? this.section()?.search?.decisionModel ?? 'decision-model-preview'; }
             editDecision(model) {
@@ -366,7 +354,7 @@ window.__ModuleLoader__.load({
                 this.editView({ expandedId: this.view.expandedId === id ? null : id });
             }
             serviceDirty(service) {
-                return this.serviceEnabled(service.id) !== this.serviceEnabled(service.id, false) || service.keys.some(id => this.keyDrafts.has(id)) || this.engineDrafts.has(service.id) || ['searchServices', 'fetchServices'].some(name => this.controlDrafts.has(name) && this.controlDrafts.get(name).includes(service.id) !== (this.section()?.controls?.[name] ?? SERVICES.filter(item => item.capabilities.includes(name === 'searchServices' ? 'search' : 'fetch')).map(item => item.id)).includes(service.id)) || (service.id === 'zhipu' && this.transportDraft !== undefined);
+                return this.serviceEnabled(service.id) !== this.serviceEnabled(service.id, false) || service.keys.some(id => this.keyDrafts.has(id)) || this.engineDrafts.has(service.id) || ['searchServices', 'fetchServices'].some(name => this.controlDrafts.has(name) && this.controlDrafts.get(name).includes(service.id) !== (this.section()?.controls?.[name] ?? SERVICES.filter(item => item.capabilities.includes(name === 'searchServices' ? 'search' : 'fetch')).map(item => item.id)).includes(service.id));
             }
             matchesService(service) {
                 const { query, capability, status } = this.view;
@@ -399,14 +387,6 @@ window.__ModuleLoader__.load({
 					? snapshot.value
 					: void 0;
 			}
-			/** The transport the served section carries, resolved like the host does. */
-			servedTransport() {
-				return readPath(this.section(), TRANSPORT_PATH) === "tools-api" ? "tools-api" : "anthropic";
-			}
-			/** The transport a save would store: the staged draft, else the served value. */
-			transport() {
-				return this.transportDraft ?? this.servedTransport();
-			}
 			/**
 			* Stage a key draft. A blank draft stages nothing, so saving leaves the
 			* stored key alone instead of clearing it.
@@ -418,15 +398,6 @@ window.__ModuleLoader__.load({
 				this.baselineRevision ??= this.scope.getSnapshot().revision;
 				if (text.trim() === "") { this.keyDrafts.delete(id); this.keyRefs.delete(id); }
                 else { this.keyDrafts.set(id, text.trim()); this.keyRefs.set(id, this.slotRefs.find(slot => slot.id === id)?.refs ?? []); }
-				this.failed = false;
-                this.saved = false;
-				this.publish();
-			}
-			/** Stage the transport, or drop the draft when it matches the served value. */
-			editTransport(next) {
-                if (this.saving || !["anthropic", "tools-api"].includes(next)) return;
-				this.baselineRevision ??= this.scope.getSnapshot().revision;
-				this.transportDraft = next === this.servedTransport() ? void 0 : next;
 				this.failed = false;
                 this.saved = false;
 				this.publish();
@@ -468,7 +439,7 @@ window.__ModuleLoader__.load({
                 this.publish();
             }
 			dirty() {
-				return this.decisionDraft !== undefined || this.transportDraft !== void 0 || this.engineDrafts.size > 0 || this.keyDrafts.size > 0 || this.controlDrafts.size > 0 || this.numberDrafts.size > 0;
+				return this.decisionDraft !== undefined || this.engineDrafts.size > 0 || this.keyDrafts.size > 0 || this.controlDrafts.size > 0 || this.numberDrafts.size > 0;
 			}
 			/**
 			* Ask the credentials domain about the reference each slot resolves to.
@@ -524,9 +495,7 @@ window.__ModuleLoader__.load({
 				if (this.saving || this.shell().invalid) return;
 				const snapshot = this.scope.getSnapshot();
 				if (snapshot.writable !== true) return;
-				const ops = this.transportDraft === void 0
-					? []
-					: [{ op: "set", path: [...TRANSPORT_PATH], value: this.transportDraft }];
+				const ops = [];
 				if (this.decisionDraft !== undefined) ops.push({ op: 'set', path: ['search', 'decisionModel'], value: this.decisionDraft });
 				ops.push(...[...this.engineDrafts].map(([id, enabled]) => ({ op: "set", path: ["engines", id, "enabled"], value: enabled })));
                 ops.push(...[...this.controlDrafts].map(([name, value]) => ({ op: 'set', path: ['controls', name], value })));
@@ -544,7 +513,6 @@ window.__ModuleLoader__.load({
                             if (landed) {
                                 // Accepted configuration is no longer a draft, even if a credential write fails.
                                 this.decisionDraft = undefined;
-                this.transportDraft = undefined;
                                 this.engineDrafts.clear();
                                 this.controlDrafts.clear();
                                 this.numberDrafts.clear();
@@ -566,7 +534,6 @@ window.__ModuleLoader__.load({
 				} finally {
 					if (landed) {
 						this.decisionDraft = undefined;
-						this.transportDraft = void 0;
 						this.keyDrafts.clear();
                         this.keyRefs.clear();
                         this.engineDrafts.clear();
@@ -590,7 +557,6 @@ window.__ModuleLoader__.load({
 			/** Drop every staged edit. */
             clearDrafts() {
                 this.decisionDraft = undefined;
-                this.transportDraft = undefined;
                 this.keyDrafts.clear();
                 this.keyRefs.clear();
                 this.engineDrafts.clear();
@@ -608,7 +574,6 @@ window.__ModuleLoader__.load({
                 if (this.saving) return;
 				if (!this.dirty() && !this.failed) return;
 				this.decisionDraft = undefined;
-						this.transportDraft = void 0;
 				this.keyDrafts.clear();
                         this.keyRefs.clear();
                         this.engineDrafts.clear();
@@ -644,9 +609,7 @@ window.__ModuleLoader__.load({
                     view: { ...this.view },
                     visibleServiceIds: SERVICES.filter(service => this.matchesService(service)).map(service => service.id),
                     changedServiceIds: SERVICES.filter(service => this.serviceDirty(service)).map(service => service.id),
-                    changeCount: this.keyDrafts.size + this.engineDrafts.size + new Set([...this.controlDrafts.keys(), ...this.numberDrafts.keys()]).size + (this.transportDraft === undefined ? 0 : 1) + (this.decisionDraft === undefined ? 0 : 1),
-					transport: this.transport(),
-					transportDirty: this.transportDraft !== void 0,
+                    changeCount: this.keyDrafts.size + this.engineDrafts.size + new Set([...this.controlDrafts.keys(), ...this.numberDrafts.keys()]).size + (this.decisionDraft === undefined ? 0 : 1),
                     engines: Object.fromEntries(SERVICES.map(service => [service.id, this.serviceEnabled(service.id)])),
                     firecrawlSearchEnabled: this.engineEnabled('firecrawl'),
                     section: this.section(),
@@ -683,7 +646,6 @@ window.__ModuleLoader__.load({
             { id: 'anysearch', mark: 'AS', capability: 'searchFetch', capabilities: ['search', 'fetch'], keys: ['anysearch'] },
             { id: 'firecrawl', mark: 'FC', capability: 'searchFetch', capabilities: ['search', 'fetch'], keys: ['firecrawl'], extension: true },
             { id: 'tavily', mark: 'TV', capability: 'searchFetch', capabilities: ['search', 'fetch'], keys: ['tavily'], extension: true },
-            { id: 'zhipu', mark: '智', capability: 'search', capabilities: ['search'], keys: ['zhipu'] },
             { id: 'exa', mark: 'EX', capability: 'searchFetch', capabilities: ['search', 'fetch'], keys: ['exa'], extension: true },
             { id: 'keenable', mark: 'KE', capability: 'searchFetch', capabilities: ['search', 'fetch'], keys: ['keenable'], extension: true },
             { id: 'crawl4ai', mark: 'C4', capability: 'searchFetch', capabilities: ['search', 'fetch'], keys: ['crawl4ai'], extension: true },
@@ -804,7 +766,7 @@ window.__ModuleLoader__.load({
             { value: 'jev-latest', label: 'TypeSafe · jev-latest', key: 'typesafe' },
         ];
         function WebSearchFetchCard(props) {
-            const { t, editKey, editDecision, chooseStart, editTransport, editService, editControl, editNumber, editParticipation, editView, toggleService, refresh, save, discard } = props;
+            const { t, editKey, editDecision, chooseStart, editService, editControl, editNumber, editParticipation, editView, toggleService, refresh, save, discard } = props;
             const state = props.useWebSearchFetch(snapshot => snapshot);
             const onDiscard = React.useRef(props.leave);
             const decisionInput = React.useRef(null);
@@ -962,12 +924,6 @@ window.__ModuleLoader__.load({
                                     href: 'https://cloud.siliconflow.cn/i/E3nhNFP4', target: '_blank', rel: 'noopener noreferrer', children: t('siliconflowInvite'),
                                 }) }),
                                 ...service.keys.map(id => jsx(KeyField, { t, row: state.keys.find(row => row.id === id), disabled, onEdit: text => editKey(id, text) }, id)),
-                                service.id === 'zhipu' && jsxs('div', { className: 'wsf-transport', children: [
-                                    jsx(ui.SegmentedControl, { id: 'plugin-config-web-search-fetch-transport', value: state.transport,
-                                        options: [{ value: 'anthropic', label: t('transportAnthropic') }, { value: 'tools-api', label: t('transportToolsApi') }],
-                                        label: t('transportLabel'), disabled, onChange: editTransport }),
-                                    jsx('p', { className: 'wsf-muted', children: t('transportHint') }),
-                                ] }),
                                 service.extension && service.keys.length > 0 && (!state.engines[service.id] || missingKey && !anonymousService(service, state))
                                     && jsx('p', { className: 'wsf-notice', children: t(!state.engines[service.id] ? 'enableWarning' : 'missingWarning') }),
                                 service.keys.length > 0 && status === 'statusFailed' && jsx('button', { type: 'button', className: 'wsf-link', onClick: refresh, children: t('refresh') }),
@@ -1030,9 +986,6 @@ window.__ModuleLoader__.load({
                     editNumber: (name, text) => card.editNumber(name, text),
                     leave: () => card.leave(),
                     editParticipation: (id, face, enabled) => card.editParticipation(id, face, enabled),
-                    editTransport: (next) => {
-						card.editTransport(next);
-					},
 					save: () => card.save(),
 					discard: () => {
 						card.discard();

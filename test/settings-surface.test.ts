@@ -1,14 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { Config } from '../src/index.js';
-import { ZhipuClient } from '../src/engines/zhipu/client.js';
 import {
   CREDENTIAL_SLOTS,
   EDITABLE_SETTINGS_PATHS,
   WEB_SEARCH_FETCH_SETTINGS_NAMESPACE,
   isEditableSettingsPath,
   projectCredentialStatus,
-  projectEditableSettings,
   readVolatile,
   resolveCredentialRef,
   resolveCredentialRefs,
@@ -29,7 +27,6 @@ function volatileOf<T>(initial: T): { get(): T; set(next: T): void } {
 /** The parsed Config, with every volatile field read through its reference. */
 function plainRefs(config: SettingsSurfaceConfig): Record<string, string | undefined> {
   return {
-    zhipu: resolveCredentialRef(config, 'zhipu'),
     anysearch: resolveCredentialRef(config, 'anysearch'),
     siliconflow: resolveCredentialRef(config, 'siliconflow'),
     firecrawl: resolveCredentialRef(config, 'firecrawl'),
@@ -66,14 +63,11 @@ describe('EDITABLE_SETTINGS_PATHS', () => {
   });
 
   it('不把非 volatile 字段谎报为可编辑', () => {
-    expect(isEditableSettingsPath(['search', 'zhipuTransport'])).toBe(true);
-    expect(isEditableSettingsPath(['apiKeyEnv'])).toBe(true);
     // Ordinary tuning knobs stay out of the served form.
     expect(isEditableSettingsPath(['search', 'rrfK'])).toBe(false);
     expect(isEditableSettingsPath(['search', 'rerank'])).toBe(true);
     // A path that merely shares a prefix is not editable either.
     expect(isEditableSettingsPath(['search'])).toBe(false);
-    expect(isEditableSettingsPath(['search', 'zhipuTransport', 'x'])).toBe(false);
   });
 
   it('覆盖完整接入清单的凭证位需要的全部引用路径', () => {
@@ -88,7 +82,6 @@ describe('EDITABLE_SETTINGS_PATHS', () => {
 describe('resolveCredentialRefs', () => {
   it('默认 Config 下五槽各取自己的默认引用', () => {
     expect(plainRefs(Config({}))).toEqual({
-      zhipu: 'ZHIPU_API_KEY',
       anysearch: 'ANYSEARCH_API_KEY',
       siliconflow: 'SILICONFLOW_API_KEY',
       firecrawl: 'FIRECRAWL_API_KEY',
@@ -96,38 +89,12 @@ describe('resolveCredentialRefs', () => {
   });
 
   it('槽位顺序稳定（卡片按此顺序渲染）', () => {
-    expect(CREDENTIAL_SLOTS.map((slot) => slot.id)).toEqual(['anysearch', 'zhipu', 'firecrawl', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'tinyfish', 'serply', 'kimi', 'siliconflow', 'dashscope', 'typesafe']);
+    expect(CREDENTIAL_SLOTS.map((slot) => slot.id)).toEqual(['anysearch', 'firecrawl', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'tinyfish', 'serply', 'kimi', 'siliconflow', 'dashscope', 'typesafe']);
     expect(resolveCredentialRefs(Config({})).map((slot) => slot.id)).toEqual(
       CREDENTIAL_SLOTS.map((slot) => slot.id),
     );
   });
 
-  it('显式覆盖优先，根 apiKeyEnv 是智谱的第二顺位', () => {
-    expect(
-      plainRefs(
-        Config({
-          apiKeyEnv: 'ROOT_KEY',
-          search: { zhipuApiKeyEnv: 'SEARCH_KEY' },
-        }),
-      ).zhipu,
-    ).toBe('SEARCH_KEY');
-    expect(plainRefs(Config({ apiKeyEnv: 'ROOT_KEY' })).zhipu).toBe('ROOT_KEY');
-  });
-
-  it('空串覆盖被跳过（留空沿用下一顺位，而不是把引用名清空）', () => {
-    expect(
-      plainRefs(Config({ apiKeyEnv: 'ROOT_KEY', search: { zhipuApiKeyEnv: '' } })).zhipu,
-    ).toBe('ROOT_KEY');
-  });
-
-  it('经 .get() 读取活引用：保存后的新值立刻可见', () => {
-    const zhipuRef = volatileOf('OLD_REF');
-    const config: SettingsSurfaceConfig = { search: { zhipuApiKeyEnv: zhipuRef } };
-    expect(resolveCredentialRef(config, 'zhipu')).toBe('OLD_REF');
-    // The settings domain commits a saved edit into this same reference.
-    zhipuRef.set('NEW_REF');
-    expect(resolveCredentialRef(config, 'zhipu')).toBe('NEW_REF');
-  });
 });
 
 describe('projectCredentialStatus', () => {
@@ -135,16 +102,16 @@ describe('projectCredentialStatus', () => {
 
   it('只输出布尔与引用名——没有任何字段能承载凭证值', () => {
     const rows = projectCredentialStatus(slots, {
-      ZHIPU_API_KEY: { configured: true, source: 'file', writable: true },
+      ANYSEARCH_API_KEY: { configured: true, source: 'file', writable: true },
     });
-    const zhipu = rows.find((row) => row.id === 'zhipu');
-    expect(zhipu).toEqual({
-      id: 'zhipu',
-      ref: 'ZHIPU_API_KEY',
+    const anysearch = rows.find((row) => row.id === 'anysearch');
+    expect(anysearch).toEqual({
+      id: 'anysearch',
+      ref: 'ANYSEARCH_API_KEY',
       configured: true,
       writable: true,
     });
-    expect(Object.keys(zhipu!).sort()).toEqual(['configured', 'id', 'ref', 'writable']);
+    expect(Object.keys(anysearch!).sort()).toEqual(['configured', 'id', 'ref', 'writable']);
     // A configured reference reports presence, never the value.
     for (const row of rows) {
       expect(Object.keys(row).sort()).toEqual(['configured', 'id', 'ref', 'writable']);
@@ -162,17 +129,17 @@ describe('projectCredentialStatus', () => {
   it('provider 视图上的多余字段不会流到状态行', () => {
     const rows = projectCredentialStatus(slots, {
       // A provider view with an unexpected field must not widen the row.
-      ZHIPU_API_KEY: {
+      ANYSEARCH_API_KEY: {
         configured: true,
         writable: false,
         source: 'file',
         value: 'leaked-secret',
       } as never,
     });
-    const zhipu = rows.find((row) => row.id === 'zhipu');
-    expect(zhipu).toEqual({
-      id: 'zhipu',
-      ref: 'ZHIPU_API_KEY',
+    const anysearch = rows.find((row) => row.id === 'anysearch');
+    expect(anysearch).toEqual({
+      id: 'anysearch',
+      ref: 'ANYSEARCH_API_KEY',
       configured: true,
       writable: false,
     });
@@ -180,34 +147,14 @@ describe('projectCredentialStatus', () => {
 
   it('按引用名而非槽位取事实：两个槽位同名引用时各自独立', () => {
     const shared = resolveCredentialRefs(
-      Config({ search: { zhipuApiKeyEnv: 'SHARED', anysearchApiKeyEnv: 'SHARED' } }),
+      Config({ search: { anysearchApiKeyEnv: 'SHARED', siliconflowApiKeyEnv: 'SHARED' } }),
     );
     const rows = projectCredentialStatus(shared, {
       SHARED: { configured: true, writable: true },
     });
     expect(rows.filter((row) => row.ref === 'SHARED')).toHaveLength(2);
-    expect(rows.find((row) => row.id === 'zhipu')!.configured).toBe(true);
     expect(rows.find((row) => row.id === 'anysearch')!.configured).toBe(true);
-  });
-});
-
-describe('projectEditableSettings', () => {
-  it('默认通道 anthropic', () => {
-    expect(projectEditableSettings(Config({})).zhipuTransport).toBe('anthropic');
-  });
-
-  it('未知通道名回落到 anthropic（与 ZhipuClient 的收窄一致）', () => {
-    expect(projectEditableSettings({ search: { zhipuTransport: 'nope' } }).zhipuTransport).toBe(
-      'anthropic',
-    );
-  });
-
-  it('经活引用读取：保存后的通道切换立刻可见', () => {
-    const transport = volatileOf<string>('anthropic');
-    const config: SettingsSurfaceConfig = { search: { zhipuTransport: transport } };
-    expect(projectEditableSettings(config).zhipuTransport).toBe('anthropic');
-    transport.set('tools-api');
-    expect(projectEditableSettings(config).zhipuTransport).toBe('tools-api');
+    expect(rows.find((row) => row.id === 'anysearch')!.configured).toBe(true);
   });
 });
 
@@ -216,42 +163,6 @@ describe('readVolatile', () => {
     expect(readVolatile(volatileOf('live'))).toBe('live');
     expect(readVolatile('plain')).toBe('plain');
     expect(readVolatile(undefined)).toBeUndefined();
-  });
-});
-
-describe('ZhipuClient transport liveness', () => {
-  it('resolveTransport 每次取值，挂载后切换通道即生效', async () => {
-    let current: 'anthropic' | 'tools-api' = 'anthropic';
-    const client = new ZhipuClient({
-      resolveApiKey: async () => 'unused',
-      credentialName: 'ZHIPU_API_KEY',
-      resolveTransport: () => current,
-      fetchImpl: (() => Promise.reject(new Error('not called'))) as unknown as typeof fetch,
-    });
-    expect(client.configuredTransport).toBe('anthropic');
-    // A volatile settings edit commits into the running reference without a
-    // remount, so the client must observe it on the next operation.
-    current = 'tools-api';
-    expect(client.configuredTransport).toBe('tools-api');
-  });
-
-  it('固定 transport 选项仍然可用（手写配置与既有调用方）', () => {
-    const client = new ZhipuClient({
-      resolveApiKey: async () => 'unused',
-      credentialName: 'ZHIPU_API_KEY',
-      transport: 'tools-api',
-    });
-    expect(client.configuredTransport).toBe('tools-api');
-  });
-
-  it('resolveTransport 优先于固定 transport，未定义时回落 anthropic', () => {
-    const client = new ZhipuClient({
-      resolveApiKey: async () => 'unused',
-      credentialName: 'ZHIPU_API_KEY',
-      transport: 'tools-api',
-      resolveTransport: () => undefined,
-    });
-    expect(client.configuredTransport).toBe('anthropic');
   });
 });
 

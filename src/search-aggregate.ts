@@ -611,7 +611,7 @@ function toSeamSource(candidate: FusedCandidate): WebSearchSource {
  *
  * Two sources are read, never parsed: the error itself, when it is one of the
  * engines' classified errors (`AnySearchClientError`), and its
- * `cause`, which is where the Zhipu engine hangs its 429 signal. Only the three
+ * `cause`, where an engine may hang a structured signal. Only the three
  * documented reasons pass through, spelled exactly as the breaker defines them;
  * every other engine classification (auth, invalid request, transport, …) is
  * deliberately not a breaker event.
@@ -625,8 +625,8 @@ function breakerSignalOf(value: unknown): BreakerSignal | undefined {
   const anysearch = anySearchFailureSignal(value);
   if (anysearch !== undefined) return fromReason(anysearch.kind, anysearch.retryAfterMs);
 
-  // The plain-object spelling: the Zhipu 429 signal (`{kind:'rate-limit',
-  // retryAfterMs?}`) and any engine adopting the same closed vocabulary.
+  // The plain-object spelling (`{kind:'rate-limit', retryAfterMs?}`) shared by
+  // engines using the closed vocabulary.
   if (value !== null && typeof value === 'object') {
     const record = value as { kind?: unknown; retryAfterMs?: unknown };
     return fromReason(record.kind, record.retryAfterMs);

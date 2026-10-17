@@ -3,7 +3,6 @@ import { WebError } from '@deepseek-ai/dsh-web';
 import type { WebSearchRequest, WebSearchResult, WebSearchSource } from '@deepseek-ai/dsh-web';
 import { CircuitBreaker, type BreakerSignal } from '../src/breaker/index.js';
 import { AnySearchClientError } from '../src/engines/anysearch/index.js';
-import { mapZhipuSearchResponse } from '../src/engines/zhipu/wire.js';
 import {
   AggregatedSearchProvider,
   normalizeSearchUrl,
@@ -190,29 +189,6 @@ describe('rrfFuse', () => {
 // ---------------------------------------------------------------------------
 
 describe('readSearchFailureSignal', () => {
-  it('智谱 429 信号挂在 cause 上，Retry-After 一并读出（不改名）', () => {
-    const error = new WebError('Zhipu web search failed with HTTP 429', 'WEB_PROVIDER_ERROR', {
-      cause: { kind: 'rate-limit', retryAfterMs: 2500 },
-    });
-    expect(readSearchFailureSignal(error)).toEqual({ kind: 'rate-limit', retryAfterMs: 2500 });
-  });
-
-  it('智谱 429 无 Retry-After 时只给 kind', () => {
-    const error = new WebError('Zhipu web search failed with HTTP 429', 'WEB_PROVIDER_ERROR', {
-      cause: { kind: 'rate-limit' },
-    });
-    expect(readSearchFailureSignal(error)).toEqual({ kind: 'rate-limit' });
-  });
-
-  it('AnySearch 402（欠费）→ quota-exhausted，只留 kind 与 retryAfterMs', () => {
-    const inner = new AnySearchClientError('AnySearch search failed', {
-      operation: 'search',
-      httpStatus: 402,
-    });
-    const wrapped = new WebError(inner.message, 'WEB_PROVIDER_ERROR', { cause: inner });
-    expect(readSearchFailureSignal(wrapped)).toEqual({ kind: 'quota-exhausted' });
-  });
-
   it('AnySearch 429 + retry-after 透传 retryAfterMs', () => {
     const inner = new AnySearchClientError('AnySearch search failed', {
       operation: 'search',
@@ -252,7 +228,7 @@ function buildProvider(options: {
 describe('AggregatedSearchProvider 多路并发', () => {
   it('三路成功：合并去重后按 RRF 序返回，三路都收到派发', async () => {
     const a = fakeEngine('anysearch', ok([source('https://a/1'), source('https://a/2')]));
-    const z = fakeEngine('zhipu', ok([source('https://z/1')]));
+    const z = fakeEngine('engine-z', ok([source('https://z/1')]));
     const h = fakeEngine('engine-a', ok([source('https://h/1')]));
     const provider = buildProvider({ engines: [a.engine, z.engine, h.engine] });
     const out = await provider.search({ query: '测试', maxResults: 10 });
@@ -272,7 +248,7 @@ describe('AggregatedSearchProvider 多路并发', () => {
 
   it('一路超时不阻塞其余：限时到点即丢弃该路并记日志', async () => {
     const slow = fakeEngine('anysearch', hangs());
-    const fast = fakeEngine('zhipu', ok([source('https://z/1')]));
+    const fast = fakeEngine('engine-z', ok([source('https://z/1')]));
     const logger = recordingLogger();
     const provider = buildProvider({
       engines: [slow.engine, fast.engine],
@@ -292,7 +268,7 @@ describe('AggregatedSearchProvider 多路并发', () => {
   it('两路失败一路成功：返回成功路结果，失败路日志带引擎名、延迟与原因', async () => {
     const bad = fakeEngine('anysearch', fails(new WebError('upstream exploded', 'WEB_PROVIDER_ERROR')));
     const worse = fakeEngine('engine-a', fails(new WebError('engine-a down', 'WEB_PROVIDER_ERROR')));
-    const good = fakeEngine('zhipu', ok([source('https://z/1')]));
+    const good = fakeEngine('engine-z', ok([source('https://z/1')]));
     const logger = recordingLogger();
     const provider = buildProvider({ engines: [bad.engine, worse.engine, good.engine], logger });
     const out = await provider.search({ query: 'q' });
@@ -305,7 +281,7 @@ describe('AggregatedSearchProvider 多路并发', () => {
 
   it('全败抛 WEB_PROVIDER_ERROR，摘要带各引擎失败原因', async () => {
     const a = fakeEngine('anysearch', fails(new WebError('a failed', 'WEB_PROVIDER_ERROR')));
-    const z = fakeEngine('zhipu', fails(new WebError('z failed', 'WEB_PROVIDER_ERROR')));
+    const z = fakeEngine('engine-z', fails(new WebError('z failed', 'WEB_PROVIDER_ERROR')));
     const h = fakeEngine('engine-a', fails(new WebError('h failed', 'WEB_PROVIDER_ERROR')));
     const provider = buildProvider({ engines: [a.engine, z.engine, h.engine] });
     const error = await expectWebError(provider.search({ query: 'q' }), 'WEB_PROVIDER_ERROR');
@@ -325,17 +301,17 @@ describe('AggregatedSearchProvider 多路并发', () => {
   });
 
   it('熔断引擎被跳过：不派发、记日志，其余路照常', async () => {
-    const z = fakeEngine('zhipu', ok([source('https://z/1')]));
+    const z = fakeEngine('engine-z', ok([source('https://z/1')]));
     const a = fakeEngine('anysearch', ok([source('https://a/1')]));
     const breaker = new CircuitBreaker();
-    breaker.recordSignal('zhipu', { kind: 'rate-limit', retryAfterMs: 60_000 });
+    breaker.recordSignal('engine-z', { kind: 'rate-limit', retryAfterMs: 60_000 });
     const logger = recordingLogger();
     const provider = buildProvider({ engines: [z.engine, a.engine], breaker, logger });
     const out = await provider.search({ query: 'q' });
     expect(out.sources.map((entry) => entry.url)).toEqual(['https://a/1']);
     expect(z.requests).toHaveLength(0);
     expect(a.requests).toHaveLength(1);
-    expect(logger.lines.some((line) => line.includes('zhipu') && /熔断|跳过/.test(line))).toBe(true);
+    expect(logger.lines.some((line) => line.includes('engine-z') && /熔断|跳过/.test(line))).toBe(true);
   });
 
   it('外层 abort → WEB_ABORTED，且不当作引擎失败', async () => {
@@ -380,7 +356,7 @@ describe('AggregatedSearchProvider 多路并发', () => {
 });
 
 describe('AggregatedSearchProvider 熔断信号转发', () => {
-  it('引擎 A 30001 转发 rate-limit；智谱 429 带 Retry-After；AnySearch 402 转当日熔断', async () => {
+  it('引擎 A 30001 转发 rate-limit；AnySearch 402 转当日熔断', async () => {
     const a = fakeEngine(
       'anysearch',
       fails(
@@ -390,9 +366,9 @@ describe('AggregatedSearchProvider 熔断信号转发', () => {
       ),
     );
     const z = fakeEngine(
-      'zhipu',
+      'engine-z',
       fails(
-        new WebError('Zhipu web search failed with HTTP 429', 'WEB_PROVIDER_ERROR', {
+        new WebError('engine-z limited', 'WEB_PROVIDER_ERROR', {
           cause: { kind: 'rate-limit', retryAfterMs: 7000 },
         }),
       ),
@@ -410,32 +386,32 @@ describe('AggregatedSearchProvider 熔断信号转发', () => {
     await expectWebError(provider.search({ query: 'q' }), 'WEB_PROVIDER_ERROR');
 
     expect(errors).toContain('open:anysearch:quota-exhausted');
-    expect(errors).toContain('open:zhipu:rate-limit');
+    expect(errors).toContain('open:engine-z:rate-limit');
     expect(errors).toContain('open:engine-a:rate-limit');
     expect(breaker.isBroken('anysearch')).toBe(true);
-    expect(breaker.isBroken('zhipu')).toBe(true);
+    expect(breaker.isBroken('engine-z')).toBe(true);
     expect(breaker.isBroken('engine-a')).toBe(true);
-    const status = breaker.status('zhipu');
+    const status = breaker.status('engine-z');
     expect(status.broken && status.reason === 'rate-limit' && status.cooldownUntil !== undefined).toBe(true);
   });
 
   it('词表三值原样透传，不改名不映射', async () => {
     const z = fakeEngine(
-      'zhipu',
+      'engine-z',
       fails(new WebError('insufficient balance', 'WEB_PROVIDER_ERROR', { cause: { kind: 'insufficient-credits' } })),
     );
     const breaker = new CircuitBreaker();
     const provider = buildProvider({ engines: [z.engine], breaker });
     await expectWebError(provider.search({ query: 'q' }), 'WEB_PROVIDER_ERROR');
-    expect(breaker.status('zhipu').reason).toBe('insufficient-credits');
+    expect(breaker.status('engine-z').reason).toBe('insufficient-credits');
   });
 
   it('无关失败不触发熔断', async () => {
-    const z = fakeEngine('zhipu', fails(new WebError('plain failure', 'WEB_PROVIDER_ERROR')));
+    const z = fakeEngine('engine-z', fails(new WebError('plain failure', 'WEB_PROVIDER_ERROR')));
     const breaker = new CircuitBreaker();
     const provider = buildProvider({ engines: [z.engine], breaker });
     await expectWebError(provider.search({ query: 'q' }), 'WEB_PROVIDER_ERROR');
-    expect(breaker.isBroken('zhipu')).toBe(false);
+    expect(breaker.isBroken('engine-z')).toBe(false);
   });
 });
 
@@ -533,7 +509,7 @@ describe('AggregatedSearchProvider 引擎 A额度日检', () => {
 describe('AggregatedSearchProvider rerank', () => {
   const fusedThree = (): [FakeEngine, FakeEngine] => [
     fakeEngine('anysearch', ok([source('https://x/1', { title: 'T1', snippet: 'S1' }), source('https://x/2', { title: 'T2', snippet: 'S2' })])),
-    fakeEngine('zhipu', ok([source('https://x/2', { title: 'T2', snippet: 'S2' }), source('https://x/3', { title: 'T3' })])),
+    fakeEngine('engine-z', ok([source('https://x/2', { title: 'T2', snippet: 'S2' }), source('https://x/3', { title: 'T3' })])),
   ];
 
   it('rerank 成功：按返回的索引重排，document 为 title+snippet 拼接，top_n=maxResults', async () => {

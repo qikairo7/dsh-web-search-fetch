@@ -13,29 +13,19 @@
  */
 import type { Context, Volatile } from '@deepseek-ai/cordis';
 import type { Dict } from '@deepseek-ai/cosmokit';
-import { credentialRef } from '@deepseek-ai/dsh-credentials';
 import z from '@deepseek-ai/schemastery';
-import type { ZhipuSearchTransport } from './types.js';
 import { type AdditionalEnginesConfig } from './engines/additional/index.js';
 import type { RuntimeControls } from './request-budget.js';
 export { createAdditionalEngines, ADDITIONAL_ENGINE_DEFAULTS } from './engines/additional/index.js';
 export type { AdditionalEnginesConfig, AdditionalEngineConfig, AdditionalEngineId } from './engines/additional/index.js';
 import { WEB_SEARCH_FETCH_SETTINGS_NAMESPACE } from './settings-surface.js';
-export { AGGREGATED_PROVIDER_ID, ZHIPU_DEFAULT_API_KEY_ENV, ZHIPU_SEARCH_QUERY_MAX_CHARS, ZHIPU_WEB_SEARCH_URL, } from './limits.js';
 export { ANYSEARCH_DEFAULT_BASE_URL } from './engines/anysearch/limits.js';
 export { AnySearchClient } from './engines/anysearch/client.js';
 export { AnySearchClientError } from './engines/anysearch/error.js';
 export type { AnySearchDomainCapability, AnySearchDomainsResponse, AnySearchDomainSummary, AnySearchMetadata, AnySearchParamInfo, AnySearchParamValue, AnySearchResult, AnySearchSearchRequest, AnySearchSearchResponse, AnySearchSubDomain, AnySearchSubDomainsResponse, } from './engines/anysearch/types.js';
 export { FIRECRAWL_SCRAPE_URL } from './engines/firecrawl/wire.js';
 export { RERANK_TIMEOUT_MS, SILICONFLOW_RERANK_URL } from './engines/rerank/limits.js';
-export { ZhipuClient, translateTransportFailure, extractUpstreamErrorDetail } from './engines/zhipu/client.js';
-export type { ZhipuClientOptions } from './engines/zhipu/client.js';
-export { buildZhipuSearchRequest, clampZhipuCount, mapZhipuSearchResponse, truncateToCodePoints, } from './engines/zhipu/wire.js';
-export { buildZhipuAnthropicEndpoint, buildZhipuAnthropicRequest, isZhipuAnthropicResultBlockType, mapZhipuAnthropicResponse, resolveZhipuAnthropicBaseURL, resolveZhipuAnthropicMaxTokens, resolveZhipuAnthropicMaxUses, resolveZhipuAnthropicModel, resolveZhipuSearchTransport, ZHIPU_ANTHROPIC_RESULT_BLOCK_TYPES, } from './engines/zhipu/anthropic-wire.js';
-export type { ZhipuAnthropicRawItem } from './engines/zhipu/anthropic-wire.js';
-export { createZhipuAnthropicStreamAssembler, createZhipuSseDecoder, isZhipuEventStream, } from './engines/zhipu/anthropic-stream.js';
-export type { ZhipuAnthropicStreamAssembler, ZhipuAnthropicStreamOutcome, ZhipuSseDecoder, ZhipuSseFrame, } from './engines/zhipu/anthropic-stream.js';
-export { AggregatedSearchProvider, ANYSEARCH_DEFAULT_API_KEY_ENV, ANYSEARCH_ENGINE_ID, DEFAULT_RERANK_POOL, DEFAULT_RRF_K, DEFAULT_SEARCH_MAX_FANOUT_MS, SILICONFLOW_DEFAULT_API_KEY_ENV, ZHIPU_ENGINE_ID, createAggregatedSearchProvider, normalizeSearchUrl, readSearchFailureSignal, rrfFuse, } from './search-pipeline.js';
+export { AggregatedSearchProvider, ANYSEARCH_DEFAULT_API_KEY_ENV, ANYSEARCH_ENGINE_ID, DEFAULT_RERANK_POOL, DEFAULT_RRF_K, DEFAULT_SEARCH_MAX_FANOUT_MS, SILICONFLOW_DEFAULT_API_KEY_ENV, createAggregatedSearchProvider, normalizeSearchUrl, readSearchFailureSignal, rrfFuse, } from './search-pipeline.js';
 export type { AggregatedSearchOptions, AggregatedSearchPipelineOptions, FusedCandidate, RerankHandle, ResolveCredential, SearchEngineClient, SearchEngineOverrides, SearchLogSink, } from './search-pipeline.js';
 export { AggregatedFetchProvider, DEFAULT_HTTP_FETCH_LIMITS, createExtractionLegs } from './fetch-pipeline.js';
 export type { AggregatedFetchProviderOptions, ExtractionEngineClients } from './fetch-pipeline.js';
@@ -47,7 +37,6 @@ export type { DecisionDepth, DecisionModelId, DecisionProvider } from './engines
 export type { FetchCandidate, FetchEngineLeg, FetchPipelineLogger, FetchRoute, FetchRouteOptions, } from './fetch-aggregate.js';
 export { CircuitBreaker, formatBreakerEvent } from './breaker/index.js';
 export type { BreakerSignal, CircuitBreakerOptions } from './breaker/index.js';
-export type { ZhipuAnthropicBlock, ZhipuAnthropicMessage, ZhipuAnthropicRequest, ZhipuAnthropicResponse, ZhipuAnthropicTool, ZhipuSearchRequest, ZhipuSearchResponse, ZhipuSearchResultItem, ZhipuSearchTransport, } from './types.js';
 /** Cordis plugin name used by loader diagnostics. */
 export declare const name = "web-search-fetch";
 /** Required services: web providers and per-operation credentials. */
@@ -65,39 +54,10 @@ export interface SearchConfig {
     rerank?: Volatile<boolean> | boolean;
     /** Rerank whole-operation deadline in milliseconds; defaults to the documented ~3 s. */
     rerankTimeoutMs?: number;
-    /**
-     * Zhipu credential reference for the search face. Unset falls back to the
-     * root `apiKeyEnv`, then to `ZHIPU_API_KEY`.
-     *
-     * Volatile: the settings card reads this to learn which reference its Zhipu
-     * key slot writes, so the reference name must be part of the served form.
-     * It carries no schema default — unset must fall back rather than shadow — so
-     * the reference's value type admits `undefined`.
-     */
-    zhipuApiKeyEnv?: Volatile<string | undefined>;
-    /** AnySearch credential reference; defaults to `ANYSEARCH_API_KEY`. Volatile: see `zhipuApiKeyEnv`. */
+    /** AnySearch credential reference; defaults to `ANYSEARCH_API_KEY`. Volatile. */
     anysearchApiKeyEnv?: Volatile<string>;
-    /** SiliconFlow rerank credential reference; defaults to `SILICONFLOW_API_KEY`. Volatile: see `zhipuApiKeyEnv`. */
+    /** SiliconFlow rerank credential reference; defaults to `SILICONFLOW_API_KEY`. Volatile. */
     siliconflowApiKeyEnv?: Volatile<string>;
-    /** Zhipu `web_search` endpoint (DESIGN.md); defaults to the public endpoint. */
-    zhipuBaseURL?: string;
-    /**
-     * Which Zhipu transport the search face uses (issue #12):
-     * `anthropic` (default) posts to `{anthropicBaseURL}/messages` and bills the
-     * GLM Coding Plan; `tools-api` posts to `/paas/v4/web_search` per call.
-     * Unrecognized values are rejected by the schema and client.
-     *
-     * Volatile: this is the one field the settings card edits, and a volatile
-     * field is also what makes the namespace servable — the settings domain skips
-     * an entry whose schema has no live field. Read it through `.get()`.
-     */
-    zhipuTransport?: Volatile<ZhipuSearchTransport>;
-    /** Zhipu Anthropic-compatible Messages base URL; defaults to the public base. */
-    zhipuAnthropicBaseURL?: string;
-    /** GLM model for the `anthropic` transport; defaults to `glm-4.6`. */
-    zhipuAnthropicModel?: string;
-    /** Server-tool invocation bound for the `anthropic` transport; defaults to 1. */
-    zhipuAnthropicMaxUses?: number;
     /** AnySearch origin (DESIGN.md); defaults to `https://api.anysearch.com`. */
     anysearchBaseURL?: string;
     /** SiliconFlow rerank endpoint (DESIGN.md); defaults to the public endpoint. */
@@ -133,14 +93,6 @@ export interface Config {
     controls?: Volatile<RuntimeControls | undefined>;
     /** Additional engines; a configured entry is enabled unless set to false. */
     engines?: Volatile<AdditionalEnginesConfig | undefined>;
-    /**
-     * Credential reference the Zhipu engine resolves once per search; the value
-     * never enters configuration. Defaults to `ZHIPU_API_KEY`.
-     *
-     * Volatile: the settings card reads this to learn which reference its Zhipu
-     * key slot writes, so the reference name must be part of the served form.
-     */
-    apiKeyEnv?: Volatile<string>;
     /** Search-pipeline knobs (DESIGN.md). */
     search?: SearchConfig;
     /** Fetch-side knobs, all optional. */
@@ -185,21 +137,14 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
         fetchBaseURL: z<string, string, "plain">;
         searchMode: z<"basic" | "pro", "basic" | "pro", "plain">;
     }>>, string>>, "volatile">;
-    apiKeyEnv: z<string, string, "volatile-defined">;
     search: z<Schemastery.ObjectS<NoInfer<{
         maxFanoutMs: z<number, number, "defined">;
         rrfK: z<number, number, "defined">;
         rerankPool: z<number, number, "defined">;
         rerank: z<boolean, boolean, "volatile-defined">;
         rerankTimeoutMs: z<number, number, "defined">;
-        zhipuApiKeyEnv: z<string, string, "volatile">;
         anysearchApiKeyEnv: z<string, string, "volatile-defined">;
         siliconflowApiKeyEnv: z<string, string, "volatile-defined">;
-        zhipuBaseURL: z<string, string, "defined">;
-        zhipuTransport: z<"anthropic" | "tools-api", "anthropic" | "tools-api", "volatile-defined">;
-        zhipuAnthropicBaseURL: z<string, string, "defined">;
-        zhipuAnthropicModel: z<string, string, "defined">;
-        zhipuAnthropicMaxUses: z<number, number, "defined">;
         anysearchBaseURL: z<string, string, "defined">;
         rerankBaseURL: z<string, string, "defined">;
         decisionModel: z<"Kev-4b" | "SemIf" | "diffusiongemma" | "decision-model-preview" | "jev-latest", "Kev-4b" | "SemIf" | "diffusiongemma" | "decision-model-preview" | "jev-latest", "volatile-defined">;
@@ -210,14 +155,8 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
         rerankPool: z<number, number, "defined">;
         rerank: z<boolean, boolean, "volatile-defined">;
         rerankTimeoutMs: z<number, number, "defined">;
-        zhipuApiKeyEnv: z<string, string, "volatile">;
         anysearchApiKeyEnv: z<string, string, "volatile-defined">;
         siliconflowApiKeyEnv: z<string, string, "volatile-defined">;
-        zhipuBaseURL: z<string, string, "defined">;
-        zhipuTransport: z<"anthropic" | "tools-api", "anthropic" | "tools-api", "volatile-defined">;
-        zhipuAnthropicBaseURL: z<string, string, "defined">;
-        zhipuAnthropicModel: z<string, string, "defined">;
-        zhipuAnthropicMaxUses: z<number, number, "defined">;
         anysearchBaseURL: z<string, string, "defined">;
         rerankBaseURL: z<string, string, "defined">;
         decisionModel: z<"Kev-4b" | "SemIf" | "diffusiongemma" | "decision-model-preview" | "jev-latest", "Kev-4b" | "SemIf" | "diffusiongemma" | "decision-model-preview" | "jev-latest", "volatile-defined">;
@@ -283,21 +222,14 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
         fetchBaseURL: z<string, string, "plain">;
         searchMode: z<"basic" | "pro", "basic" | "pro", "plain">;
     }>>, string>>, "volatile">;
-    apiKeyEnv: z<string, string, "volatile-defined">;
     search: z<Schemastery.ObjectS<NoInfer<{
         maxFanoutMs: z<number, number, "defined">;
         rrfK: z<number, number, "defined">;
         rerankPool: z<number, number, "defined">;
         rerank: z<boolean, boolean, "volatile-defined">;
         rerankTimeoutMs: z<number, number, "defined">;
-        zhipuApiKeyEnv: z<string, string, "volatile">;
         anysearchApiKeyEnv: z<string, string, "volatile-defined">;
         siliconflowApiKeyEnv: z<string, string, "volatile-defined">;
-        zhipuBaseURL: z<string, string, "defined">;
-        zhipuTransport: z<"anthropic" | "tools-api", "anthropic" | "tools-api", "volatile-defined">;
-        zhipuAnthropicBaseURL: z<string, string, "defined">;
-        zhipuAnthropicModel: z<string, string, "defined">;
-        zhipuAnthropicMaxUses: z<number, number, "defined">;
         anysearchBaseURL: z<string, string, "defined">;
         rerankBaseURL: z<string, string, "defined">;
         decisionModel: z<"Kev-4b" | "SemIf" | "diffusiongemma" | "decision-model-preview" | "jev-latest", "Kev-4b" | "SemIf" | "diffusiongemma" | "decision-model-preview" | "jev-latest", "volatile-defined">;
@@ -308,14 +240,8 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
         rerankPool: z<number, number, "defined">;
         rerank: z<boolean, boolean, "volatile-defined">;
         rerankTimeoutMs: z<number, number, "defined">;
-        zhipuApiKeyEnv: z<string, string, "volatile">;
         anysearchApiKeyEnv: z<string, string, "volatile-defined">;
         siliconflowApiKeyEnv: z<string, string, "volatile-defined">;
-        zhipuBaseURL: z<string, string, "defined">;
-        zhipuTransport: z<"anthropic" | "tools-api", "anthropic" | "tools-api", "volatile-defined">;
-        zhipuAnthropicBaseURL: z<string, string, "defined">;
-        zhipuAnthropicModel: z<string, string, "defined">;
-        zhipuAnthropicMaxUses: z<number, number, "defined">;
         anysearchBaseURL: z<string, string, "defined">;
         rerankBaseURL: z<string, string, "defined">;
         decisionModel: z<"Kev-4b" | "SemIf" | "diffusiongemma" | "decision-model-preview" | "jev-latest", "Kev-4b" | "SemIf" | "diffusiongemma" | "decision-model-preview" | "jev-latest", "volatile-defined">;
@@ -345,5 +271,3 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
 }>>, "plain">;
 /** Register aggregated providers behind the native tools. */
 export declare function apply(ctx: Context, config: Config): void;
-/** Kept so `apiKeyEnv`'s credential-ref contract stays reachable to callers. */
-export { credentialRef };

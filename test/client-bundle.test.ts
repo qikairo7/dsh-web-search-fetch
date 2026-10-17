@@ -283,7 +283,7 @@ describe('client bundle', () => {
 
   it('apply 注册 zh/en 双语并把 tab 挂进 settings.plugins.tab', () => {
     const { module } = loadBundle();
-    const { scope } = createScope({ value: { search: { zhipuTransport: 'anthropic' } } });
+    const { scope } = createScope({ value: {} });
     const page = createPageContext({ scope });
     module.apply(page.ctx);
 
@@ -319,7 +319,7 @@ describe('client bundle', () => {
 
   it('注入面暴露 hook 与四个动作，hook 名符合 use<Name> 约定', () => {
     const { module } = loadBundle();
-    const { scope } = createScope({ value: { search: { zhipuTransport: 'anthropic' } } });
+    const { scope } = createScope({ value: {} });
     const page = createPageContext({ scope });
     module.apply(page.ctx);
     const tab = page.registrations.find((entry) => entry.options.name === 'settings.plugins.tab')!;
@@ -328,7 +328,7 @@ describe('client bundle', () => {
     // The renderer derives the prop name from the hook key; the component reads
     // props.useWebSearchFetch, so the two must agree.
     expect(typeof face.hooks.webSearchFetch.getSnapshot).toBe('function');
-    for (const action of ['editKey', 'editTransport', 'save', 'discard']) {
+    for (const action of ['editKey', 'editDecision', 'chooseStart', 'editService', 'editControl', 'editNumber', 'editParticipation', 'save', 'discard']) {
       expect(typeof face[action], action).toBe('function');
     }
   });
@@ -360,11 +360,10 @@ describe('card controller', () => {
     return { face, page, scope };
   }
 
-  it('投影出完整十三个凭证位与当前通道', () => {
-    const { face } = mount({ value: { search: { zhipuTransport: 'tools-api' } } });
+  it('投影出完整十三个凭证位', () => {
+    const { face } = mount({ value: {} });
     const state = face.hooks.webSearchFetch.getSnapshot();
-    expect(state.transport).toBe('tools-api');
-    expect(state.keys.map((row: { id: string }) => row.id)).toEqual(['anysearch', 'zhipu', 'firecrawl', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'tinyfish', 'serply', 'kimi', 'siliconflow', 'dashscope', 'typesafe']);
+    expect(state.keys.map((row: { id: string }) => row.id)).toEqual(['anysearch', 'firecrawl', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'tinyfish', 'serply', 'kimi', 'siliconflow', 'dashscope', 'typesafe']);
     expect(state.keys.every((row: { text: string }) => row.text === '')).toBe(true);
     expect(state.writable).toBe(true);
   });
@@ -479,88 +478,39 @@ describe('card controller', () => {
   it('按已服务的引用名询问凭证状态，且只投影布尔', async () => {
     const described: string[][] = [];
     const { face } = mount({
-      value: { search: { zhipuTransport: 'anthropic' } },
+      value: {},
       describe: (refs) => {
         described.push(refs);
         return {
           ok: true,
           value: {
-            ZHIPU_API_KEY: { configured: true, writable: true, source: 'file', value: 'secret' },
-            ANYSEARCH_API_KEY: { configured: false, writable: true },
+            ANYSEARCH_API_KEY: { configured: true, writable: true, source: 'file', value: 'secret' },
           },
         };
       },
     });
     await Promise.resolve();
-    expect(described[0]).toContain('ZHIPU_API_KEY');
+    expect(described[0]).toContain('ANYSEARCH_API_KEY');
     expect(described[0]).toContain('FIRECRAWL_API_KEY');
     const state = face.hooks.webSearchFetch.getSnapshot();
-    const zhipu = state.keys.find((row: { id: string }) => row.id === 'zhipu');
-    expect(zhipu.configured).toBe(true);
+    const anysearch = state.keys.find((row: { id: string }) => row.id === 'anysearch');
+    expect(anysearch.configured).toBe(true);
     // The provider view carried a value; the projection must not.
     expect(JSON.stringify(state)).not.toContain('secret');
-    expect(state.keys.find((row: { id: string }) => row.id === 'anysearch').configured).toBe(false);
-  });
-
-  it('已配置的引用名来自覆盖链（search.zhipuApiKeyEnv 优先于根）', async () => {
-    const described: string[][] = [];
-    const { face } = mount({
-      value: { apiKeyEnv: 'ROOT_KEY', search: { zhipuApiKeyEnv: 'SEARCH_KEY' } },
-      describe: (refs) => {
-        described.push(refs);
-        return { ok: true, value: {} };
-      },
-    });
-    await Promise.resolve();
-    expect(described[0]).toContain('SEARCH_KEY');
-    expect(described[0]).not.toContain('ROOT_KEY');
-  });
-
-  it('保存通道走一次 path 变更，路径为 search.zhipuTransport', async () => {
-    const { face, scope } = mount({ value: { search: { zhipuTransport: 'anthropic' } } });
-    face.editTransport('tools-api');
-    expect(face.hooks.webSearchFetch.getSnapshot().dirty).toBe(true);
-    await face.save();
-    expect(scope.mutations).toHaveLength(1);
-    expect(scope.mutations[0]).toEqual([
-      { op: 'set', path: ['search', 'zhipuTransport'], value: 'tools-api' },
-    ]);
-    // A landed save clears the draft.
-    expect(face.hooks.webSearchFetch.getSnapshot().dirty).toBe(false);
-  });
-
-  it('把通道切回已服务值时不产生写入', async () => {
-    const { face, scope } = mount({ value: { search: { zhipuTransport: 'anthropic' } } });
-    face.editTransport('tools-api');
-    face.editTransport('anthropic');
-    await face.save();
-    expect(scope.mutations).toHaveLength(0);
-    expect(face.hooks.webSearchFetch.getSnapshot().dirty).toBe(false);
-  });
-
-  it('保存用暂存时的 revision 做冲突栅栏（不是保存时的）', async () => {
-    const { face, scope } = mount({ value: { search: { zhipuTransport: 'anthropic' } }, revision: 7 });
-    face.editTransport('tools-api');
-    await face.save();
-    // The scope's own mutate received the revision the drafts were staged
-    // against, so an edit made elsewhere meanwhile is refused rather than
-    // silently overwritten.
-    expect(scope.mutations).toHaveLength(1);
-    expect(scope.revisions).toEqual([7]);
   });
 
   it('填写 key 后按引用名写入凭证域', async () => {
     const writes: { ref: string; value: string }[] = [];
     const { face } = mount({
-      value: { search: { zhipuTransport: 'anthropic' } },
+      value: {},
       set: (ref, value) => {
         writes.push({ ref, value });
         return { ok: true, value: undefined };
       },
     });
-    face.editKey('zhipu', 'sk-live-value');
+    face.editKey('anysearch', 'sk-live-value');
     await face.save();
-    expect(writes).toEqual([{ ref: 'ZHIPU_API_KEY', value: 'sk-live-value' }]);
+    expect(writes).toEqual([{ ref: 'ANYSEARCH_API_KEY', value: 'sk-live-value' }]);
     // The literal must not survive in the card's own render state.
     expect(face.hooks.webSearchFetch.getSnapshot().keys.every((r: { text: string }) => r.text === '')).toBe(
       true,
@@ -570,13 +520,13 @@ describe('card controller', () => {
   it('留空保持：空白草稿不写入凭证域，也不清空既有 key', async () => {
     const writes: { ref: string; value: string }[] = [];
     const { face } = mount({
-      value: { search: { zhipuTransport: 'anthropic' } },
+      value: {},
       set: (ref, value) => {
         writes.push({ ref, value });
         return { ok: true, value: undefined };
       },
     });
-    face.editKey('zhipu', '   ');
+    face.editKey('anysearch', '   ');
     await face.save();
     expect(writes).toEqual([]);
     expect(face.hooks.webSearchFetch.getSnapshot().dirty).toBe(false);
@@ -585,14 +535,14 @@ describe('card controller', () => {
   it('空白草稿不会覆盖此前已暂存的值', async () => {
     const writes: { ref: string; value: string }[] = [];
     const { face } = mount({
-      value: { search: { zhipuTransport: 'anthropic' } },
+      value: {},
       set: (ref, value) => {
         writes.push({ ref, value });
         return { ok: true, value: undefined };
       },
     });
-    face.editKey('zhipu', 'sk-first');
-    face.editKey('zhipu', '');
+    face.editKey('anysearch', 'sk-first');
+    face.editKey('anysearch', '');
     await face.save();
     expect(writes).toEqual([]);
   });
@@ -600,14 +550,14 @@ describe('card controller', () => {
   it('只读部署拒绝保存', async () => {
     const writes: { ref: string; value: string }[] = [];
     const { face, scope } = mount({
-      value: { search: { zhipuTransport: 'anthropic' } },
+      value: {},
       writable: false,
       set: (ref, value) => {
         writes.push({ ref, value });
         return { ok: true, value: undefined };
       },
     });
-    face.editKey('zhipu', 'sk-live');
+    face.editKey('anysearch', 'sk-live');
     await face.save();
     expect(writes).toEqual([]);
     expect(scope.mutations).toHaveLength(0);
@@ -616,10 +566,10 @@ describe('card controller', () => {
 
   it('凭证写入被拒时保留草稿并标记失败', async () => {
     const { face } = mount({
-      value: { search: { zhipuTransport: 'anthropic' } },
+      value: {},
       set: () => ({ ok: false, error: { code: 'credential/rejected', message: 'read-only' } }),
     });
-    face.editKey('zhipu', 'sk-live');
+    face.editKey('anysearch', 'sk-live');
     await face.save();
     const state = face.hooks.webSearchFetch.getSnapshot();
     expect(state.failed).toBe(true);
@@ -628,19 +578,17 @@ describe('card controller', () => {
   });
 
   it('discard 丢弃全部草稿', async () => {
-    const { face } = mount({ value: { search: { zhipuTransport: 'anthropic' } } });
-    face.editTransport('tools-api');
+    const { face } = mount({ value: {} });
     face.editKey('tavily', 'secret-draft');
     face.discard();
     const state = face.hooks.webSearchFetch.getSnapshot();
     expect(state.dirty).toBe(false);
-    expect(state.transport).toBe('anthropic');
   });
 
   it('凭证变更事件只对受监视引用触发重读', async () => {
     const described: string[][] = [];
     const { face, page } = mount({
-      value: { search: { zhipuTransport: 'anthropic' } },
+      value: {},
       describe: (refs) => {
         described.push(refs);
         return { ok: true, value: {} };
@@ -652,14 +600,14 @@ describe('card controller', () => {
     handler('UNRELATED_REF');
     await Promise.resolve();
     expect(described.length).toBe(before);
-    handler('ZHIPU_API_KEY');
+    handler('ANYSEARCH_API_KEY');
     await Promise.resolve();
     expect(described.length).toBeGreaterThan(before);
   });
 
   it('描述调用失败时不把凭证报成未配置（保持未知）', async () => {
     const { face } = mount({
-      value: { search: { zhipuTransport: 'anthropic' } },
+      value: {},
       describe: () => {
         throw new Error('gateway down');
       },
@@ -667,19 +615,12 @@ describe('card controller', () => {
     await Promise.resolve();
     const state = face.hooks.webSearchFetch.getSnapshot();
     // The card still renders; no row claims a false negative from a failed read.
-    expect(state.keys).toHaveLength(14);
+    expect(state.keys).toHaveLength(13);
     expect(state.keys.every((row: { configured: boolean }) => row.configured === false)).toBe(true);
   });
 
-  it('作用域订阅更新后投影随之刷新', async () => {
-    const { face, scope } = mount({ value: { search: { zhipuTransport: 'anthropic' } } });
-    expect(face.hooks.webSearchFetch.getSnapshot().transport).toBe('anthropic');
-    scope.setValue({ search: { zhipuTransport: 'tools-api' } });
-    expect(face.hooks.webSearchFetch.getSnapshot().transport).toBe('tools-api');
-  });
-
   it('注册了凭证失效事件与表单清理 effect', () => {
-    const { page } = mount({ value: { search: { zhipuTransport: 'anthropic' } } });
+    const { page } = mount({ value: {} });
     expect(page.eventHandlers.has('credentials/reference-updated')).toBe(true);
     expect(page.effects.some((label) => label.includes('credential invalidations'))).toBe(true);
   });
@@ -721,7 +662,7 @@ describe('card controller', () => {
     const { face, page } = mount({ value: {} });
     const state = face.hooks.webSearchFetch.getSnapshot();
     expect(state.visibleServiceIds).toEqual(expect.arrayContaining(Object.keys(ADDITIONAL_ENGINE_DEFAULTS)));
-    expect(state.visibleServiceIds).toHaveLength(15);
+    expect(state.visibleServiceIds).toHaveLength(14);
     const bundles = page.localeRegistrations[0]!.bundles as { zh: Record<string, string> };
     const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
     for (const id of state.visibleServiceIds) expect(readme).toContain(bundles.zh[id + '-service']);
@@ -893,18 +834,18 @@ describe('card controller', () => {
     expect(scope.mutations).toEqual([[{ op: 'set', path: ['controls', 'maxRequests'], value: 24 }]]);
   });
   it('全部服务统一提供启停状态，基础服务关闭不改参与范围或凭证', async () => {
-    const { face, scope } = mount({ value: { controls: { searchServices: ['anysearch', 'zhipu'], fetchServices: ['anysearch'] } } });
-    expect(Object.keys(face.hooks.webSearchFetch.getSnapshot().engines)).toHaveLength(15);
+    const { face, scope } = mount({ value: { controls: { searchServices: ['anysearch', 'tavily'], fetchServices: ['anysearch'] } } });
+    expect(Object.keys(face.hooks.webSearchFetch.getSnapshot().engines)).toHaveLength(14);
     face.editService('anysearch', false);
-    face.editService('zhipu', false);
+    face.editService('tavily', false);
     face.editService('http', false);
     const state = face.hooks.webSearchFetch.getSnapshot();
     expect(state.engines.anysearch).toBe(false);
     expect(state.engines.http).toBe(false);
-    expect(state.controls.searchServices).toEqual(['anysearch', 'zhipu']);
+    expect(state.controls.searchServices).toEqual(['anysearch', 'tavily']);
     expect(state.controls.fetchServices).toEqual(['anysearch']);
     await face.save();
-    expect(scope.mutations).toEqual([[{ op: 'set', path: ['controls', 'serviceEnabled'], value: { anysearch: false, zhipu: false, http: false } }]]);
+    expect(scope.mutations).toEqual([[{ op: 'set', path: ['controls', 'serviceEnabled'], value: { anysearch: false, http: false } }]]);
   });
   it('统一开关尊重原重排配置，恢复基础服务原状态会清除草稿', async () => {
     const { face, scope } = mount({ value: { search: { rerank: false } } });

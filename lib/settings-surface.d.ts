@@ -16,7 +16,6 @@
 import type { AdditionalEnginesConfig } from './engines/additional/index.js';
 import type { Volatile } from '@deepseek-ai/cordis';
 import type { CredentialInfo } from '@deepseek-ai/dsh-credentials';
-import type { ZhipuSearchTransport } from './types.js';
 /**
  * Settings namespace of this plugin's configuration surface.
  *
@@ -28,7 +27,7 @@ export declare const WEB_SEARCH_FETCH_SETTINGS_NAMESPACE = "web-search-fetch";
 /** Fields served by native settings: transport, credential references and the extension map.
  * The map is volatile as a whole so path mutations can preserve custom endpoints and refs.
  */
-export declare const EDITABLE_SETTINGS_PATHS: readonly [readonly ["controls"], readonly ["search", "rerank"], readonly ["engines"], readonly ["fetch", "anysearchApiKeyEnv"], readonly ["apiKeyEnv"], readonly ["search", "zhipuApiKeyEnv"], readonly ["search", "anysearchApiKeyEnv"], readonly ["search", "siliconflowApiKeyEnv"], readonly ["search", "zhipuTransport"], readonly ["search", "decisionModel"], readonly ["fetch", "firecrawlApiKeyEnv"]];
+export declare const EDITABLE_SETTINGS_PATHS: readonly [readonly ["controls"], readonly ["search", "rerank"], readonly ["engines"], readonly ["fetch", "anysearchApiKeyEnv"], readonly ["search", "anysearchApiKeyEnv"], readonly ["search", "siliconflowApiKeyEnv"], readonly ["search", "decisionModel"], readonly ["fetch", "firecrawlApiKeyEnv"]];
 /** One editable config path. */
 export type EditableSettingsPath = (typeof EDITABLE_SETTINGS_PATHS)[number];
 /**
@@ -48,15 +47,11 @@ export declare function isEditableSettingsPath(path: readonly string[]): boolean
  */
 export interface SettingsSurfaceConfig {
     engines?: Volatile<AdditionalEnginesConfig | undefined> | AdditionalEnginesConfig;
-    /** Root Zhipu reference; the last link of the Zhipu chain. */
-    apiKeyEnv?: Volatile<string> | string;
     /** Search-face configuration. */
     search?: {
         /** No schema default: unset falls back, so the reference admits `undefined`. */
-        zhipuApiKeyEnv?: Volatile<string | undefined> | string;
         anysearchApiKeyEnv?: Volatile<string> | string;
         siliconflowApiKeyEnv?: Volatile<string> | string;
-        zhipuTransport?: Volatile<string> | string;
     };
     /** Fetch-face configuration. */
     fetch?: {
@@ -65,7 +60,7 @@ export interface SettingsSurfaceConfig {
     };
 }
 /** Stable id of one engine key slot the settings card offers. */
-export type CredentialSlotId = 'anysearch' | 'zhipu' | 'firecrawl' | 'tavily' | 'exa' | 'keenable' | 'crawl4ai' | 'github' | 'tinyfish' | 'serply' | 'kimi' | 'siliconflow' | 'dashscope' | 'typesafe';
+export type CredentialSlotId = 'anysearch' | 'firecrawl' | 'tavily' | 'exa' | 'keenable' | 'crawl4ai' | 'github' | 'tinyfish' | 'serply' | 'kimi' | 'siliconflow' | 'dashscope' | 'typesafe';
 /** One engine key slot: which references name it, and the fallback. */
 export interface CredentialSlot {
     /** Stable slot id the card labels and renders in this order. */
@@ -129,17 +124,6 @@ export interface CredentialSlotStatus {
  * @returns one status row per slot, in the order given.
  */
 export declare function projectCredentialStatus(slots: readonly CredentialSlotRef[], described: Readonly<Record<string, CredentialInfo>>): readonly CredentialSlotStatus[];
-/**
- * Project the editable settings the card renders as controls.
- *
- * Reads through the volatile reference, so this reports the value a saved edit
- * is visible as rather than the value captured when the plugin mounted.
- * @param config - the parsed plugin configuration.
- * @returns the transport the search face would dispatch to.
- */
-export declare function projectEditableSettings(config: SettingsSurfaceConfig): {
-    zhipuTransport: ZhipuSearchTransport;
-};
 /**
  * Read a configuration field the settings page can edit.
  *

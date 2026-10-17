@@ -61,8 +61,8 @@ describe('CircuitBreaker 当日熔断', () => {
 
   it('insufficient-credits（欠费）同样触发当日熔断', () => {
     const breaker = new CircuitBreaker();
-    breaker.recordSignal('zhipu', { kind: 'insufficient-credits' });
-    expect(breaker.status('zhipu')).toEqual({
+    breaker.recordSignal('engine-z', { kind: 'insufficient-credits' });
+    expect(breaker.status('engine-z')).toEqual({
       broken: true,
       reason: 'insufficient-credits',
       resetAt: NEXT_MIDNIGHT,
@@ -111,25 +111,25 @@ describe('CircuitBreaker rate-limit 冷却', () => {
   it('带 retryAfterMs 按该时长冷却（Retry-After 语义），到期即恢复', () => {
     const breaker = new CircuitBreaker();
     const t0 = DAY_START.getTime();
-    breaker.recordSignal('zhipu', { kind: 'rate-limit', retryAfterMs: 30_000 }, t0);
-    expect(breaker.status('zhipu', t0)).toEqual({
+    breaker.recordSignal('engine-z', { kind: 'rate-limit', retryAfterMs: 30_000 }, t0);
+    expect(breaker.status('engine-z', t0)).toEqual({
       broken: true,
       reason: 'rate-limit',
       cooldownUntil: t0 + 30_000,
     });
-    expect(breaker.isBroken('zhipu', t0 + 29_999)).toBe(true);
-    expect(breaker.isBroken('zhipu', t0 + 30_000)).toBe(false);
+    expect(breaker.isBroken('engine-z', t0 + 29_999)).toBe(true);
+    expect(breaker.isBroken('engine-z', t0 + 30_000)).toBe(false);
   });
 
   it('不带 retryAfterMs 退化为默认 60 秒短冷却，构造参数可配', () => {
     const t0 = DAY_START.getTime();
     const def = new CircuitBreaker();
-    def.recordSignal('zhipu', { kind: 'rate-limit' }, t0);
-    expect(def.status('zhipu', t0).cooldownUntil).toBe(t0 + DEFAULT_RATE_LIMIT_COOLDOWN_MS);
+    def.recordSignal('engine-z', { kind: 'rate-limit' }, t0);
+    expect(def.status('engine-z', t0).cooldownUntil).toBe(t0 + DEFAULT_RATE_LIMIT_COOLDOWN_MS);
     const custom = new CircuitBreaker({ defaultRateLimitCooldownMs: 5_000 });
-    custom.recordSignal('zhipu', { kind: 'rate-limit' }, t0);
-    expect(custom.isBroken('zhipu', t0 + 4_999)).toBe(true);
-    expect(custom.isBroken('zhipu', t0 + 5_000)).toBe(false);
+    custom.recordSignal('engine-z', { kind: 'rate-limit' }, t0);
+    expect(custom.isBroken('engine-z', t0 + 4_999)).toBe(true);
+    expect(custom.isBroken('engine-z', t0 + 5_000)).toBe(false);
   });
 
   it('冷却期内同类信号指数退避加倍：1× → 2× → 4×，从新起点重新计时', () => {
@@ -156,9 +156,9 @@ describe('CircuitBreaker rate-limit 冷却', () => {
   it('退避上限可配（maxRateLimitCooldownMs）', () => {
     const breaker = new CircuitBreaker({ maxRateLimitCooldownMs: 90_000 });
     const t0 = DAY_START.getTime();
-    breaker.recordSignal('zhipu', { kind: 'rate-limit', retryAfterMs: 60_000 }, t0);
-    breaker.recordSignal('zhipu', { kind: 'rate-limit', retryAfterMs: 60_000 }, t0);
-    expect(breaker.status('zhipu', t0).cooldownUntil).toBe(t0 + 90_000);
+    breaker.recordSignal('engine-z', { kind: 'rate-limit', retryAfterMs: 60_000 }, t0);
+    breaker.recordSignal('engine-z', { kind: 'rate-limit', retryAfterMs: 60_000 }, t0);
+    expect(breaker.status('engine-z', t0).cooldownUntil).toBe(t0 + 90_000);
   });
 
   it('冷却结束后再来信号：退避清零，从 1× 重新开始', () => {
@@ -176,8 +176,8 @@ describe('CircuitBreaker rate-limit 冷却', () => {
     const { events, onEvent } = collectEvents();
     const breaker = new CircuitBreaker({ onEvent });
     const t0 = DAY_START.getTime();
-    breaker.recordSignal('zhipu', { kind: 'rate-limit', retryAfterMs: 0 }, t0);
-    expect(breaker.isBroken('zhipu', t0)).toBe(false);
+    breaker.recordSignal('engine-z', { kind: 'rate-limit', retryAfterMs: 0 }, t0);
+    expect(breaker.isBroken('engine-z', t0)).toBe(false);
     expect(events).toHaveLength(0);
   });
 
@@ -185,17 +185,17 @@ describe('CircuitBreaker rate-limit 冷却', () => {
     const { events, onEvent } = collectEvents();
     const breaker = new CircuitBreaker({ onEvent });
     const t0 = DAY_START.getTime();
-    breaker.recordSignal('zhipu', { kind: 'rate-limit', retryAfterMs: 30_000 }, t0);
-    expect(breaker.isBroken('zhipu', t0)).toBe(true);
-    breaker.recordSignal('zhipu', { kind: 'rate-limit', retryAfterMs: 0 }, t0 + 5_000);
-    expect(breaker.isBroken('zhipu', t0 + 5_000)).toBe(false);
+    breaker.recordSignal('engine-z', { kind: 'rate-limit', retryAfterMs: 30_000 }, t0);
+    expect(breaker.isBroken('engine-z', t0)).toBe(true);
+    breaker.recordSignal('engine-z', { kind: 'rate-limit', retryAfterMs: 0 }, t0 + 5_000);
+    expect(breaker.isBroken('engine-z', t0 + 5_000)).toBe(false);
     expect(events).toEqual([
-      { type: 'open', engineId: 'zhipu', reason: 'rate-limit', at: t0, until: t0 + 30_000 },
-      { type: 'recovery', engineId: 'zhipu', reason: 'rate-limit', at: t0 + 5_000 },
+      { type: 'open', engineId: 'engine-z', reason: 'rate-limit', at: t0, until: t0 + 30_000 },
+      { type: 'recovery', engineId: 'engine-z', reason: 'rate-limit', at: t0 + 5_000 },
     ]);
     // 冷却后的下一次信号从 1× 重新计时（不残留退避）。
-    breaker.recordSignal('zhipu', { kind: 'rate-limit', retryAfterMs: 30_000 }, t0 + 6_000);
-    expect(breaker.status('zhipu', t0 + 6_000).cooldownUntil).toBe(t0 + 36_000);
+    breaker.recordSignal('engine-z', { kind: 'rate-limit', retryAfterMs: 30_000 }, t0 + 6_000);
+    expect(breaker.status('engine-z', t0 + 6_000).cooldownUntil).toBe(t0 + 36_000);
   });
 });
 
@@ -205,18 +205,18 @@ describe('CircuitBreaker 多引擎与未知引擎', () => {
     const breaker = new CircuitBreaker({ onEvent });
     const t0 = DAY_START.getTime();
     breaker.recordSignal('engine-a', { kind: 'quota-exhausted' }, t0);
-    breaker.recordSignal('zhipu', { kind: 'rate-limit', retryAfterMs: 30_000 }, t0);
+    breaker.recordSignal('engine-z', { kind: 'rate-limit', retryAfterMs: 30_000 }, t0);
     expect(breaker.isBroken('engine-a', t0)).toBe(true);
-    expect(breaker.isBroken('zhipu', t0)).toBe(true);
+    expect(breaker.isBroken('engine-z', t0)).toBe(true);
     expect(breaker.isBroken('anysearch', t0)).toBe(false);
-    // zhipu 冷却先到期，丝毫不影响 engine-a 的当日熔断，也没动过 anysearch。
-    expect(breaker.isBroken('zhipu', t0 + 30_000)).toBe(false);
+    // engine-z 冷却先到期，丝毫不影响 engine-a 的当日熔断，也没动过 anysearch。
+    expect(breaker.isBroken('engine-z', t0 + 30_000)).toBe(false);
     expect(breaker.isBroken('engine-a', t0 + 30_000)).toBe(true);
     expect(breaker.isBroken('anysearch', t0 + 30_000)).toBe(false);
     expect(events.map((event) => `${event.type}:${event.engineId}`)).toEqual([
       'open:engine-a',
-      'open:zhipu',
-      'recovery:zhipu',
+      'open:engine-z',
+      'recovery:engine-z',
     ]);
   });
 
@@ -228,23 +228,23 @@ describe('CircuitBreaker 多引擎与未知引擎', () => {
 });
 
 describe('与聚合管线的约定（管线跳过熔断引擎）', () => {
-  const ENGINES = ['anysearch', 'zhipu', 'engine-a'] as const;
+  const ENGINES = ['anysearch', 'engine-z', 'engine-a'] as const;
 
   it('当日熔断的引擎被跳过，其余引擎照常派发；跨日后重新加入', () => {
     const breaker = new CircuitBreaker();
     breaker.recordSignal('engine-a', { kind: 'quota-exhausted' });
-    expect(dispatchableEngines(breaker, ENGINES)).toEqual(['anysearch', 'zhipu']);
+    expect(dispatchableEngines(breaker, ENGINES)).toEqual(['anysearch', 'engine-z']);
     vi.setSystemTime(new Date(2026, 9, 14, 0, 0, 0));
-    expect(dispatchableEngines(breaker, ENGINES)).toEqual(['anysearch', 'zhipu', 'engine-a']);
+    expect(dispatchableEngines(breaker, ENGINES)).toEqual(['anysearch', 'engine-z', 'engine-a']);
   });
 
   it('rate-limit 冷却期内被跳过，冷却结束自动回队', () => {
     const breaker = new CircuitBreaker();
     const t0 = DAY_START.getTime();
-    breaker.recordSignal('zhipu', { kind: 'rate-limit', retryAfterMs: 10_000 }, t0);
+    breaker.recordSignal('engine-z', { kind: 'rate-limit', retryAfterMs: 10_000 }, t0);
     expect(dispatchableEngines(breaker, ENGINES)).toEqual(['anysearch', 'engine-a']);
     vi.setSystemTime(t0 + 10_000);
-    expect(dispatchableEngines(breaker, ENGINES)).toEqual(['anysearch', 'zhipu', 'engine-a']);
+    expect(dispatchableEngines(breaker, ENGINES)).toEqual(['anysearch', 'engine-z', 'engine-a']);
   });
 });
 
@@ -293,13 +293,13 @@ describe('事件与日志行', () => {
     const { events, onEvent } = collectEvents();
     const breaker = new CircuitBreaker({ onEvent });
     const t0 = DAY_START.getTime();
-    breaker.recordSignal('zhipu', { kind: 'rate-limit', retryAfterMs: 30_000 }, t0);
-    breaker.recordSignal('zhipu', { kind: 'rate-limit', retryAfterMs: 30_000 }, t0 + 5_000);
+    breaker.recordSignal('engine-z', { kind: 'rate-limit', retryAfterMs: 30_000 }, t0);
+    breaker.recordSignal('engine-z', { kind: 'rate-limit', retryAfterMs: 30_000 }, t0 + 5_000);
     expect(events).toEqual([
-      { type: 'open', engineId: 'zhipu', reason: 'rate-limit', at: t0, until: t0 + 30_000 },
+      { type: 'open', engineId: 'engine-z', reason: 'rate-limit', at: t0, until: t0 + 30_000 },
       {
         type: 'open',
-        engineId: 'zhipu',
+        engineId: 'engine-z',
         reason: 'rate-limit',
         at: t0 + 5_000,
         until: t0 + 5_000 + 60_000,
@@ -321,9 +321,9 @@ describe('事件与日志行', () => {
   it('未注入 onEvent 时静默工作，状态机照常', () => {
     const breaker = new CircuitBreaker();
     const t0 = DAY_START.getTime();
-    breaker.recordSignal('zhipu', { kind: 'rate-limit', retryAfterMs: 1_000 }, t0);
-    expect(breaker.isBroken('zhipu', t0)).toBe(true);
-    expect(breaker.isBroken('zhipu', t0 + 1_000)).toBe(false);
+    breaker.recordSignal('engine-z', { kind: 'rate-limit', retryAfterMs: 1_000 }, t0);
+    expect(breaker.isBroken('engine-z', t0)).toBe(true);
+    expect(breaker.isBroken('engine-z', t0 + 1_000)).toBe(false);
   });
 });
 
@@ -331,14 +331,14 @@ describe('时钟注入', () => {
   it('构造注入 now() 时钟被使用，方法级 now 可覆盖', () => {
     const fixed = new Date(2026, 9, 13, 15, 0, 0).getTime();
     const breaker = new CircuitBreaker({ now: () => fixed });
-    breaker.recordSignal('zhipu', { kind: 'rate-limit', retryAfterMs: 10_000 });
-    expect(breaker.status('zhipu')).toEqual({
+    breaker.recordSignal('engine-z', { kind: 'rate-limit', retryAfterMs: 10_000 });
+    expect(breaker.status('engine-z')).toEqual({
       broken: true,
       reason: 'rate-limit',
       cooldownUntil: fixed + 10_000,
     });
     // 方法级 now 覆盖注入时钟：到期、结算恢复。
-    expect(breaker.isBroken('zhipu', fixed + 10_000)).toBe(false);
-    expect(breaker.status('zhipu')).toEqual({ broken: false });
+    expect(breaker.isBroken('engine-z', fixed + 10_000)).toBe(false);
+    expect(breaker.status('engine-z')).toEqual({ broken: false });
   });
 });

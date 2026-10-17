@@ -94,6 +94,6 @@ describe('推荐服务的匿名请求', () => {
     const bundle = parse(readFileSync(new URL('../cordis.patch.yml', import.meta.url), 'utf8'));
     const config = bundle[1].insert[0].config;
     expect(Object.entries(config.engines).filter(([, value]) => (value as { enabled: boolean }).enabled).map(([id]) => id).sort()).toEqual(['firecrawl', 'tavily']);
-    expect(config.controls.serviceEnabled).toEqual({ anysearch: true, firecrawl: true, tavily: true, zhipu: false, siliconflow: false, http: true });
+    expect(config.controls.serviceEnabled).toEqual({ anysearch: true, firecrawl: true, tavily: true, siliconflow: false, http: true });
   });
 });

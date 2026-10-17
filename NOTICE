@@ -53,12 +53,6 @@ Copyright (c) 2026 AnySearch Team
 
 ---
 
-dsh-web-search-zhipu
-https://github.com/PartinGQAQ/dsh-web-search-zhipu
-main @ 374b6c3，取用于 2026-10-13
-Copyright (c) 2026 PartinGQAQ
-许可：MIT
-
 参考范围（anthropic 传输通道）：
 
   lib/repr.js  ← 响应格式翻译层的方法参照：两种块布局的识别、

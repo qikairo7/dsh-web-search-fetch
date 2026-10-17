@@ -30,7 +30,7 @@ it('uses priority, enabled capability lists, credential presence and preset caps
     expect(await selectServices(['a', 'b', 'c', 'd', 'e'], id => id, 'search', async id => id !== 'c')).toEqual(['b', 'a', 'd']);
   });
   await runOperation({ preset: 'free' }, 'search', undefined, async () => {
-    expect(await selectServices(['zhipu', 'kimi', 'bing', 'tinyfish', 'github'], id => id, 'search')).toEqual(['bing', 'tinyfish', 'github']);
+    expect(await selectServices(['tavily', 'kimi', 'bing', 'tinyfish', 'github'], id => id, 'search')).toEqual(['bing', 'tinyfish', 'github']);
   });
   await runOperation({ searchServices: [] }, 'search', undefined, async () => {
     expect(await selectServices(['bing'], id => id, 'search')).toEqual([]);
