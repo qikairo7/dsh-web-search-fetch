@@ -60,7 +60,7 @@ export interface SettingsSurfaceConfig {
     };
 }
 /** Stable id of one engine key slot the settings card offers. */
-export type CredentialSlotId = 'anysearch' | 'firecrawl' | 'tavily' | 'exa' | 'keenable' | 'crawl4ai' | 'github' | 'tinyfish' | 'serply' | 'kimi' | 'siliconflow' | 'dashscope' | 'typesafe';
+export type CredentialSlotId = 'anysearch' | 'deepseek' | 'firecrawl' | 'tavily' | 'exa' | 'keenable' | 'crawl4ai' | 'github' | 'tinyfish' | 'serply' | 'kimi' | 'siliconflow' | 'dashscope' | 'typesafe';
 /** One engine key slot: which references name it, and the fallback. */
 export interface CredentialSlot {
     /** Stable slot id the card labels and renders in this order. */

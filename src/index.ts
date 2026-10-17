@@ -185,10 +185,10 @@ export const Config = z.object({
     serviceEnabled: z.dict(z.boolean()).default({}).description('服务总开关；关闭后不派发该服务，保留各能力的参与范围。'),
     mode: z.union(['organize', 'select']).default('organize').description('正文整理；select 为旧版单份正文模式。'),
     preset: z.union(['auto', 'custom', 'free', 'balanced', 'deep']).default('auto').description('自动按请求判断覆盖范围；也可固定为自定义、免费、均衡（最多三路）或深度检索。免费仍可能需要凭证。'),
-    searchServices: z.array(z.string()).default(['anysearch', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'firecrawl', 'tinyfish', 'serply', 'kimi', 'bing', 'aihot']).description('搜索服务 ID 与调用优先级；空数组不调用搜索服务。'),
-    fetchServices: z.array(z.string()).default(['firecrawl', 'anysearch', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'tinyfish', 'serply', 'kimi', 'aihot']).description('提取服务 ID 与调用优先级；HTTP 静态路径不受此列表控制。'),
-    maxSearchServices: z.natural().min(1).max(12).default(12).description('每个查询最多调用的搜索服务数。'),
-    maxFetchServices: z.natural().min(1).max(10).default(10).description('每个 URL 最多调用的普通提取服务数。'),
+    searchServices: z.array(z.string()).default(['anysearch', 'deepseek', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'firecrawl', 'tinyfish', 'serply', 'kimi', 'bing', 'aihot']).description('搜索服务 ID 与调用优先级；空数组不调用搜索服务。'),
+    fetchServices: z.array(z.string()).default(['firecrawl', 'anysearch', 'deepseek', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'tinyfish', 'serply', 'kimi', 'aihot']).description('提取服务 ID 与调用优先级；HTTP 静态路径不受此列表控制。'),
+    maxSearchServices: z.natural().min(1).max(13).default(13).description('每个查询最多调用的搜索服务数。'),
+    maxFetchServices: z.natural().min(1).max(11).default(11).description('每个 URL 最多调用的普通提取服务数。'),
     maxRequests: z.natural().min(1).max(256).default(32).description('每次 provider 操作的插件 HTTP 请求上限，包含额度查询、重试和重排；不含宿主 HTTP 重定向。'),
     searchDeadlineMs: z.natural().min(1).max(3600000).default(15000).description('搜索操作总限时，毫秒。'),
     fetchDeadlineMs: z.natural().min(1).max(3600000).default(50000).description('提取操作总限时，毫秒。'),
@@ -200,7 +200,7 @@ export const Config = z.object({
     baseURL: z.string().description('HTTP API 基础地址；省略时使用官方地址。'),
     fetchBaseURL: z.string().description('提取 API 基础地址；TinyFish 默认使用独立 Fetch API 域名。'),
     searchMode: z.union(['basic', 'pro']).description('Kimi 搜索档位；默认 pro，basic 只请求摘要，不请求整页正文。'),
-  })).volatile().description('扩展服务：tavily、exa、keenable、crawl4ai、github、firecrawl、tinyfish、serply、kimi、bing、aihot。Bing RSS 与 AIHOT 无需凭证；AIHOT 默认关闭。只配置需要启用的服务。'),
+  })).volatile().description('扩展服务：deepseek、tavily、exa、keenable、crawl4ai、github、firecrawl、tinyfish、serply、kimi、bing、aihot。DeepSeek 新 API 与 AIHOT 默认关闭；Bing RSS 与 AIHOT 无需凭证。只配置需要启用的服务。'),
   search: z
     .object({
       maxFanoutMs: z
@@ -290,6 +290,7 @@ export const Config = z.object({
   '聚合搜索与提取插件：web_search / web_fetch 背后的多来源聚合。' +
     '推荐使用 AnySearch、Firecrawl、Tavily 的官方匿名额度；需要增强服务时，把 key 值写入 ~/.dsh/.credentials.yaml 的 refs 段（键名见各凭证字段说明），无需改动本页默认值。',
 );
+
 
 /** Register aggregated providers behind the native tools. */
 export function apply(ctx: Context, config: Config): void {

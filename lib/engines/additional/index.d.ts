@@ -4,6 +4,10 @@ import { additionalBreakerSignal } from './http.js';
 export { githubPath } from './adapters.js';
 export { additionalBreakerSignal } from './http.js';
 export declare const ADDITIONAL_ENGINE_DEFAULTS: {
+    readonly deepseek: {
+        readonly apiKeyEnv: "DEEPSEEK_API_KEY";
+        readonly baseURL: "https://api.deepseek.com/v1/tools";
+    };
     readonly tavily: {
         readonly apiKeyEnv: "TAVILY_API_KEY";
         readonly baseURL: "https://api.tavily.com";
@@ -75,7 +79,7 @@ export declare function createAdditionalEngines(config: AdditionalEnginesConfig,
     fetchImpl?: typeof fetch;
 }): AdditionalEngine[];
 export declare function additionalExtractionLegs(engines: readonly AdditionalEngine[], url: string): {
-    engineId: "tinyfish" | "bing" | "github" | "aihot" | "firecrawl" | "tavily" | "exa" | "keenable" | "crawl4ai" | "serply" | "kimi";
+    engineId: "tinyfish" | "bing" | "github" | "aihot" | "firecrawl" | "tavily" | "exa" | "deepseek" | "keenable" | "crawl4ai" | "serply" | "kimi";
     extract: (url: string, signal?: AbortSignal) => Promise<WebFetchResult>;
     signalOf: typeof additionalBreakerSignal;
 }[];

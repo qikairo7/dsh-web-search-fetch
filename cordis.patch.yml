@@ -7,6 +7,8 @@
       name: dsh-web-search-fetch
       config:
         engines:
+          deepseek:
+            enabled: false
           tavily:
             enabled: true
           exa:

@@ -236,6 +236,7 @@ describe('client bundle', () => {
     // injected: registering into an undeclared slot throws at plugin load, so a
     // wrong owner here is a blank tab, not a degraded one.
     expect(manifest.dsh?.client?.inject).toContain('@deepseek-ai/dsh-client-ui-settings-plugins');
+    expect(manifest.dsh?.client?.inject).toContain('@deepseek-ai/dsh-client-ui-plugin-manager');
     expect(manifest.dsh?.client?.inject).toContain('@deepseek-ai/dsh-client-ui-settings');
     const clientExport = manifest.exports?.['./client'];
     expect(clientExport, 'exports["./client"] 必须存在').toBeDefined();
@@ -251,12 +252,13 @@ describe('client bundle', () => {
     // The bundle registers under its own package name, which is the id the
     // scanner addresses it by.
     expect(manifest.name).toBe('dsh-web-search-fetch');
-    expect(manifest.dsh?.compatibility?.dsh).toBe('0.2.1-alpha.5');
+    expect(manifest.dsh?.compatibility?.dsh).toBe('0.2.1-rc.2');
     expect(manifest.dsh?.compatibility?.dshReleases).toMatchObject({
       '0.2.1-alpha.2': 'compatible',
       '0.2.1-alpha.3': 'compatible',
       '0.2.1-alpha.4': 'compatible',
       '0.2.1-alpha.5': 'compatible',
+      '0.2.1-rc.2': 'compatible',
     });
   });
 
@@ -360,10 +362,10 @@ describe('card controller', () => {
     return { face, page, scope };
   }
 
-  it('投影出完整十三个凭证位', () => {
+  it('投影出完整十四个凭证位', () => {
     const { face } = mount({ value: {} });
     const state = face.hooks.webSearchFetch.getSnapshot();
-    expect(state.keys.map((row: { id: string }) => row.id)).toEqual(['anysearch', 'firecrawl', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'tinyfish', 'serply', 'kimi', 'siliconflow', 'dashscope', 'typesafe']);
+    expect(state.keys.map((row: { id: string }) => row.id)).toEqual(['anysearch', 'deepseek', 'firecrawl', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'tinyfish', 'serply', 'kimi', 'siliconflow', 'dashscope', 'typesafe']);
     expect(state.keys.every((row: { text: string }) => row.text === '')).toBe(true);
     expect(state.writable).toBe(true);
   });
@@ -615,7 +617,7 @@ describe('card controller', () => {
     await Promise.resolve();
     const state = face.hooks.webSearchFetch.getSnapshot();
     // The card still renders; no row claims a false negative from a failed read.
-    expect(state.keys).toHaveLength(13);
+    expect(state.keys).toHaveLength(14);
     expect(state.keys.every((row: { configured: boolean }) => row.configured === false)).toBe(true);
   });
 
@@ -623,6 +625,18 @@ describe('card controller', () => {
     const { page } = mount({ value: {} });
     expect(page.eventHandlers.has('credentials/reference-updated')).toBe(true);
     expect(page.effects.some((label) => label.includes('credential invalidations'))).toBe(true);
+  });
+
+  it('同时注册旧设置页与 rc.2 插件详情配置页', () => {
+    const { page } = mount({ value: {} });
+    const settingsTab = page.registrations.find(entry => entry.options.name === 'settings.plugins.tab');
+    const bundleConfig = page.registrations.find(entry => entry.options.name === 'plugins.bundle.config');
+    expect(settingsTab?.options.id).toBe('web-search-fetch');
+    expect(bundleConfig?.options.key).toBe('dsh-web-search-fetch');
+    expect(bundleConfig?.options.locale).toBe('settings.webSearchFetch');
+    const face = bundleConfig!.options.inject() as Record<string, unknown>;
+    expect(face.hooks).toHaveProperty('webSearchFetch');
+    expect(typeof face.save).toBe('function');
   });
   it('扩展引擎开关作为路径编辑保存，保留原有配置', async () => {
     const { face, scope } = mount({ value: { engines: { tavily: { enabled: true, apiKeyEnv: 'CUSTOM', baseURL: 'https://example.com' } } }, revision: 9 });
@@ -662,7 +676,7 @@ describe('card controller', () => {
     const { face, page } = mount({ value: {} });
     const state = face.hooks.webSearchFetch.getSnapshot();
     expect(state.visibleServiceIds).toEqual(expect.arrayContaining(Object.keys(ADDITIONAL_ENGINE_DEFAULTS)));
-    expect(state.visibleServiceIds).toHaveLength(14);
+    expect(state.visibleServiceIds).toHaveLength(15);
     const bundles = page.localeRegistrations[0]!.bundles as { zh: Record<string, string> };
     const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
     for (const id of state.visibleServiceIds) expect(readme).toContain(bundles.zh[id + '-service']);
@@ -740,6 +754,13 @@ describe('card controller', () => {
     ]);
     expect(face.hooks.webSearchFetch.getSnapshot().controls.extra).toBe('preserve');
     expect(face.hooks.webSearchFetch.getSnapshot().dirty).toBe(false);
+  });
+  it('搜索 13 路、提取 11 路的上限配置不被旧范围误判', () => {
+    const { face } = mount({ value: { controls: { maxSearchServices: 13, maxFetchServices: 11 } } });
+    const state = face.hooks.webSearchFetch.getSnapshot();
+    expect(state.invalid).toBe(false);
+    expect(state.numberFields.maxSearchServices.text).toBe('13');
+    expect(state.numberFields.maxFetchServices.text).toBe('11');
   });
   it('非法预算不形成草稿，放弃更改恢复整理设置', () => {
     const { face } = mount({ value: { controls: { mode: 'organize', maxRequests: 32 } } });
@@ -835,7 +856,7 @@ describe('card controller', () => {
   });
   it('全部服务统一提供启停状态，基础服务关闭不改参与范围或凭证', async () => {
     const { face, scope } = mount({ value: { controls: { searchServices: ['anysearch', 'tavily'], fetchServices: ['anysearch'] } } });
-    expect(Object.keys(face.hooks.webSearchFetch.getSnapshot().engines)).toHaveLength(14);
+    expect(Object.keys(face.hooks.webSearchFetch.getSnapshot().engines)).toHaveLength(15);
     face.editService('anysearch', false);
     face.editService('tavily', false);
     face.editService('http', false);

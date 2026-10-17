@@ -33,10 +33,10 @@ window.__ModuleLoader__.load({
             controlsHint: '整理保留原文和提取来源；差异不会自动判定真伪。请求上限包括重试、额度检查与重排，不是金额上限；宿主 HTTP 抓取另有独立限制。处理情况见本次工具结果和日志。',
             freeHint: '免费预设仅使用 Bing RSS、TinyFish、GitHub 公开 API 和已启用的 AIHOT；部分仍需密钥，AIHOT 仍受用途限制。不调用免费额度用尽后收费的接口。',
             keysHint: '留空保留原密钥。保存后只显示配置状态。', keyHint: '留空保留原密钥',
-            anysearch: 'AnySearch API Key',
+            anysearch: 'AnySearch API Key', deepseek: 'DeepSeek API Key',
             firecrawl: 'Firecrawl API Key', tavily: 'Tavily API Key', exa: 'Exa API Key', keenable: 'Keenable API Key',
             crawl4ai: 'Crawl4AI Cloud API Key', github: 'GitHub Token', tinyfish: 'TinyFish API Key', serply: 'Serply API Key', kimi: 'Kimi API Key', siliconflow: '硅基流动 API Key',
-            'anysearch-service': 'AnySearch AI',
+            'anysearch-service': 'AnySearch AI', 'deepseek-service': 'DeepSeek Search / Fetch',
             'firecrawl-service': 'Firecrawl', 'tavily-service': 'Tavily', 'exa-service': 'Exa', 'keenable-service': 'Keenable',
             'crawl4ai-service': 'Crawl4AI Cloud', 'github-service': 'GitHub', 'tinyfish-service': 'TinyFish', 'serply-service': 'Serply', 'kimi-service': 'Kimi',
             'bing-service': 'Bing RSS', 'aihot-service': 'AIHOT', 'siliconflow-service': '硅基流动', 'http-service': '直接 HTTP 抓取',
@@ -52,6 +52,7 @@ window.__ModuleLoader__.load({
             baseHint: '启用后按参与范围调用。关闭会保留凭证与参与范围。',
             extensionHint: '启用并保存后，参与下一次搜索或适用网页的提取。',
             anysearchHint: '推荐服务。官方搜索与提取支持匿名额度，按 IP 限流；配置 API Key 后使用账户额度。自定义端点需要密钥。',
+            deepseekHint: 'DSH 0.2.1-rc.2 的新版 Search / Fetch 直连 API，默认关闭。搜索与提取共用 DEEPSEEK_API_KEY，均按成功请求计费。',
             tavilyHint: '推荐服务。官方 search / extract 支持 keyless 匿名额度，受共享限流约束；配置 API Key 后使用账户额度。自定义端点需要密钥。',
             firecrawlHint: '推荐服务。官方端点未配置密钥时使用匿名额度，受服务方额度及限流约束。填写密钥后使用账户额度，自定义端点仍需密钥。总开关控制搜索与提取，下方可分别选择参与范围。',
             githubHint: '搜索公开仓库；提取仅适用于仓库 README 和 blob 文件 URL。',
@@ -100,10 +101,10 @@ window.__ModuleLoader__.load({
             controlsHint: 'Retains original text and extraction provenance without deciding which variant is true. Request limits include retries, quota checks and reranking, not monetary costs. Host HTTP retrieval has separate limits. Processing notes appear in tool results and logs.',
             freeHint: 'Free preset uses Bing RSS, TinyFish, public GitHub APIs and enabled AIHOT only. Keys may still be required; AIHOT usage terms apply. APIs with paid overages are excluded.',
             keysHint: 'Leave blank to keep a key. Saved keys show status only.', keyHint: 'Leave blank to keep the key',
-            anysearch: 'AnySearch API key',
+            anysearch: 'AnySearch API key', deepseek: 'DeepSeek API key',
             firecrawl: 'Firecrawl API key', tavily: 'Tavily API key', exa: 'Exa API key', keenable: 'Keenable API key',
             crawl4ai: 'Crawl4AI Cloud API key', github: 'GitHub token', tinyfish: 'TinyFish API key', serply: 'Serply API key', kimi: 'Kimi API key', siliconflow: 'SiliconFlow API key',
-            'anysearch-service': 'AnySearch AI',
+            'anysearch-service': 'AnySearch AI', 'deepseek-service': 'DeepSeek Search / Fetch',
             'firecrawl-service': 'Firecrawl', 'tavily-service': 'Tavily', 'exa-service': 'Exa', 'keenable-service': 'Keenable',
             'crawl4ai-service': 'Crawl4AI Cloud', 'github-service': 'GitHub', 'tinyfish-service': 'TinyFish', 'serply-service': 'Serply', 'kimi-service': 'Kimi',
             'bing-service': 'Bing RSS', 'aihot-service': 'AIHOT', 'siliconflow-service': 'SiliconFlow', 'http-service': 'Direct HTTP fetch',
@@ -119,6 +120,7 @@ window.__ModuleLoader__.load({
             baseHint: 'Enable to use the selected capabilities. Disabling preserves credentials and participation settings.',
             extensionHint: 'Enable and save to join the next search or supported page extraction.',
             anysearchHint: 'Recommended. Official search and extraction support anonymous quotas with IP rate limits. A configured key uses account quotas; custom endpoints require a key.',
+            deepseekHint: 'Direct Search / Fetch APIs added with DSH 0.2.1-rc.2, off by default. Both use DEEPSEEK_API_KEY and bill per successful request.',
             tavilyHint: 'Recommended. Official search and extract support keyless access with a shared rate limit. A configured key uses account quotas; custom endpoints require a key.',
             firecrawlHint: 'Recommended. Official endpoints use anonymous credits without a key, subject to quota and rate limits. A configured key uses account credits; custom endpoints still require a key. The switch controls both search and extraction; select each capability below.',
             githubHint: 'Search public repositories; extract only repository README and blob file URLs.',
@@ -152,14 +154,14 @@ window.__ModuleLoader__.load({
 		/** Dictionary namespace owned by this plugin. */
 		const NS = "settings.webSearchFetch";
         const NUMBER_CONTROLS = {
-            maxSearchServices: { initial: 12, min: 1, max: 12 },
-            maxFetchServices: { initial: 10, min: 1, max: 10 },
+            maxSearchServices: { initial: 13, min: 1, max: 13 },
+            maxFetchServices: { initial: 11, min: 1, max: 11 },
             maxRequests: { initial: 32, min: 1, max: 256 },
             searchDeadlineMs: { initial: 15000, min: 1, max: 3600000 },
             fetchDeadlineMs: { initial: 50000, min: 1, max: 3600000 },
             maxOutputChars: { initial: 100000, min: 1000, max: 1000000 },
         };
-        const EXTENSIONS = ["tavily", "exa", "keenable", "crawl4ai", "github", "firecrawl", "tinyfish", "serply", "kimi", "bing", "aihot"];
+        const EXTENSIONS = ["deepseek", "tavily", "exa", "keenable", "crawl4ai", "github", "firecrawl", "tinyfish", "serply", "kimi", "bing", "aihot"];
 		/**
 		* The complete credential slots, mirroring `src/settings-surface.ts`.
 		*
@@ -171,6 +173,7 @@ window.__ModuleLoader__.load({
 		*/
 		const CREDENTIAL_SLOTS = [
 			{"id": "anysearch", "overridePaths": [["search", "anysearchApiKeyEnv"]], "defaultRef": "ANYSEARCH_API_KEY", "additionalPaths": [["fetch", "anysearchApiKeyEnv"]]},
+			{"id": "deepseek", "overridePaths": [["engines", "deepseek", "apiKeyEnv"]], "defaultRef": "DEEPSEEK_API_KEY"},
 			{"id": "firecrawl", "overridePaths": [["fetch", "firecrawlApiKeyEnv"]], "defaultRef": "FIRECRAWL_API_KEY", "additionalPaths": [["engines", "firecrawl", "apiKeyEnv"]]},
 			{"id": "tavily", "overridePaths": [["engines", "tavily", "apiKeyEnv"]], "defaultRef": "TAVILY_API_KEY"},
 			{"id": "exa", "overridePaths": [["engines", "exa", "apiKeyEnv"]], "defaultRef": "EXA_API_KEY"},
@@ -644,6 +647,7 @@ window.__ModuleLoader__.load({
         //#region card
         const SERVICES = [
             { id: 'anysearch', mark: 'AS', capability: 'searchFetch', capabilities: ['search', 'fetch'], keys: ['anysearch'] },
+            { id: 'deepseek', keywords: 'DeepSeek API Search Fetch 新版 直连 official', mark: 'DS', capability: 'searchFetch', capabilities: ['search', 'fetch'], keys: ['deepseek'], extension: true },
             { id: 'firecrawl', mark: 'FC', capability: 'searchFetch', capabilities: ['search', 'fetch'], keys: ['firecrawl'], extension: true },
             { id: 'tavily', mark: 'TV', capability: 'searchFetch', capabilities: ['search', 'fetch'], keys: ['tavily'], extension: true },
             { id: 'exa', mark: 'EX', capability: 'searchFetch', capabilities: ['search', 'fetch'], keys: ['exa'], extension: true },
@@ -964,34 +968,39 @@ window.__ModuleLoader__.load({
 			ctx.effect(() => ctx.remote.$on("credentials/reference-updated", (ref) => {
 				card.refreshCredential(ref);
 			}), "ui-settings-web-search-fetch: credential invalidations");
+			const bundleFace = () => ({
+				hooks: { webSearchFetch: card.store },
+				editKey: (id, text) => { card.editKey(id, text); },
+				editDecision: model => card.editDecision(model),
+				chooseStart: choice => card.chooseStart(choice),
+				editView: (next) => card.editView(next),
+				toggleService: (id) => card.toggleService(id),
+				refresh: () => card.readCredentials(),
+				editEngine: (id, enabled) => card.editEngine(id, enabled),
+				editService: (id, enabled) => card.editService(id, enabled),
+				editControl: (name, value) => card.editControl(name, value),
+				editNumber: (name, text) => card.editNumber(name, text),
+				leave: () => card.leave(),
+				editParticipation: (id, face, enabled) => card.editParticipation(id, face, enabled),
+				save: () => card.save(),
+				discard: () => { card.discard(); },
+			});
 			ctx.effect(() => ctx.configForms.whileServed([SETTINGS_NS], () => ctx.slots.inject("settings.plugins.tab", () => ctx.slots.register({
 				name: "settings.plugins.tab",
 				id: "web-search-fetch",
 				order: 20,
 				label: () => t("title"),
 				locale: NS,
-				inject: () => ({
-					hooks: { webSearchFetch: card.store },
-					editKey: (id, text) => {
-						card.editKey(id, text);
-					},
-                    editDecision: model => card.editDecision(model),
-                    chooseStart: choice => card.chooseStart(choice),
-                    editView: (next) => card.editView(next),
-                    toggleService: (id) => card.toggleService(id),
-                    refresh: () => card.readCredentials(),
-					editEngine: (id, enabled) => card.editEngine(id, enabled),
-                    editService: (id, enabled) => card.editService(id, enabled),
-                    editControl: (name, value) => card.editControl(name, value),
-                    editNumber: (name, text) => card.editNumber(name, text),
-                    leave: () => card.leave(),
-                    editParticipation: (id, face, enabled) => card.editParticipation(id, face, enabled),
-					save: () => card.save(),
-					discard: () => {
-						card.discard();
-					}
-				})
+				inject: bundleFace
 			}, WebSearchFetchCard))), "ui-settings-web-search-fetch: page");
+			// rc.2 renders bundle configuration on the Plugins page, keyed by
+			// package name. Keep the settings tab above for older hosts.
+			ctx.effect(() => ctx.configForms.whileServed([SETTINGS_NS], () => ctx.slots.inject("plugins.bundle.config", () => ctx.slots.register({
+				name: "plugins.bundle.config",
+				key: "dsh-web-search-fetch",
+				locale: NS,
+				inject: bundleFace,
+			}, WebSearchFetchCard))), "ui-settings-web-search-fetch: bundle page");
 		}
 		//#endregion
 		exports.NS = NS;
