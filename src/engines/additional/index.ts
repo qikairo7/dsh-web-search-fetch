@@ -8,6 +8,7 @@ export { githubPath } from './adapters.js';
 export { additionalBreakerSignal } from './http.js';
 
 export const ADDITIONAL_ENGINE_DEFAULTS = {
+  deepseek: { apiKeyEnv: 'DEEPSEEK_API_KEY', baseURL: 'https://api.deepseek.com/v1/tools' },
   tavily: { apiKeyEnv: 'TAVILY_API_KEY', baseURL: 'https://api.tavily.com' },
   exa: { apiKeyEnv: 'EXA_API_KEY', baseURL: 'https://api.exa.ai' },
   keenable: { apiKeyEnv: 'KEENABLE_API_KEY', baseURL: 'https://api.keenable.ai' },
@@ -51,10 +52,11 @@ export function createAdditionalEngines(config: AdditionalEnginesConfig, resolve
     const id = name as AdditionalEngineId;
     const defaults = ADDITIONAL_ENGINE_DEFAULTS[id];
     const apiKeyEnv = settings.apiKeyEnv ?? defaults.apiKeyEnv;
+    const bearer = ['deepseek', 'kimi', 'firecrawl', 'tavily', 'crawl4ai', 'github'].includes(id);
     const makeHttp = (ref: string, timeoutMs: number, baseURL: string) => new EngineHttp({
       id, baseURL, timeoutMs,
       resolveApiKey: () => resolveCredential(credentialRef(ref)),
-      auth: id === 'bing' || id === 'aihot' ? 'none' : ['exa', 'keenable', 'tinyfish', 'serply'].includes(id) ? 'x-api-key' : 'bearer',
+      auth: id === 'bing' || id === 'aihot' ? 'none' : bearer ? 'bearer' : 'x-api-key',
       ...(id === 'bing' ? { accept: 'application/rss+xml, application/xml, text/xml' } : {}),
       fetchImpl: budgetedFetch(options.fetchImpl),
     });

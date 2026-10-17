@@ -7,6 +7,21 @@ import { readAihotApi } from './aihot.js';
 
 export function adapt(id: AdditionalEngineId, search: EngineHttp, fetch: EngineHttp, settings: AdditionalEngineConfig = {}): AdditionalEngine {
   switch (id) {
+    case 'deepseek': return {
+      id,
+      search: async (request, signal) => {
+        const data = await search.call('/search', {
+          query: request.query,
+          count: count(request, 50),
+          need_content: false,
+        }, signal);
+        return searchResult(rows(data.results, id).map(item => source(item.url, item.title, item.snippet, item.date)), request);
+      },
+      extract: async (url, signal) => {
+        const data = await fetch.call('/fetch', { url }, signal);
+        return fetchResult(url, url, data.content);
+      },
+    };
     case 'kimi': return {
       id,
       search: async (request, signal) => {

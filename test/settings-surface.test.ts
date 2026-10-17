@@ -89,7 +89,7 @@ describe('resolveCredentialRefs', () => {
   });
 
   it('槽位顺序稳定（卡片按此顺序渲染）', () => {
-    expect(CREDENTIAL_SLOTS.map((slot) => slot.id)).toEqual(['anysearch', 'firecrawl', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'tinyfish', 'serply', 'kimi', 'siliconflow', 'dashscope', 'typesafe']);
+    expect(CREDENTIAL_SLOTS.map((slot) => slot.id)).toEqual(['anysearch', 'deepseek', 'firecrawl', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'tinyfish', 'serply', 'kimi', 'siliconflow', 'dashscope', 'typesafe']);
     expect(resolveCredentialRefs(Config({})).map((slot) => slot.id)).toEqual(
       CREDENTIAL_SLOTS.map((slot) => slot.id),
     );
@@ -188,7 +188,7 @@ describe('client bundle parity', () => {
 describe('complete integration credentials', () => {
   it('扩展服务使用与运行时相同的默认引用', () => {
     const refs = Object.fromEntries(resolveCredentialRefs(Config({})).map(slot => [slot.id, slot.ref]));
-    expect(refs).toMatchObject({ tavily: 'TAVILY_API_KEY', exa: 'EXA_API_KEY', keenable: 'KEENABLE_API_KEY',
+    expect(refs).toMatchObject({ deepseek: 'DEEPSEEK_API_KEY', tavily: 'TAVILY_API_KEY', exa: 'EXA_API_KEY', keenable: 'KEENABLE_API_KEY',
       crawl4ai: 'CRAWL4AI_API_KEY', github: 'GITHUB_TOKEN', tinyfish: 'TINYFISH_API_KEY',
       serply: 'SERPLY_API_KEY', kimi: 'MOONSHOT_API_KEY' });
   });

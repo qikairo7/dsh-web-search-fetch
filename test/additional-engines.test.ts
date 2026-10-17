@@ -15,6 +15,7 @@ afterEach(async () => { await server?.close(); server = undefined; });
 const ids = Object.keys(ADDITIONAL_ENGINE_DEFAULTS) as AdditionalEngineId[];
 const target = 'https://example.com/article';
 const searchPayloads: Record<AdditionalEngineId, unknown> = {
+  deepseek: { results: [{ url: target, title: 'Title', snippet: 'Snippet', date: null }] },
   kimi: { search_results: [{ url: target, title: 'Title', snippet: 'Snippet', chunks: [] }] },
   aihot: { schemaVersion: 1, items: [{ title: 'Title', summary: 'Snippet', source: { name: 'Publisher' }, links: { original: target, aihot: 'https://aihot.news/items/sample' }, attribution: { name: 'AIHOT', url: 'https://aihot.news' }, publishedAt: null }], page: { hasMore: false } },
   tavily: { results: [{ url: target, title: 'Title', content: 'Snippet' }] },
@@ -28,6 +29,7 @@ const searchPayloads: Record<AdditionalEngineId, unknown> = {
   firecrawl: { success: true, data: { web: [{ url: target, title: 'Title', description: 'Snippet' }] } },
 };
 const fetchPayloads: Partial<Record<AdditionalEngineId, unknown>> = {
+  deepseek: { title: 'Title', content: 'Body' },
   kimi: { url: target, title: 'Title', markdown: 'Body' },
   tinyfish: { results: [{ url: target, final_url: target, title: 'Title', text: 'Body' }], errors: [] },
   serply: 'Body',
@@ -96,6 +98,18 @@ describe('新增引擎 HTTP 契约', () => {
     const query = new URL(server.requests[0]!.url, server.url).searchParams;
     expect(Object.fromEntries(query)).toEqual({ mode: 'all', window: '7d', q: 'DeepSeek', limit: '2' });
     expect(engine.extract).toBeUndefined();
+  });
+
+  it('DeepSeek 新 API 默认地址、Bearer 鉴权与 50 条搜索上限', async () => {
+    server = await startMockServer((_request, response) => {
+      response.setHeader('content-type', 'application/json');
+      response.end(JSON.stringify(searchPayloads.deepseek));
+    });
+    const engines = createAdditionalEngines({ deepseek: { baseURL: server.url } }, async () => 'test-secret', { searchTimeoutMs: 500, fetchTimeoutMs: 500 });
+    await engines[0]!.search({ query: 'sample query', maxResults: 80 });
+    expect(server.requests[0]!.url).toBe('/search');
+    expect(server.requests[0]!.headers.authorization).toBe('Bearer test-secret');
+    expect(JSON.parse(server.requests[0]!.body)).toEqual({ query: 'sample query', count: 50, need_content: false });
   });
 
   it('AIHOT 缓存遵守 TTL，过期用 ETag 验证，已取消请求不读缓存', async () => {
@@ -196,7 +210,7 @@ describe('新增引擎 HTTP 契约', () => {
     const engine = createAdditionalEngines({ [id]: { baseURL: server.url, fetchBaseURL: server.url } }, async () => 'test-secret', { searchTimeoutMs: 500, fetchTimeoutMs: 500 })[0]!;
     expect(await engine.search({ query: 'sample query', maxResults: 2 })).toMatchObject({ sources: [{ url: target, title: 'Title', snippet: id === 'aihot' ? expect.stringContaining('Snippet') : 'Snippet' }] });
     const request = server.requests[0]!;
-    const paths: Record<AdditionalEngineId, string> = { kimi: '/v1/tools/search_pro', tavily: '/search', exa: '/search', keenable: '/v1/search', crawl4ai: '/search', github: '/search/repositories', firecrawl: '/v2/search', tinyfish: '/', serply: '/v1/search/', bing: '/search', aihot: '/api/v1/items' };
+    const paths: Record<AdditionalEngineId, string> = { deepseek: '/search', kimi: '/v1/tools/search_pro', tavily: '/search', exa: '/search', keenable: '/v1/search', crawl4ai: '/search', github: '/search/repositories', firecrawl: '/v2/search', tinyfish: '/', serply: '/v1/search/', bing: '/search', aihot: '/api/v1/items' };
     expect(new URL(request.url, server.url).pathname).toBe(paths[id]);
     const headerAuth = ['exa', 'keenable', 'tinyfish', 'serply'].includes(id);
     expect(request.headers[headerAuth ? 'x-api-key' : 'authorization']).toBe(['bing', 'aihot'].includes(id) ? undefined : headerAuth ? 'test-secret' : 'Bearer test-secret');

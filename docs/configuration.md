@@ -9,6 +9,7 @@
 | 服务 | 默认凭证引用 | 搜索 | 提取 |
 | --- | --- | --- | --- |
 | AnySearch | `ANYSEARCH_API_KEY` | 是 | 是 |
+| DeepSeek Search / Fetch（默认关闭） | `DEEPSEEK_API_KEY` | 是 | 是 |
 | Firecrawl | `FIRECRAWL_API_KEY` | 是 | 是 |
 | Tavily | `TAVILY_API_KEY` | 是 | 是 |
 | Exa | `EXA_API_KEY` | 是 | 是 |
@@ -38,6 +39,8 @@
       maxRequests: 8
       maxOutputChars: 100000
     engines:
+      deepseek:
+        enabled: false
       tavily: {}
       exa: {}
       keenable: {}
@@ -70,6 +73,8 @@
 ```
 
 省略可选字段时使用默认值；不要用 YAML `null` 代替字符串。只启用 Tavily 和 Exa 时，将示例的 `engines` 整块改为这两项。每项支持 `enabled`、`apiKeyEnv`、`baseURL`、`fetchBaseURL`；Kimi 另支持 `searchMode`。TinyFish 的搜索和提取为不同域名，`baseURL` 只覆盖搜索，`fetchBaseURL` 覆盖提取。Firecrawl 扩展配置控制搜索，网页提取由 `fetch.firecrawlApiKeyEnv` / `fetch.firecrawlBaseURL` 控制。
+
+`deepseek` 接入 DSH `0.2.1-rc.2` 对应的 DeepSeek 新版 Search / Fetch API。基础地址默认为 `https://api.deepseek.com/v1/tools`，插件追加 `/search` 与 `/fetch`；两者共用 `DEEPSEEK_API_KEY`。该服务默认关闭，开启后与宿主内置的同名能力相互独立：本插件仍通过 `aggregated` provider 聚合结果。搜索请求发送 `query`、`count` 和 `need_content: false`，结果数上限为 50；提取返回 Markdown 正文。官方按成功且有结果的请求计费，当前为每 1,000 次 5 元；失败、无结果与超时不计费。协议依据：[DeepSeek 网页搜索与抓取](https://api-docs.deepseek.com/zh-cn/guides/search/)。
 
 AnySearch 提取凭证优先使用 `fetch.anysearchApiKeyEnv`，其次 `search.anysearchApiKeyEnv`。
 
@@ -119,6 +124,7 @@ AnySearch 提取凭证优先使用 `fetch.anysearchApiKeyEnv`，其次 `search.a
 | 扩展 ID | 默认引用 | 搜索基础地址 | 提取基础地址 |
 | --- | --- | --- | --- |
 | `tavily` | `TAVILY_API_KEY` | `https://api.tavily.com` | 同搜索 |
+| `deepseek` | `DEEPSEEK_API_KEY` | `https://api.deepseek.com/v1/tools` | 同搜索 |
 | `exa` | `EXA_API_KEY` | `https://api.exa.ai` | 同搜索 |
 | `keenable` | `KEENABLE_API_KEY` | `https://api.keenable.ai` | 同搜索 |
 | `crawl4ai` | `CRAWL4AI_API_KEY` | `https://api.crawl4ai.com` | 同搜索 |
@@ -130,7 +136,7 @@ AnySearch 提取凭证优先使用 `fetch.anysearchApiKeyEnv`，其次 `search.a
 | `bing` | 无 | `https://cn.bing.com` | — |
 | `aihot` | 无 | `https://aihot.news` | 仅专用 API |
 
-扩展项字段：`enabled`（布尔值，条目内默认 `true`）、`apiKeyEnv`（字符串引用名）、`baseURL` 和 `fetchBaseURL`（字符串基础地址）。Kimi 的 `searchMode` 为 `basic` 或 `pro`，省略时使用 `pro`。省略整个条目不会创建该扩展；新安装 bundle 仅启用 Firecrawl、Tavily 两个扩展及 AnySearch 服务；其他远程服务与重排默认关闭。直接 HTTP 抓取作为静态资源基础能力保留。已保存的显式开关设置优先于安装默认。
+扩展项字段：`enabled`（布尔值，条目内默认 `true`）、`apiKeyEnv`（字符串引用名）、`baseURL` 和 `fetchBaseURL`（字符串基础地址）。Kimi 的 `searchMode` 为 `basic` 或 `pro`，省略时使用 `pro`。省略整个条目不会创建该扩展；新安装 bundle 仅启用 Firecrawl、Tavily 两个扩展及 AnySearch 服务；DeepSeek 新版 API、其他远程服务与重排默认关闭。直接 HTTP 抓取作为静态资源基础能力保留。已保存的显式开关设置优先于安装默认。
 
 ## 提取路由
 
@@ -150,7 +156,7 @@ AnySearch 提取凭证优先使用 `fetch.anysearchApiKeyEnv`，其次 `search.a
 | `preset` | `auto` | `auto` 自动判断；`free` 免费接口、`balanced` 最多三路、`deep` 所选全部服务、`custom` 自定义 |
 | `searchServices` | 全部搜索服务 ID | 按数组顺序选择，空数组禁用搜索派发 |
 | `fetchServices` | 全部提取服务 ID | 普通提取及 AIHOT 参与范围，静态 HTTP 独立 |
-| `maxSearchServices` | `12` | 每个查询的服务上限，范围 1–12 |
+| `maxSearchServices` | `13` | 每个查询的服务上限，范围 1–13 |
 | `maxFetchServices` | `11` | 每个 URL 的普通提取服务上限，范围 1–11 |
 | `maxRequests` | `32` | 每次 provider 操作的插件 HTTP 请求上限，范围 1–256 |
 | `searchDeadlineMs` | `15000` | 搜索操作总限时，范围 1–3,600,000 毫秒 |
@@ -197,13 +203,13 @@ GitHub 提取只识别仓库根 URL 与 `/blob/<ref>/<path>`，通过 README／c
 
 匿名入口不清除凭证、不改自定义端点，也不写入新的密钥。凭证状态尚未读取、读取失败、已有完整或部分密钥、存在密钥草稿或自定义端点的服务不会被选入；没有符合条件的服务时入口禁用并说明原因。选择后另外配置密钥会使对应服务使用账户额度，凭证不会因预设而被忽略。
 
-打开「设置 → 内置插件 → 网络搜索与提取」。卡片与 README 的完整接入清单一致，覆盖 14 项搜索／提取／重排服务、13 个凭证位，另提供五款决策模型选择，包括无需凭证的 Bing RSS、AIHOT 和直接 HTTP 抓取。
+打开「设置 → 内置插件 → 网络搜索与提取」。卡片与 README 的完整接入清单一致，覆盖 15 项搜索／提取／重排服务、14 个凭证位，另提供五款决策模型选择，包括无需凭证的 Bing RSS、AIHOT 和直接 HTTP 抓取。
 
 用服务名称或用途搜索，按搜索 / 提取 / 重排筛选，或只查看待配置、未保存及无需密钥的服务。点击服务行展开密钥与说明；切换筛选或折叠保留草稿。保存和放弃更改位于列表下方，全局计数包含筛选后隐藏的修改。
 
 页面上方设置正文处理模式、调用预设和各项预算，服务详情内分别勾选搜索与提取参与。修改参与范围不会删除密钥或自定义端点。保存仅提交修改路径；放弃更改同时清除未保存的模式、预算和参与范围。
 
-14 项服务均提供总开关，控制该服务的全部能力。Firecrawl 的总开关同时控制搜索与提取。旧 `engines.firecrawl.enabled` 仍只控制搜索；设置页的「参与搜索」会反映并修改这个旧字段。GitHub 提取限定仓库 README / 文件。扩展服务开关在保存后影响下一次调用，无需重挂插件。
+15 项服务均提供总开关，控制该服务的全部能力。Firecrawl 的总开关同时控制搜索与提取。旧 `engines.firecrawl.enabled` 仍只控制搜索；设置页的「参与搜索」会反映并修改这个旧字段。GitHub 提取限定仓库 README / 文件。扩展服务开关在保存后影响下一次调用，无需重挂插件。
 
 密钥通过 DSH credentials 域写入。留空保持现值；保存成功清空输入框，刷新后只显示配置状态。环境变量提供的凭证遵循宿主只读规则。AnySearch 或 Firecrawl 的搜索与提取若使用不同引用，一次填写会更新两处引用。
 

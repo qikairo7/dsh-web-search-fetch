@@ -80,7 +80,7 @@ export interface SettingsSurfaceConfig {
 }
 
 /** Stable id of one engine key slot the settings card offers. */
-export type CredentialSlotId = 'anysearch' | 'firecrawl' | 'tavily' | 'exa' | 'keenable' | 'crawl4ai' | 'github' | 'tinyfish' | 'serply' | 'kimi' | 'siliconflow' | 'dashscope' | 'typesafe';
+export type CredentialSlotId = 'anysearch' | 'deepseek' | 'firecrawl' | 'tavily' | 'exa' | 'keenable' | 'crawl4ai' | 'github' | 'tinyfish' | 'serply' | 'kimi' | 'siliconflow' | 'dashscope' | 'typesafe';
 
 /** One engine key slot: which references name it, and the fallback. */
 export interface CredentialSlot {
@@ -100,6 +100,7 @@ export interface CredentialSlot {
 /** All credential inputs from the complete integration list, in service order. */
 export const CREDENTIAL_SLOTS: readonly CredentialSlot[] = [
   {"id": "anysearch", "overridePaths": [["search", "anysearchApiKeyEnv"]], "defaultRef": "ANYSEARCH_API_KEY", "additionalPaths": [["fetch", "anysearchApiKeyEnv"]]},
+  {"id": "deepseek", "overridePaths": [["engines", "deepseek", "apiKeyEnv"]], "defaultRef": "DEEPSEEK_API_KEY"},
   {"id": "firecrawl", "overridePaths": [["fetch", "firecrawlApiKeyEnv"]], "defaultRef": "FIRECRAWL_API_KEY", "additionalPaths": [["engines", "firecrawl", "apiKeyEnv"]]},
   {"id": "tavily", "overridePaths": [["engines", "tavily", "apiKeyEnv"]], "defaultRef": "TAVILY_API_KEY"},
   {"id": "exa", "overridePaths": [["engines", "exa", "apiKeyEnv"]], "defaultRef": "EXA_API_KEY"},
