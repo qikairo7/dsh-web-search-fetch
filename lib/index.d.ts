@@ -28,7 +28,6 @@ export { AnySearchClientError } from './engines/anysearch/error.js';
 export type { AnySearchDomainCapability, AnySearchDomainsResponse, AnySearchDomainSummary, AnySearchMetadata, AnySearchParamInfo, AnySearchParamValue, AnySearchResult, AnySearchSearchRequest, AnySearchSearchResponse, AnySearchSubDomain, AnySearchSubDomainsResponse, } from './engines/anysearch/types.js';
 export { FIRECRAWL_SCRAPE_URL } from './engines/firecrawl/wire.js';
 export { RERANK_TIMEOUT_MS, SILICONFLOW_RERANK_URL } from './engines/rerank/limits.js';
-export { ZHIHU_GLOBAL_SEARCH_URL, ZHIHU_QUOTA_URL } from './engines/zhihu/limits.js';
 export { ZhipuClient, translateTransportFailure, extractUpstreamErrorDetail } from './engines/zhipu/client.js';
 export type { ZhipuClientOptions } from './engines/zhipu/client.js';
 export { buildZhipuSearchRequest, clampZhipuCount, mapZhipuSearchResponse, truncateToCodePoints, } from './engines/zhipu/wire.js';
@@ -36,7 +35,7 @@ export { buildZhipuAnthropicEndpoint, buildZhipuAnthropicRequest, isZhipuAnthrop
 export type { ZhipuAnthropicRawItem } from './engines/zhipu/anthropic-wire.js';
 export { createZhipuAnthropicStreamAssembler, createZhipuSseDecoder, isZhipuEventStream, } from './engines/zhipu/anthropic-stream.js';
 export type { ZhipuAnthropicStreamAssembler, ZhipuAnthropicStreamOutcome, ZhipuSseDecoder, ZhipuSseFrame, } from './engines/zhipu/anthropic-stream.js';
-export { AggregatedSearchProvider, ANYSEARCH_DEFAULT_API_KEY_ENV, ANYSEARCH_ENGINE_ID, DEFAULT_RERANK_POOL, DEFAULT_RRF_K, DEFAULT_SEARCH_MAX_FANOUT_MS, SILICONFLOW_DEFAULT_API_KEY_ENV, ZHIHU_DEFAULT_ACCESS_SECRET_ENV, ZHIHU_ENGINE_ID, ZHIPU_ENGINE_ID, createAggregatedSearchProvider, normalizeSearchUrl, readSearchFailureSignal, rrfFuse, } from './search-pipeline.js';
+export { AggregatedSearchProvider, ANYSEARCH_DEFAULT_API_KEY_ENV, ANYSEARCH_ENGINE_ID, DEFAULT_RERANK_POOL, DEFAULT_RRF_K, DEFAULT_SEARCH_MAX_FANOUT_MS, SILICONFLOW_DEFAULT_API_KEY_ENV, ZHIPU_ENGINE_ID, createAggregatedSearchProvider, normalizeSearchUrl, readSearchFailureSignal, rrfFuse, } from './search-pipeline.js';
 export type { AggregatedSearchOptions, AggregatedSearchPipelineOptions, FusedCandidate, RerankHandle, ResolveCredential, SearchEngineClient, SearchEngineOverrides, SearchLogSink, } from './search-pipeline.js';
 export { AggregatedFetchProvider, DEFAULT_HTTP_FETCH_LIMITS, createExtractionLegs } from './fetch-pipeline.js';
 export type { AggregatedFetchProviderOptions, ExtractionEngineClients } from './fetch-pipeline.js';
@@ -62,8 +61,6 @@ export interface SearchConfig {
     rrfK?: number;
     /** Candidates handed to rerank; defaults to 20. */
     rerankPool?: number;
-    /** Whether the daily Zhihu quota probe runs; defaults to on. */
-    zhihuQuotaCheck?: boolean;
     /** Set `false` to skip the rerank stage entirely (pure RRF). */
     rerank?: Volatile<boolean> | boolean;
     /** Rerank whole-operation deadline in milliseconds; defaults to the documented ~3 s. */
@@ -80,8 +77,6 @@ export interface SearchConfig {
     zhipuApiKeyEnv?: Volatile<string | undefined>;
     /** AnySearch credential reference; defaults to `ANYSEARCH_API_KEY`. Volatile: see `zhipuApiKeyEnv`. */
     anysearchApiKeyEnv?: Volatile<string>;
-    /** Zhihu credential reference; defaults to `ZHIHU_ACCESS_SECRET`. Volatile: see `zhipuApiKeyEnv`. */
-    zhihuAccessSecretEnv?: Volatile<string>;
     /** SiliconFlow rerank credential reference; defaults to `SILICONFLOW_API_KEY`. Volatile: see `zhipuApiKeyEnv`. */
     siliconflowApiKeyEnv?: Volatile<string>;
     /** Zhipu `web_search` endpoint (DESIGN.md); defaults to the public endpoint. */
@@ -105,10 +100,6 @@ export interface SearchConfig {
     zhipuAnthropicMaxUses?: number;
     /** AnySearch origin (DESIGN.md); defaults to `https://api.anysearch.com`. */
     anysearchBaseURL?: string;
-    /** Zhihu `global_search` endpoint (DESIGN.md); defaults to the public endpoint. */
-    zhihuBaseURL?: string;
-    /** Zhihu daily-quota endpoint (DESIGN.md); defaults to the public endpoint. */
-    zhihuQuotaURL?: string;
     /** SiliconFlow rerank endpoint (DESIGN.md); defaults to the public endpoint. */
     rerankBaseURL?: string;
     /** Fast decision model behind the automatic preset. */
@@ -184,14 +175,12 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
     engines: z<NoInfer<Dict<{
         enabled?: boolean | null | undefined;
         apiKeyEnv?: string | null | undefined;
-        fetchApiKeyEnv?: string | null | undefined;
         baseURL?: string | null | undefined;
         fetchBaseURL?: string | null | undefined;
         searchMode?: "basic" | "pro" | null | undefined;
     } & Dict, string>>, NoInfer<Dict<Schemastery.ObjectT<NoInfer<{
         enabled: z<boolean, boolean, "defined">;
         apiKeyEnv: z<string, string, "plain">;
-        fetchApiKeyEnv: z<string, string, "plain">;
         baseURL: z<string, string, "plain">;
         fetchBaseURL: z<string, string, "plain">;
         searchMode: z<"basic" | "pro", "basic" | "pro", "plain">;
@@ -201,12 +190,10 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
         maxFanoutMs: z<number, number, "defined">;
         rrfK: z<number, number, "defined">;
         rerankPool: z<number, number, "defined">;
-        zhihuQuotaCheck: z<boolean, boolean, "defined">;
         rerank: z<boolean, boolean, "volatile-defined">;
         rerankTimeoutMs: z<number, number, "defined">;
         zhipuApiKeyEnv: z<string, string, "volatile">;
         anysearchApiKeyEnv: z<string, string, "volatile-defined">;
-        zhihuAccessSecretEnv: z<string, string, "volatile-defined">;
         siliconflowApiKeyEnv: z<string, string, "volatile-defined">;
         zhipuBaseURL: z<string, string, "defined">;
         zhipuTransport: z<"anthropic" | "tools-api", "anthropic" | "tools-api", "volatile-defined">;
@@ -214,8 +201,6 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
         zhipuAnthropicModel: z<string, string, "defined">;
         zhipuAnthropicMaxUses: z<number, number, "defined">;
         anysearchBaseURL: z<string, string, "defined">;
-        zhihuBaseURL: z<string, string, "defined">;
-        zhihuQuotaURL: z<string, string, "defined">;
         rerankBaseURL: z<string, string, "defined">;
         decisionModel: z<"Kev-4b" | "SemIf" | "diffusiongemma" | "decision-model-preview" | "jev-latest", "Kev-4b" | "SemIf" | "diffusiongemma" | "decision-model-preview" | "jev-latest", "volatile-defined">;
         decisionTimeoutMs: z<number, number, "defined">;
@@ -223,12 +208,10 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
         maxFanoutMs: z<number, number, "defined">;
         rrfK: z<number, number, "defined">;
         rerankPool: z<number, number, "defined">;
-        zhihuQuotaCheck: z<boolean, boolean, "defined">;
         rerank: z<boolean, boolean, "volatile-defined">;
         rerankTimeoutMs: z<number, number, "defined">;
         zhipuApiKeyEnv: z<string, string, "volatile">;
         anysearchApiKeyEnv: z<string, string, "volatile-defined">;
-        zhihuAccessSecretEnv: z<string, string, "volatile-defined">;
         siliconflowApiKeyEnv: z<string, string, "volatile-defined">;
         zhipuBaseURL: z<string, string, "defined">;
         zhipuTransport: z<"anthropic" | "tools-api", "anthropic" | "tools-api", "volatile-defined">;
@@ -236,8 +219,6 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
         zhipuAnthropicModel: z<string, string, "defined">;
         zhipuAnthropicMaxUses: z<number, number, "defined">;
         anysearchBaseURL: z<string, string, "defined">;
-        zhihuBaseURL: z<string, string, "defined">;
-        zhihuQuotaURL: z<string, string, "defined">;
         rerankBaseURL: z<string, string, "defined">;
         decisionModel: z<"Kev-4b" | "SemIf" | "diffusiongemma" | "decision-model-preview" | "jev-latest", "Kev-4b" | "SemIf" | "diffusiongemma" | "decision-model-preview" | "jev-latest", "volatile-defined">;
         decisionTimeoutMs: z<number, number, "defined">;
@@ -292,14 +273,12 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
     engines: z<NoInfer<Dict<{
         enabled?: boolean | null | undefined;
         apiKeyEnv?: string | null | undefined;
-        fetchApiKeyEnv?: string | null | undefined;
         baseURL?: string | null | undefined;
         fetchBaseURL?: string | null | undefined;
         searchMode?: "basic" | "pro" | null | undefined;
     } & Dict, string>>, NoInfer<Dict<Schemastery.ObjectT<NoInfer<{
         enabled: z<boolean, boolean, "defined">;
         apiKeyEnv: z<string, string, "plain">;
-        fetchApiKeyEnv: z<string, string, "plain">;
         baseURL: z<string, string, "plain">;
         fetchBaseURL: z<string, string, "plain">;
         searchMode: z<"basic" | "pro", "basic" | "pro", "plain">;
@@ -309,12 +288,10 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
         maxFanoutMs: z<number, number, "defined">;
         rrfK: z<number, number, "defined">;
         rerankPool: z<number, number, "defined">;
-        zhihuQuotaCheck: z<boolean, boolean, "defined">;
         rerank: z<boolean, boolean, "volatile-defined">;
         rerankTimeoutMs: z<number, number, "defined">;
         zhipuApiKeyEnv: z<string, string, "volatile">;
         anysearchApiKeyEnv: z<string, string, "volatile-defined">;
-        zhihuAccessSecretEnv: z<string, string, "volatile-defined">;
         siliconflowApiKeyEnv: z<string, string, "volatile-defined">;
         zhipuBaseURL: z<string, string, "defined">;
         zhipuTransport: z<"anthropic" | "tools-api", "anthropic" | "tools-api", "volatile-defined">;
@@ -322,8 +299,6 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
         zhipuAnthropicModel: z<string, string, "defined">;
         zhipuAnthropicMaxUses: z<number, number, "defined">;
         anysearchBaseURL: z<string, string, "defined">;
-        zhihuBaseURL: z<string, string, "defined">;
-        zhihuQuotaURL: z<string, string, "defined">;
         rerankBaseURL: z<string, string, "defined">;
         decisionModel: z<"Kev-4b" | "SemIf" | "diffusiongemma" | "decision-model-preview" | "jev-latest", "Kev-4b" | "SemIf" | "diffusiongemma" | "decision-model-preview" | "jev-latest", "volatile-defined">;
         decisionTimeoutMs: z<number, number, "defined">;
@@ -331,12 +306,10 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
         maxFanoutMs: z<number, number, "defined">;
         rrfK: z<number, number, "defined">;
         rerankPool: z<number, number, "defined">;
-        zhihuQuotaCheck: z<boolean, boolean, "defined">;
         rerank: z<boolean, boolean, "volatile-defined">;
         rerankTimeoutMs: z<number, number, "defined">;
         zhipuApiKeyEnv: z<string, string, "volatile">;
         anysearchApiKeyEnv: z<string, string, "volatile-defined">;
-        zhihuAccessSecretEnv: z<string, string, "volatile-defined">;
         siliconflowApiKeyEnv: z<string, string, "volatile-defined">;
         zhipuBaseURL: z<string, string, "defined">;
         zhipuTransport: z<"anthropic" | "tools-api", "anthropic" | "tools-api", "volatile-defined">;
@@ -344,8 +317,6 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
         zhipuAnthropicModel: z<string, string, "defined">;
         zhipuAnthropicMaxUses: z<number, number, "defined">;
         anysearchBaseURL: z<string, string, "defined">;
-        zhihuBaseURL: z<string, string, "defined">;
-        zhihuQuotaURL: z<string, string, "defined">;
         rerankBaseURL: z<string, string, "defined">;
         decisionModel: z<"Kev-4b" | "SemIf" | "diffusiongemma" | "decision-model-preview" | "jev-latest", "Kev-4b" | "SemIf" | "diffusiongemma" | "decision-model-preview" | "jev-latest", "volatile-defined">;
         decisionTimeoutMs: z<number, number, "defined">;

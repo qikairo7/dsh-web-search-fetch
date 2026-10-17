@@ -138,30 +138,6 @@ export function adapt(id: AdditionalEngineId, search: EngineHttp, fetch: EngineH
         return fetchResult(url, data.url, data.markdown);
       },
     };
-    case 'qianfan': return {
-      id,
-      search: async (request, signal) => {
-        const data = await search.call('/v2/ai_search/web_search', {
-          messages: [{ role: 'user', content: request.query }], search_source: 'baidu_search_v2',
-          resource_type_filter: [{ type: 'web', top_k: count(request, 50) }],
-        }, signal);
-        if (data.code !== undefined && data.code !== 0 && data.code !== '0') throw new WebError('qianfan: search rejected', 'WEB_PROVIDER_ERROR');
-        return searchResult(rows(data.references, id).map(item => source(item.url, item.title, item.snippet ?? item.content, item.date)), request);
-      },
-    };
-    case 'doubao': return {
-      id,
-      search: async (request, signal) => {
-        const data = await search.call('/search_api/web_search', { Query: request.query, SearchType: 'web', Count: count(request, 50) }, signal);
-        const result = doubaoResult(data);
-        return searchResult(rows(result.WebResults, id).map(item => source(item.Url, item.Title, item.Summary ?? item.Snippet, item.PublishTime)), request);
-      },
-      extract: async (url, signal) => {
-        const data = await fetch.call('/search_api/fetch', { Url: url }, signal);
-        const item = record(doubaoResult(data).Data, id);
-        return fetchResult(url, item.RedirectedUrl ?? item.Url, item.ContentText, item.Title, item.StatusCode);
-      },
-    };
     case 'firecrawl': return {
       id,
       search: async (request, signal) => {
@@ -196,12 +172,6 @@ export function adapt(id: AdditionalEngineId, search: EngineHttp, fetch: EngineH
       },
     };
   }
-}
-
-function doubaoResult(data: Record<string, unknown>): Record<string, unknown> {
-  const metadata = record(data.ResponseMetadata, 'doubao');
-  if (metadata.Error !== undefined) throw new WebError('doubao: request rejected', 'WEB_PROVIDER_ERROR');
-  return record(data.Result, 'doubao');
 }
 
 function count(request: WebSearchRequest, max: number): number {

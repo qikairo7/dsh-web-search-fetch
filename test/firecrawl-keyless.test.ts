@@ -69,7 +69,7 @@ it('makes native tools usable with zero configured credentials despite readiness
     fibers.push(await ctx.plugin(ToolWeb, { search: true, fetch: true }));
     fibers.push(await ctx.plugin(plugin, {
       engines: { firecrawl: {} }, controls: { preset: 'custom', searchServices: ['firecrawl'], fetchServices: ['firecrawl'] },
-      search: { rerank: false, zhihuQuotaCheck: false },
+      search: { rerank: false, quotaCheck: false },
     }));
     const invoke = (name: string, args: Record<string, unknown>) => ctx.tools.execute({ name, arguments: args, callId: ToolCallId(name), signal: AbortSignal.timeout(5000) });
     const searched = await invoke('web_search', { queries: ['fixture'] });

@@ -6,7 +6,7 @@
  * and configuration into that module's {@link SearchEngineClient} list and
  * builds the one provider `ctx.web` registers.
  *
- * The base engines are AnySearch, Zhipu, and Zhihu; configured HTTP adapters
+ * The base engines are AnySearch and Zhipu; configured HTTP adapters
  * join the same list. Each base engine is adapted here
  * rather than in its own engine folder, because the engines deliberately ship
  * no registration and no seam class (a new engine is a new adapter file, and
@@ -15,7 +15,7 @@
  * key reaches the next search without a restart.
  *
  * The engine modules expose their failures in their own vocabularies
- * (`AnySearchClientError`, `ZhihuWebError`, the Zhipu 429 signal on `cause`);
+ * (`AnySearchClientError`, the Zhipu 429 signal on `cause`);
  * `search-aggregate.ts`'s `readSearchFailureSignal` is the single place that
  * projects them onto the breaker's closed set, so nothing here renames or
  * re-invents a reason.
@@ -30,7 +30,6 @@ import { CircuitBreaker, formatBreakerEvent } from './breaker/index.js';
 import type { CredentialRefSource } from './credential-ref.js';
 import { liveCredentialRef } from './credential-ref.js';
 import { AnySearchEngine } from './engines/anysearch/index.js';
-import { ZhihuClient, ZhihuEngine } from './engines/zhihu/index.js';
 import { RerankClient } from './engines/rerank/client.js';
 import { SILICONFLOW_RERANK_URL } from './engines/rerank/limits.js';
 import { ZhipuClient } from './engines/zhipu/client.js';
@@ -55,11 +54,9 @@ export { AGGREGATED_PROVIDER_ID } from './limits.js';
 /** Stable engine ids; also the circuit breaker's keys and the log labels. */
 export const ANYSEARCH_ENGINE_ID = 'anysearch';
 export const ZHIPU_ENGINE_ID = 'zhipu';
-export const ZHIHU_ENGINE_ID = 'zhihu';
 
 /** Credential-reference defaults for the engines this pipeline wires. */
 export const ANYSEARCH_DEFAULT_API_KEY_ENV = 'ANYSEARCH_API_KEY';
-export const ZHIHU_DEFAULT_ACCESS_SECRET_ENV = 'ZHIHU_ACCESS_SECRET';
 export const SILICONFLOW_DEFAULT_API_KEY_ENV = 'SILICONFLOW_API_KEY';
 
 /** A credential reference resolved per operation; `undefined` means unconfigured. */
@@ -73,10 +70,6 @@ export interface SearchEngineOverrides {
   readonly zhipuBaseURL?: string;
   /** Zhipu Anthropic-compatible Messages base URL override (the `anthropic` channel). */
   readonly zhipuAnthropicBaseURL?: string;
-  /** Zhihu `global_search` endpoint override. */
-  readonly zhihuBaseURL?: string;
-  /** Zhihu quota endpoint override. */
-  readonly zhihuQuotaURL?: string;
   /** SiliconFlow rerank endpoint override. */
   readonly rerankBaseURL?: string;
   /** `fetch` implementation override, forwarded to every client. */
@@ -99,8 +92,6 @@ export interface AggregatedSearchPipelineOptions {
   readonly zhipuApiKeyEnv?: CredentialRefSource;
   /** AnySearch credential reference name; defaults to `ANYSEARCH_API_KEY`. */
   readonly anysearchApiKeyEnv?: CredentialRefSource;
-  /** Zhihu credential reference name; defaults to `ZHIHU_ACCESS_SECRET`. */
-  readonly zhihuAccessSecretEnv?: CredentialRefSource;
   /** SiliconFlow credential reference name; defaults to `SILICONFLOW_API_KEY`. */
   readonly siliconflowApiKeyEnv?: CredentialRefSource;
   /** Zhipu `search_engine` tier; defaults to the client's own (`search_pro`). */
@@ -129,8 +120,6 @@ export interface AggregatedSearchPipelineOptions {
   readonly rrfK?: number;
   /** Candidates handed to rerank; defaults to 20. */
   readonly rerankPool?: number;
-  /** Whether the daily Zhihu quota probe runs; defaults to `true`. */
-  readonly zhihuQuotaCheck?: boolean;
   /** Disable the rerank stage entirely (RRF order is then final). */
   readonly rerank?: boolean;
   /** Rerank whole-operation deadline in milliseconds; defaults to the documented ~3 s. */
@@ -161,10 +150,6 @@ export function createAggregatedSearchProvider(
   // labels diagnostics; resolution always goes through the live reader.
   const zhipuApiKeyEnv = liveCredentialRef(options.zhipuApiKeyEnv, ZHIPU_DEFAULT_API_KEY_ENV);
   const anysearchApiKeyEnv = liveCredentialRef(options.anysearchApiKeyEnv, ANYSEARCH_DEFAULT_API_KEY_ENV);
-  const zhihuAccessSecretEnv = liveCredentialRef(
-    options.zhihuAccessSecretEnv,
-    ZHIHU_DEFAULT_ACCESS_SECRET_ENV,
-  );
   const siliconflowApiKeyEnv = liveCredentialRef(
     options.siliconflowApiKeyEnv,
     SILICONFLOW_DEFAULT_API_KEY_ENV,
@@ -205,18 +190,6 @@ export function createAggregatedSearchProvider(
     ...(fetchImpl === undefined ? {} : { fetchImpl }),
   });
 
-  const zhihuEngine = new ZhihuEngine(
-    new ZhihuClient({
-      resolveAccessSecret: () => options.resolveCredential(ref(zhihuAccessSecretEnv())),
-      credentialName: zhihuAccessSecretEnv(),
-      timeoutMs,
-      ...(options.overrides?.zhihuBaseURL === undefined ? {} : { baseURL: options.overrides.zhihuBaseURL }),
-      ...(options.overrides?.zhihuQuotaURL === undefined ? {} : { quotaURL: options.overrides.zhihuQuotaURL }),
-      ...(fetchImpl === undefined ? {} : { fetchImpl }),
-      ...(options.now === undefined ? {} : { now: options.now }),
-    }),
-  );
-
   const rerank = buildRerankHandle({
     enabled: true,
     resolveApiKey: () => options.resolveCredential(ref(siliconflowApiKeyEnv())),
@@ -240,7 +213,6 @@ export function createAggregatedSearchProvider(
   const engines = [
       wrapAnySearch(anysearch),
       new ZhipuSearchEngine(zhipuClient),
-      new ZhihuSearchEngine(zhihuEngine),
       ...(options.additionalEngines ?? []),
     ];
   return new AggregatedSearchProvider({
@@ -256,7 +228,6 @@ export function createAggregatedSearchProvider(
     maxFanoutMs: timeoutMs,
     ...(options.rrfK === undefined ? {} : { rrfK: options.rrfK }),
     ...(options.rerankPool === undefined ? {} : { rerankPool: options.rerankPool }),
-    ...(options.zhihuQuotaCheck === undefined ? {} : { zhihuQuotaCheck: options.zhihuQuotaCheck }),
     ...(options.now === undefined ? {} : { now: options.now }),
   });
 }
@@ -303,21 +274,6 @@ class ZhipuSearchEngine implements SearchEngineClient {
         { cause: error },
       );
     }
-  }
-}
-
-/** Zhihu as a pipeline engine: seam-shaped `search` plus the daily `quota`. */
-class ZhihuSearchEngine implements SearchEngineClient {
-  readonly id = ZHIHU_ENGINE_ID;
-
-  constructor(private readonly engine: ZhihuEngine) {}
-
-  search(request: WebSearchRequest, signal?: AbortSignal): Promise<WebSearchResult> {
-    return this.engine.search(request, signal);
-  }
-
-  quota(signal?: AbortSignal): ReturnType<ZhihuEngine['quota']> {
-    return this.engine.quota(signal);
   }
 }
 

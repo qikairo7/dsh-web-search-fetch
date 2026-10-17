@@ -364,7 +364,7 @@ describe('card controller', () => {
     const { face } = mount({ value: { search: { zhipuTransport: 'tools-api' } } });
     const state = face.hooks.webSearchFetch.getSnapshot();
     expect(state.transport).toBe('tools-api');
-    expect(state.keys.map((row: { id: string }) => row.id)).toEqual(['anysearch', 'zhipu', 'zhihu', 'firecrawl', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'qianfan', 'doubao-search', 'doubao-fetch', 'tinyfish', 'serply', 'kimi', 'siliconflow', 'dashscope', 'typesafe']);
+    expect(state.keys.map((row: { id: string }) => row.id)).toEqual(['anysearch', 'zhipu', 'firecrawl', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'tinyfish', 'serply', 'kimi', 'siliconflow', 'dashscope', 'typesafe']);
     expect(state.keys.every((row: { text: string }) => row.text === '')).toBe(true);
     expect(state.writable).toBe(true);
   });
@@ -630,7 +630,7 @@ describe('card controller', () => {
   it('discard 丢弃全部草稿', async () => {
     const { face } = mount({ value: { search: { zhipuTransport: 'anthropic' } } });
     face.editTransport('tools-api');
-    face.editKey('zhihu', 'secret-draft');
+    face.editKey('tavily', 'secret-draft');
     face.discard();
     const state = face.hooks.webSearchFetch.getSnapshot();
     expect(state.dirty).toBe(false);
@@ -667,7 +667,7 @@ describe('card controller', () => {
     await Promise.resolve();
     const state = face.hooks.webSearchFetch.getSnapshot();
     // The card still renders; no row claims a false negative from a failed read.
-    expect(state.keys).toHaveLength(18);
+    expect(state.keys).toHaveLength(14);
     expect(state.keys.every((row: { configured: boolean }) => row.configured === false)).toBe(true);
   });
 
@@ -693,17 +693,6 @@ describe('card controller', () => {
       { op: 'set', path: ['engines', 'exa', 'enabled'], value: true },
     ]);
     expect(scope.revisions).toEqual([9]);
-  });
-
-  it('豆包搜索与提取分别写入各自的自定义引用', async () => {
-    const writes: string[][] = [];
-    const { face } = mount({ value: { engines: { doubao: { apiKeyEnv: 'CUSTOM_SEARCH', fetchApiKeyEnv: 'CUSTOM_FETCH' } } },
-      set: (ref, value) => { writes.push([ref, value]); return { ok: true }; } });
-    face.editKey('doubao-search', 'search-fixture');
-    face.editKey('doubao-fetch', 'fetch-fixture');
-    await face.save();
-    expect(writes).toEqual([['CUSTOM_SEARCH', 'search-fixture'], ['CUSTOM_FETCH', 'fetch-fixture']]);
-    expect(JSON.stringify(face.hooks.webSearchFetch.getSnapshot())).not.toContain('fixture');
   });
 
   it('Firecrawl 搜索与提取拆分引用时两者同时更新', async () => {
@@ -732,12 +721,12 @@ describe('card controller', () => {
     const { face, page } = mount({ value: {} });
     const state = face.hooks.webSearchFetch.getSnapshot();
     expect(state.visibleServiceIds).toEqual(expect.arrayContaining(Object.keys(ADDITIONAL_ENGINE_DEFAULTS)));
-    expect(state.visibleServiceIds).toHaveLength(18);
+    expect(state.visibleServiceIds).toHaveLength(15);
     const bundles = page.localeRegistrations[0]!.bundles as { zh: Record<string, string> };
     const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
     for (const id of state.visibleServiceIds) expect(readme).toContain(bundles.zh[id + '-service']);
     expect(state.keys.some((row: { id: string }) => ['bing', 'aihot', 'http'].includes(row.id))).toBe(false);
-    expect(state.keys.map((row: { id: string }) => row.id)).toEqual(expect.arrayContaining(['tinyfish', 'serply', 'doubao-search', 'doubao-fetch']));
+    expect(state.keys.map((row: { id: string }) => row.id)).toEqual(expect.arrayContaining(['tinyfish', 'serply']));
   });
 
   it('搜索、能力与状态筛选保留所有未保存输入，放弃更改恢复配置', async () => {
@@ -904,18 +893,18 @@ describe('card controller', () => {
     expect(scope.mutations).toEqual([[{ op: 'set', path: ['controls', 'maxRequests'], value: 24 }]]);
   });
   it('全部服务统一提供启停状态，基础服务关闭不改参与范围或凭证', async () => {
-    const { face, scope } = mount({ value: { controls: { searchServices: ['anysearch', 'zhihu'], fetchServices: ['anysearch'] } } });
-    expect(Object.keys(face.hooks.webSearchFetch.getSnapshot().engines)).toHaveLength(18);
+    const { face, scope } = mount({ value: { controls: { searchServices: ['anysearch', 'zhipu'], fetchServices: ['anysearch'] } } });
+    expect(Object.keys(face.hooks.webSearchFetch.getSnapshot().engines)).toHaveLength(15);
     face.editService('anysearch', false);
-    face.editService('zhihu', false);
+    face.editService('zhipu', false);
     face.editService('http', false);
     const state = face.hooks.webSearchFetch.getSnapshot();
     expect(state.engines.anysearch).toBe(false);
     expect(state.engines.http).toBe(false);
-    expect(state.controls.searchServices).toEqual(['anysearch', 'zhihu']);
+    expect(state.controls.searchServices).toEqual(['anysearch', 'zhipu']);
     expect(state.controls.fetchServices).toEqual(['anysearch']);
     await face.save();
-    expect(scope.mutations).toEqual([[{ op: 'set', path: ['controls', 'serviceEnabled'], value: { anysearch: false, zhihu: false, http: false } }]]);
+    expect(scope.mutations).toEqual([[{ op: 'set', path: ['controls', 'serviceEnabled'], value: { anysearch: false, zhipu: false, http: false } }]]);
   });
   it('统一开关尊重原重排配置，恢复基础服务原状态会清除草稿', async () => {
     const { face, scope } = mount({ value: { search: { rerank: false } } });

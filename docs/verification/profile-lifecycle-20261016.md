@@ -69,7 +69,7 @@ DSH 0.2.1-alpha.3 的 CLI remove 移除包和 bundle，但保留设置页写入 
 
 - NOT_RUN：通过 GitHub Git URL 直接安装；固定源码路径验证采用同一提交的 `git archive` 导出和本地 `file:` 安装。
 - NOT_RUN：其他操作系统及其他 DSH 版本的完整 profile 生命周期，不扩大 manifest 兼容声明。
-- 本记录的原始调用只覆盖三家推荐服务。后续已补齐[全服务逐项实测](./all-services-20261016.md)，包含单独标识的未发布 PR 候选包；不能把候选包修复视为已发布 0.2.12 的行为。
+- 本记录的原始调用只覆盖三家推荐服务，不能外推到所有增强服务。
 - NOT_RUN：语言模型自主调用。卸载后默认搜索 provider 的账户调用不在本次范围内。
 - NOT_RUN：Store 独立供应链审阅及准入，仍以 [#1415](https://github.com/AI-Scarlett/DSH-Store/issues/1415) 的维护者结论为准。
 - 本轮未替换正式 profile 的包或配置；验收结束时正式 Web 服务仍由原进程提供服务。

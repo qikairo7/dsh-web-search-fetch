@@ -10,7 +10,7 @@
  * Three boundaries are deliberate:
  *
  * - The module is generic over engines: it consumes {@link SearchEngineClient}
- *   (an id plus a seam-shaped `search`, optionally the Zhihu-style `quota`), so
+ *   (an id plus a seam-shaped `search`, optionally `quota`), so
  *   an engine can be added without touching the orchestration, and every branch
  *   of the fan-out, fusion, rerank, and truncation logic is unit-testable
  *   against fakes.
@@ -30,7 +30,6 @@ import { officialHosts, isOfficial, topicMatches, preferOfficial, contentVariant
 import type { RuntimeControls } from './request-budget.js';
 import type { WebSearchProvider, WebSearchRequest, WebSearchResult, WebSearchSource } from '@deepseek-ai/dsh-web';
 import { anySearchFailureSignal } from './engines/anysearch/index.js';
-import { readZhihuCircuitSignal } from './engines/zhihu/index.js';
 import { AGGREGATED_PROVIDER_ID } from './limits.js';
 import type { BreakerReason, BreakerSignal, CircuitBreaker } from './breaker/index.js';
 
@@ -130,7 +129,7 @@ export interface AggregatedSearchOptions {
   /** Candidates handed to rerank, best-first. Default 20. */
   readonly rerankPool?: number;
   /** Whether to probe engines that expose `quota()` once per local day. Default `true`. */
-  readonly zhihuQuotaCheck?: boolean;
+  readonly quotaCheck?: boolean;
   /** Clock override, in epoch milliseconds. Defaults to `Date.now`. */
   readonly now?: () => number;
 }
@@ -177,7 +176,7 @@ export class AggregatedSearchProvider implements WebSearchProvider {
     this.maxFanoutMs = positive(options.maxFanoutMs, DEFAULT_SEARCH_MAX_FANOUT_MS);
     this.rrfK = positive(options.rrfK, DEFAULT_RRF_K);
     this.rerankPool = positive(options.rerankPool, DEFAULT_RERANK_POOL);
-    this.quotaCheckEnabled = options.zhihuQuotaCheck ?? true;
+    this.quotaCheckEnabled = options.quotaCheck ?? true;
     this.now = options.now ?? Date.now;
   }
 
@@ -266,7 +265,7 @@ export class AggregatedSearchProvider implements WebSearchProvider {
 
   /**
    * Probe the daily allowance of every quota-capable engine, at most once per
-   * local day (DESIGN.md: 知乎额度日检). The day is marked as swept before the
+   * local day. The day is marked as swept before the
    * probes run, so one failed probe cannot make the pipeline retry all day; a
    * probe failure is logged and ignored, never blocking a search.
    */
@@ -611,7 +610,7 @@ function toSeamSource(candidate: FusedCandidate): WebSearchSource {
  * `undefined` when the failure is not a breaker event.
  *
  * Two sources are read, never parsed: the error itself, when it is one of the
- * engines' classified errors (`AnySearchClientError`, `ZhihuWebError`), and its
+ * engines' classified errors (`AnySearchClientError`), and its
  * `cause`, which is where the Zhipu engine hangs its 429 signal. Only the three
  * documented reasons pass through, spelled exactly as the breaker defines them;
  * every other engine classification (auth, invalid request, transport, …) is
@@ -625,9 +624,6 @@ export function readSearchFailureSignal(error: unknown): BreakerSignal | undefin
 function breakerSignalOf(value: unknown): BreakerSignal | undefined {
   const anysearch = anySearchFailureSignal(value);
   if (anysearch !== undefined) return fromReason(anysearch.kind, anysearch.retryAfterMs);
-
-  const zhihu = readZhihuCircuitSignal(value);
-  if (zhihu !== undefined) return fromReason(zhihu.kind, undefined);
 
   // The plain-object spelling: the Zhipu 429 signal (`{kind:'rate-limit',
   // retryAfterMs?}`) and any engine adopting the same closed vocabulary.

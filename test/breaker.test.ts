@@ -49,10 +49,10 @@ describe('nextLocalMidnight', () => {
 describe('CircuitBreaker 当日熔断', () => {
   it('quota-exhausted 触发当日熔断：返回值与 status 给出原因与本地次日零点恢复时间', () => {
     const breaker = new CircuitBreaker();
-    const status = breaker.recordSignal('zhihu', { kind: 'quota-exhausted' });
+    const status = breaker.recordSignal('engine-a', { kind: 'quota-exhausted' });
     expect(status).toEqual({ broken: true, reason: 'quota-exhausted', resetAt: NEXT_MIDNIGHT });
-    expect(breaker.isBroken('zhihu')).toBe(true);
-    expect(breaker.status('zhihu')).toEqual({
+    expect(breaker.isBroken('engine-a')).toBe(true);
+    expect(breaker.status('engine-a')).toEqual({
       broken: true,
       reason: 'quota-exhausted',
       resetAt: NEXT_MIDNIGHT,
@@ -71,39 +71,39 @@ describe('CircuitBreaker 当日熔断', () => {
 
   it('当日持续停用：当晚 23:59:59 仍熔断，次日零点整自动恢复', () => {
     const breaker = new CircuitBreaker();
-    breaker.recordSignal('zhihu', { kind: 'quota-exhausted' });
+    breaker.recordSignal('engine-a', { kind: 'quota-exhausted' });
     vi.setSystemTime(new Date(2026, 9, 13, 23, 59, 59));
-    expect(breaker.isBroken('zhihu')).toBe(true);
+    expect(breaker.isBroken('engine-a')).toBe(true);
     vi.setSystemTime(new Date(2026, 9, 14, 0, 0, 0));
-    expect(breaker.isBroken('zhihu')).toBe(false);
-    expect(breaker.status('zhihu')).toEqual({ broken: false });
+    expect(breaker.isBroken('engine-a')).toBe(false);
+    expect(breaker.status('engine-a')).toEqual({ broken: false });
   });
 
   it('当日熔断期间收到 rate-limit：当日熔断不被降级，短冷却不生效', () => {
     const breaker = new CircuitBreaker();
     const t0 = DAY_START.getTime();
-    breaker.recordSignal('zhihu', { kind: 'quota-exhausted' }, t0);
-    breaker.recordSignal('zhihu', { kind: 'rate-limit', retryAfterMs: 1_000 }, t0);
-    expect(breaker.status('zhihu', t0)).toEqual({
+    breaker.recordSignal('engine-a', { kind: 'quota-exhausted' }, t0);
+    breaker.recordSignal('engine-a', { kind: 'rate-limit', retryAfterMs: 1_000 }, t0);
+    expect(breaker.status('engine-a', t0)).toEqual({
       broken: true,
       reason: 'quota-exhausted',
       resetAt: NEXT_MIDNIGHT,
     });
-    expect(breaker.isBroken('zhihu', t0 + 1_000)).toBe(true);
+    expect(breaker.isBroken('engine-a', t0 + 1_000)).toBe(true);
   });
 
   it('rate-limit 冷却中又收到额度耗尽：升级为当日熔断，冷却不再适用', () => {
     const breaker = new CircuitBreaker();
     const t0 = DAY_START.getTime();
-    breaker.recordSignal('zhihu', { kind: 'rate-limit', retryAfterMs: 1_000 }, t0);
-    breaker.recordSignal('zhihu', { kind: 'quota-exhausted' }, t0 + 500);
-    expect(breaker.status('zhihu', t0 + 500)).toEqual({
+    breaker.recordSignal('engine-a', { kind: 'rate-limit', retryAfterMs: 1_000 }, t0);
+    breaker.recordSignal('engine-a', { kind: 'quota-exhausted' }, t0 + 500);
+    expect(breaker.status('engine-a', t0 + 500)).toEqual({
       broken: true,
       reason: 'quota-exhausted',
       resetAt: NEXT_MIDNIGHT,
     });
-    expect(breaker.isBroken('zhihu', t0 + 2_000)).toBe(true);
-    expect(breaker.isBroken('zhihu', NEXT_MIDNIGHT)).toBe(false);
+    expect(breaker.isBroken('engine-a', t0 + 2_000)).toBe(true);
+    expect(breaker.isBroken('engine-a', NEXT_MIDNIGHT)).toBe(false);
   });
 });
 
@@ -204,17 +204,17 @@ describe('CircuitBreaker 多引擎与未知引擎', () => {
     const { events, onEvent } = collectEvents();
     const breaker = new CircuitBreaker({ onEvent });
     const t0 = DAY_START.getTime();
-    breaker.recordSignal('zhihu', { kind: 'quota-exhausted' }, t0);
+    breaker.recordSignal('engine-a', { kind: 'quota-exhausted' }, t0);
     breaker.recordSignal('zhipu', { kind: 'rate-limit', retryAfterMs: 30_000 }, t0);
-    expect(breaker.isBroken('zhihu', t0)).toBe(true);
+    expect(breaker.isBroken('engine-a', t0)).toBe(true);
     expect(breaker.isBroken('zhipu', t0)).toBe(true);
     expect(breaker.isBroken('anysearch', t0)).toBe(false);
-    // zhipu 冷却先到期，丝毫不影响 zhihu 的当日熔断，也没动过 anysearch。
+    // zhipu 冷却先到期，丝毫不影响 engine-a 的当日熔断，也没动过 anysearch。
     expect(breaker.isBroken('zhipu', t0 + 30_000)).toBe(false);
-    expect(breaker.isBroken('zhihu', t0 + 30_000)).toBe(true);
+    expect(breaker.isBroken('engine-a', t0 + 30_000)).toBe(true);
     expect(breaker.isBroken('anysearch', t0 + 30_000)).toBe(false);
     expect(events.map((event) => `${event.type}:${event.engineId}`)).toEqual([
-      'open:zhihu',
+      'open:engine-a',
       'open:zhipu',
       'recovery:zhipu',
     ]);
@@ -228,23 +228,23 @@ describe('CircuitBreaker 多引擎与未知引擎', () => {
 });
 
 describe('与聚合管线的约定（管线跳过熔断引擎）', () => {
-  const ENGINES = ['anysearch', 'zhipu', 'zhihu'] as const;
+  const ENGINES = ['anysearch', 'zhipu', 'engine-a'] as const;
 
   it('当日熔断的引擎被跳过，其余引擎照常派发；跨日后重新加入', () => {
     const breaker = new CircuitBreaker();
-    breaker.recordSignal('zhihu', { kind: 'quota-exhausted' });
+    breaker.recordSignal('engine-a', { kind: 'quota-exhausted' });
     expect(dispatchableEngines(breaker, ENGINES)).toEqual(['anysearch', 'zhipu']);
     vi.setSystemTime(new Date(2026, 9, 14, 0, 0, 0));
-    expect(dispatchableEngines(breaker, ENGINES)).toEqual(['anysearch', 'zhipu', 'zhihu']);
+    expect(dispatchableEngines(breaker, ENGINES)).toEqual(['anysearch', 'zhipu', 'engine-a']);
   });
 
   it('rate-limit 冷却期内被跳过，冷却结束自动回队', () => {
     const breaker = new CircuitBreaker();
     const t0 = DAY_START.getTime();
     breaker.recordSignal('zhipu', { kind: 'rate-limit', retryAfterMs: 10_000 }, t0);
-    expect(dispatchableEngines(breaker, ENGINES)).toEqual(['anysearch', 'zhihu']);
+    expect(dispatchableEngines(breaker, ENGINES)).toEqual(['anysearch', 'engine-a']);
     vi.setSystemTime(t0 + 10_000);
-    expect(dispatchableEngines(breaker, ENGINES)).toEqual(['anysearch', 'zhipu', 'zhihu']);
+    expect(dispatchableEngines(breaker, ENGINES)).toEqual(['anysearch', 'zhipu', 'engine-a']);
   });
 });
 
@@ -252,18 +252,18 @@ describe('事件与日志行', () => {
   it('熔断触发事件与日志行含引擎名、触发原因、预计恢复时间', () => {
     const { events, onEvent } = collectEvents();
     const breaker = new CircuitBreaker({ onEvent });
-    breaker.recordSignal('zhihu', { kind: 'quota-exhausted' });
+    breaker.recordSignal('engine-a', { kind: 'quota-exhausted' });
     expect(events).toEqual([
       {
         type: 'open',
-        engineId: 'zhihu',
+        engineId: 'engine-a',
         reason: 'quota-exhausted',
         at: DAY_START.getTime(),
         until: NEXT_MIDNIGHT,
       },
     ]);
     const line = formatBreakerEvent(events[0]!);
-    expect(line).toContain('zhihu');
+    expect(line).toContain('engine-a');
     expect(line).toContain('quota-exhausted');
     expect(line).toContain(new Date(NEXT_MIDNIGHT).toISOString());
   });
@@ -271,20 +271,20 @@ describe('事件与日志行', () => {
   it('恢复事件在跨日后首次查询时恰好发出一次，日志行含引擎名与原因', () => {
     const { events, onEvent } = collectEvents();
     const breaker = new CircuitBreaker({ onEvent });
-    breaker.recordSignal('zhihu', { kind: 'quota-exhausted' });
+    breaker.recordSignal('engine-a', { kind: 'quota-exhausted' });
     vi.setSystemTime(new Date(2026, 9, 14, 3, 0, 0));
-    expect(breaker.isBroken('zhihu')).toBe(false);
+    expect(breaker.isBroken('engine-a')).toBe(false);
     expect(events).toHaveLength(2);
     expect(events[1]).toEqual({
       type: 'recovery',
-      engineId: 'zhihu',
+      engineId: 'engine-a',
       reason: 'quota-exhausted',
       at: new Date(2026, 9, 14, 3, 0, 0).getTime(),
     });
-    expect(breaker.isBroken('zhihu')).toBe(false);
+    expect(breaker.isBroken('engine-a')).toBe(false);
     expect(events).toHaveLength(2); // 不重复发
     const line = formatBreakerEvent(events[1]!);
-    expect(line).toContain('zhihu');
+    expect(line).toContain('engine-a');
     expect(line).toContain('quota-exhausted');
     expect(line).toContain('熔断恢复');
   });
@@ -311,11 +311,11 @@ describe('事件与日志行', () => {
   it('当日熔断期间的重复同类信号：resetAt 不变、不重复发事件', () => {
     const { events, onEvent } = collectEvents();
     const breaker = new CircuitBreaker({ onEvent });
-    breaker.recordSignal('zhihu', { kind: 'quota-exhausted' });
+    breaker.recordSignal('engine-a', { kind: 'quota-exhausted' });
     vi.setSystemTime(new Date(2026, 9, 13, 20, 0, 0));
-    breaker.recordSignal('zhihu', { kind: 'quota-exhausted' });
+    breaker.recordSignal('engine-a', { kind: 'quota-exhausted' });
     expect(events).toHaveLength(1);
-    expect(breaker.status('zhihu').resetAt).toBe(NEXT_MIDNIGHT);
+    expect(breaker.status('engine-a').resetAt).toBe(NEXT_MIDNIGHT);
   });
 
   it('未注入 onEvent 时静默工作，状态机照常', () => {

@@ -10,15 +10,12 @@
 | --- | --- | --- | --- |
 | AnySearch | `ANYSEARCH_API_KEY` | 是 | 是 |
 | 智谱 | `ZHIPU_API_KEY` | 是 | 否 |
-| 知乎 | `ZHIHU_ACCESS_SECRET` | 是 | 否 |
 | Firecrawl | `FIRECRAWL_API_KEY` | 是 | 是 |
 | Tavily | `TAVILY_API_KEY` | 是 | 是 |
 | Exa | `EXA_API_KEY` | 是 | 是 |
 | Keenable | `KEENABLE_API_KEY` | 是 | 是 |
 | Crawl4AI Cloud | `CRAWL4AI_API_KEY` | 是 | 是 |
 | GitHub | `GITHUB_TOKEN` | 公开仓库 | README / 文件 |
-| 百度千帆 | `QIANFAN_API_KEY` | 是 | 否 |
-| 豆包 Custom | `DOUBAO_SEARCH_API_KEY` / `DOUBAO_FETCH_API_KEY` | 是 | 是 |
 | TinyFish | `TINYFISH_API_KEY` | 是 | 是 |
 | Serply | `SERPLY_API_KEY` | 是 | 是 |
 | Kimi | `MOONSHOT_API_KEY` | 是 | 是 |
@@ -29,7 +26,7 @@
 | TypeSafe | `TYPESAFE_API_KEY` | 自动预设路由 | 否 |
 | 直接 HTTP 抓取 | 无需凭证 | 否 | 静态资源 |
 
-按能力和费用选择需要的服务，费用区别见 [服务费用](../README.md#服务费用)。配置方式与价格无关：AnySearch、智谱和知乎通过 `search` 字段配置；Firecrawl 与 AnySearch 的提取通过 `fetch` 字段配置。用 `controls.searchServices` / `controls.fetchServices` 分别控制参与范围。`engines` 中的服务仅在列出且未设 `enabled: false` 时创建。凭证服务明确报告未配置时，该路不派发；状态未知时保留实际请求验证。
+按能力和费用选择需要的服务，费用区别见 [服务费用](../README.md#服务费用)。配置方式与价格无关：AnySearch 和智谱通过 `search` 字段配置；Firecrawl 与 AnySearch 的提取通过 `fetch` 字段配置。用 `controls.searchServices` / `controls.fetchServices` 分别控制参与范围。`engines` 中的服务仅在列出且未设 `enabled: false` 时创建。凭证服务明确报告未配置时，该路不派发；状态未知时保留实际请求验证。
 
 在 profile 的 `cordis.patch.yml` 中按 id 覆盖配置。DSH 配置覆盖不会逐字段深合并，需重述所需配置，包括扩展服务列表。`name` 是模块匹配条件，不能用它重命名已有模块。
 
@@ -48,8 +45,6 @@
       keenable: {}
       crawl4ai: {}
       github: {}
-      qianfan: {}
-      doubao: {}
       firecrawl: {}
       tinyfish: {}
       serply: {}
@@ -66,7 +61,6 @@
       rerankTimeoutMs: 3000
       decisionModel: decision-model-preview
       decisionTimeoutMs: 2000
-      zhihuQuotaCheck: true
       anysearchApiKeyEnv: ANYSEARCH_API_KEY
       zhipuTransport: anthropic
       zhipuAnthropicModel: glm-4.6
@@ -80,7 +74,7 @@
         anysearch: 2
 ```
 
-省略可选字段时使用默认值；不要用 YAML `null` 代替字符串。只启用 Tavily 和 Exa 时，将示例的 `engines` 整块改为这两项。每项支持 `enabled`、`apiKeyEnv`、`baseURL`、`fetchBaseURL`；Kimi 另支持 `searchMode`；豆包默认使用单独的 `fetchApiKeyEnv`。TinyFish 的搜索和提取为不同域名，`baseURL` 只覆盖搜索，`fetchBaseURL` 覆盖提取。Firecrawl 扩展配置控制搜索，网页提取由 `fetch.firecrawlApiKeyEnv` / `fetch.firecrawlBaseURL` 控制。
+省略可选字段时使用默认值；不要用 YAML `null` 代替字符串。只启用 Tavily 和 Exa 时，将示例的 `engines` 整块改为这两项。每项支持 `enabled`、`apiKeyEnv`、`baseURL`、`fetchBaseURL`；Kimi 另支持 `searchMode`。TinyFish 的搜索和提取为不同域名，`baseURL` 只覆盖搜索，`fetchBaseURL` 覆盖提取。Firecrawl 扩展配置控制搜索，网页提取由 `fetch.firecrawlApiKeyEnv` / `fetch.firecrawlBaseURL` 控制。
 
 智谱搜索凭证优先使用 `search.zhipuApiKeyEnv`，其次根 `apiKeyEnv`；AnySearch 提取凭证优先使用 `fetch.anysearchApiKeyEnv`，其次 `search.anysearchApiKeyEnv`。
 
@@ -108,8 +102,7 @@
 | `search.rerankTimeoutMs` | 正整数，毫秒 | `3000` | 重排请求预算 |
 | `search.decisionModel` | 字符串枚举 | `decision-model-preview` | 另可选 `Kev-4b`、`SemIf`、`diffusiongemma`、`jev-latest` |
 | `search.decisionTimeoutMs` | 正整数，毫秒 | `2000` | 自动预设决策请求预算 |
-| `search.zhihuQuotaCheck` | 布尔值 | `true` | 当日首次查询的额度检查 |
-| `search.zhipuTransport` | 字符串枚举 | `anthropic` | 另可选 `tools-api` |
+| | `search.zhipuTransport` | 字符串枚举 | `anthropic` | 另可选 `tools-api` |
 | `search.zhipuAnthropicModel` | 字符串 | `glm-4.6` | 搜索通道模型 |
 | `search.zhipuAnthropicMaxUses` | 正整数 | `1` | 搜索工具调用上限 |
 | `fetch.staticRouting` | 布尔值 | `true` | 按 URL 分流 |
@@ -120,7 +113,7 @@
 
 内置扩展名：`txt`、`text`、`xml`、`json`、`md`、`markdown`、`csv`、`tsv`、`rss`、`atom`、`yaml`、`yml`、`log`、`ini`、`toml`、`ics`、`vtt`、`srt`。显式 `[]` 清空扩展名匹配。域名填写主机名，不写协议、路径或通配符。默认权重 Firecrawl 为 `3`，AnySearch 及未单独配置的扩展为 `2`。
 
-搜索凭证字段 `search.anysearchApiKeyEnv`、`search.zhihuAccessSecretEnv`、`search.siliconflowApiKeyEnv` 及 `fetch.firecrawlApiKeyEnv` 使用凭证表中的默认引用。`search.zhipuApiKeyEnv` 和 `fetch.anysearchApiKeyEnv` 为空时按回落关系读取。不存在 `fetch.zhipuApiKeyEnv` 或阅读器端点配置。
+搜索凭证字段 `search.anysearchApiKeyEnv`、`search.siliconflowApiKeyEnv` 及 `fetch.firecrawlApiKeyEnv` 使用凭证表中的默认引用。`search.zhipuApiKeyEnv` 和 `fetch.anysearchApiKeyEnv` 为空时按回落关系读取。不存在 `fetch.zhipuApiKeyEnv` 或阅读器端点配置。
 
 ## 端点与传输
 
@@ -129,8 +122,6 @@
 | `search.anysearchBaseURL` / `fetch.anysearchBaseURL` | `https://api.anysearch.com` |
 | `search.zhipuAnthropicBaseURL` | `https://open.bigmodel.cn/api/anthropic/v1` |
 | `search.zhipuBaseURL` | `https://open.bigmodel.cn/api/paas/v4/web_search` |
-| `search.zhihuBaseURL` | `https://developer.zhihu.com/api/v1/content/global_search` |
-| `search.zhihuQuotaURL` | `https://developer.zhihu.com/api/v1/quota` |
 | `search.rerankBaseURL` | `https://api.siliconflow.cn/v1/rerank` |
 | `fetch.firecrawlBaseURL` | `https://api.firecrawl.dev/v2/scrape` |
 
@@ -143,8 +134,6 @@
 | `keenable` | `KEENABLE_API_KEY` | `https://api.keenable.ai` | 同搜索 |
 | `crawl4ai` | `CRAWL4AI_API_KEY` | `https://api.crawl4ai.com` | 同搜索 |
 | `github` | `GITHUB_TOKEN` | `https://api.github.com` | 同搜索 |
-| `qianfan` | `QIANFAN_API_KEY` | `https://qianfan.baidubce.com` | — |
-| `doubao` | `DOUBAO_SEARCH_API_KEY` | `https://open.feedcoopapi.com` | 同搜索，引用为 `DOUBAO_FETCH_API_KEY` |
 | `firecrawl` | `FIRECRAWL_API_KEY` | `https://api.firecrawl.dev` | 网页提取使用独立 `fetch` 配置 |
 | `tinyfish` | `TINYFISH_API_KEY` | `https://api.search.tinyfish.ai` | `https://api.fetch.tinyfish.ai` |
 | `serply` | `SERPLY_API_KEY` | `https://api.serply.io` | 同搜索 |
@@ -152,7 +141,7 @@
 | `bing` | 无 | `https://cn.bing.com` | — |
 | `aihot` | 无 | `https://aihot.news` | 仅专用 API |
 
-扩展项字段：`enabled`（布尔值，条目内默认 `true`）、`apiKeyEnv`（字符串引用名）、`fetchApiKeyEnv`（豆包专用字符串引用名）、`baseURL` 和 `fetchBaseURL`（字符串基础地址）。Kimi 的 `searchMode` 为 `basic` 或 `pro`，省略时使用 `pro`。省略整个条目不会创建该扩展；新安装 bundle 仅启用 Firecrawl、Tavily 两个扩展及 AnySearch 服务；其他远程服务与重排默认关闭。直接 HTTP 抓取作为静态资源基础能力保留。已保存的显式开关设置优先于安装默认。
+扩展项字段：`enabled`（布尔值，条目内默认 `true`）、`apiKeyEnv`（字符串引用名）、`baseURL` 和 `fetchBaseURL`（字符串基础地址）。Kimi 的 `searchMode` 为 `basic` 或 `pro`，省略时使用 `pro`。省略整个条目不会创建该扩展；新安装 bundle 仅启用 Firecrawl、Tavily 两个扩展及 AnySearch 服务；其他远程服务与重排默认关闭。直接 HTTP 抓取作为静态资源基础能力保留。已保存的显式开关设置优先于安装默认。
 
 智谱 `anthropic` 通道通过 HTTP Messages API 请求服务端 `web_search_20250305`，结果块完整后结束流读取。备用 `tools-api` 调用 `search_pro`，查询截断至 70 字符。本插件接入的两条智谱搜索通道均为付费使用：Coding Plan 消耗付费订阅额度，`search_pro` 按次计费。套餐额度不等于免费额度，账号资格和计费以服务商为准；两条通道均无需 MCP。
 
@@ -221,15 +210,15 @@ GitHub 提取只识别仓库根 URL 与 `/blob/<ref>/<path>`，通过 README／c
 
 匿名入口不清除凭证、不改自定义端点，也不写入新的密钥。凭证状态尚未读取、读取失败、已有完整或部分密钥、存在密钥草稿或自定义端点的服务不会被选入；没有符合条件的服务时入口禁用并说明原因。选择后另外配置密钥会使对应服务使用账户额度，凭证不会因预设而被忽略。
 
-打开「设置 → 内置插件 → 网络搜索与提取」。卡片与 README 的完整接入清单一致，覆盖 18 项搜索／提取／重排服务、18 个凭证位，另提供五款决策模型选择，包括无需凭证的 Bing RSS、AIHOT 和直接 HTTP 抓取。豆包搜索与提取分别填写密钥；智谱只保留搜索。
+打开「设置 → 内置插件 → 网络搜索与提取」。卡片与 README 的完整接入清单一致，覆盖 15 项搜索／提取／重排服务、14 个凭证位，另提供五款决策模型选择，包括无需凭证的 Bing RSS、AIHOT 和直接 HTTP 抓取。智谱只保留搜索。
 
 用服务名称或用途搜索，按搜索 / 提取 / 重排筛选，或只查看待配置、未保存及无需密钥的服务。点击服务行展开密钥与说明；切换筛选或折叠保留草稿。保存和放弃更改位于列表下方，全局计数包含筛选后隐藏的修改。
 
 页面上方设置正文处理模式、调用预设和各项预算，服务详情内分别勾选搜索与提取参与。修改参与范围不会删除密钥或自定义端点。保存仅提交修改路径；放弃更改同时清除未保存的模式、预算和参与范围。
 
-20 项服务均提供总开关，控制该服务的全部能力。Firecrawl 的总开关同时控制搜索与提取。旧 `engines.firecrawl.enabled` 仍只控制搜索；设置页的「参与搜索」会反映并修改这个旧字段。GitHub 提取限定仓库 README / 文件。扩展服务开关和智谱通道均在保存后影响下一次调用，无需重挂插件。
+15 项服务均提供总开关，控制该服务的全部能力。Firecrawl 的总开关同时控制搜索与提取。旧 `engines.firecrawl.enabled` 仍只控制搜索；设置页的「参与搜索」会反映并修改这个旧字段。GitHub 提取限定仓库 README / 文件。扩展服务开关和智谱通道均在保存后影响下一次调用，无需重挂插件。
 
-密钥通过 DSH credentials 域写入。留空保持现值；保存成功清空输入框，刷新后只显示配置状态。环境变量提供的凭证遵循宿主只读规则。AnySearch 或 Firecrawl 的搜索与提取若使用不同引用，一次填写会更新两处引用；豆包两把密钥分别更新。
+密钥通过 DSH credentials 域写入。留空保持现值；保存成功清空输入框，刷新后只显示配置状态。环境变量提供的凭证遵循宿主只读规则。AnySearch 或 Firecrawl 的搜索与提取若使用不同引用，一次填写会更新两处引用。
 
 凭证引用名仍按上述配置契约设置。宿主通过 `--patch` 或 home patch 覆盖的配置不能由设置页改写，需要 GUI 编辑的值应放入可写 profile。配置状态只表示凭证存在，不代表 API 认证或接口健康。
 

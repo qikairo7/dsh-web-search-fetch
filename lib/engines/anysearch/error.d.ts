@@ -39,7 +39,7 @@ export type AnySearchFailureKind =
  | 'rate-limit'
 /** The account has no quota or credit left (HTTP 402, or an `error_code` naming exhaustion). */
  | 'quota-exhausted'
-/** Credential rejected or missing where required. Named `auth-failed` to match Zhihu's vocabulary (#4). */
+/** Credential rejected or missing where required. */
  | 'auth-failed'
 /** Extract refused the URL as malformed (`invalid_extract_url`). */
  | 'invalid-url'
@@ -143,7 +143,7 @@ export declare class AnySearchClientError extends Error {
  * catch broadly. Returns `undefined` for anything this engine did not raise,
  * so a pipeline can tell "AnySearch throttled us" from "something else broke".
  *
- * Mirrors `readZhihuCircuitSignal` from the Zhihu engine (#4): both engines
+ * Classified circuit signals use the same closed vocabulary across engines; both engines
  * expose one function with the same shape, so the aggregation pipeline reads
  * every engine's failure the same way.
  */

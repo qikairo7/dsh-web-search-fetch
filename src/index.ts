@@ -34,7 +34,6 @@ import {
   DEFAULT_RRF_K,
   DEFAULT_SEARCH_MAX_FANOUT_MS,
   SILICONFLOW_DEFAULT_API_KEY_ENV,
-  ZHIHU_DEFAULT_ACCESS_SECRET_ENV,
   createAggregatedSearchProvider,
 } from './search-pipeline.js';
 import type { SearchEngineOverrides } from './search-pipeline.js';
@@ -45,7 +44,6 @@ import { FIRECRAWL_DEFAULT_API_KEY_ENV, FIRECRAWL_SCRAPE_URL, isFirecrawlKeyless
 import { AnySearchEngine } from './engines/anysearch/engine.js';
 import { ANYSEARCH_DEFAULT_BASE_URL } from './engines/anysearch/limits.js';
 import { RERANK_TIMEOUT_MS, SILICONFLOW_RERANK_URL } from './engines/rerank/limits.js';
-import { ZHIHU_GLOBAL_SEARCH_URL, ZHIHU_QUOTA_URL } from './engines/zhihu/limits.js';
 import { DEFAULT_FETCH_ENGINE_TIMEOUT_MS, DEFAULT_STATIC_EXTENSIONS } from './fetch-aggregate.js';
 import { createAdditionalEngines, type AdditionalEnginesConfig } from './engines/additional/index.js';
 import { budgetedFetch, currentControls, noteOperation } from './request-budget.js';
@@ -77,7 +75,6 @@ export type {
 } from './engines/anysearch/types.js';
 export { FIRECRAWL_SCRAPE_URL } from './engines/firecrawl/wire.js';
 export { RERANK_TIMEOUT_MS, SILICONFLOW_RERANK_URL } from './engines/rerank/limits.js';
-export { ZHIHU_GLOBAL_SEARCH_URL, ZHIHU_QUOTA_URL } from './engines/zhihu/limits.js';
 export { ZhipuClient, translateTransportFailure, extractUpstreamErrorDetail } from './engines/zhipu/client.js';
 export type { ZhipuClientOptions } from './engines/zhipu/client.js';
 export {
@@ -118,8 +115,6 @@ export {
   DEFAULT_RRF_K,
   DEFAULT_SEARCH_MAX_FANOUT_MS,
   SILICONFLOW_DEFAULT_API_KEY_ENV,
-  ZHIHU_DEFAULT_ACCESS_SECRET_ENV,
-  ZHIHU_ENGINE_ID,
   ZHIPU_ENGINE_ID,
   createAggregatedSearchProvider,
   normalizeSearchUrl,
@@ -195,8 +190,6 @@ export interface SearchConfig {
   rrfK?: number;
   /** Candidates handed to rerank; defaults to 20. */
   rerankPool?: number;
-  /** Whether the daily Zhihu quota probe runs; defaults to on. */
-  zhihuQuotaCheck?: boolean;
   /** Set `false` to skip the rerank stage entirely (pure RRF). */
   rerank?: Volatile<boolean> | boolean;
   /** Rerank whole-operation deadline in milliseconds; defaults to the documented ~3 s. */
@@ -213,8 +206,6 @@ export interface SearchConfig {
   zhipuApiKeyEnv?: Volatile<string | undefined>;
   /** AnySearch credential reference; defaults to `ANYSEARCH_API_KEY`. Volatile: see `zhipuApiKeyEnv`. */
   anysearchApiKeyEnv?: Volatile<string>;
-  /** Zhihu credential reference; defaults to `ZHIHU_ACCESS_SECRET`. Volatile: see `zhipuApiKeyEnv`. */
-  zhihuAccessSecretEnv?: Volatile<string>;
   /** SiliconFlow rerank credential reference; defaults to `SILICONFLOW_API_KEY`. Volatile: see `zhipuApiKeyEnv`. */
   siliconflowApiKeyEnv?: Volatile<string>;
   /** Zhipu `web_search` endpoint (DESIGN.md); defaults to the public endpoint. */
@@ -238,10 +229,6 @@ export interface SearchConfig {
   zhipuAnthropicMaxUses?: number;
   /** AnySearch origin (DESIGN.md); defaults to `https://api.anysearch.com`. */
   anysearchBaseURL?: string;
-  /** Zhihu `global_search` endpoint (DESIGN.md); defaults to the public endpoint. */
-  zhihuBaseURL?: string;
-  /** Zhihu daily-quota endpoint (DESIGN.md); defaults to the public endpoint. */
-  zhihuQuotaURL?: string;
   /** SiliconFlow rerank endpoint (DESIGN.md); defaults to the public endpoint. */
   rerankBaseURL?: string;
   /** Fast decision model behind the automatic preset. */
@@ -296,10 +283,10 @@ export const Config = z.object({
     serviceEnabled: z.dict(z.boolean()).default({}).description('服务总开关；关闭后不派发该服务，保留各能力的参与范围。'),
     mode: z.union(['organize', 'select']).default('organize').description('正文整理；select 为旧版单份正文模式。'),
     preset: z.union(['auto', 'custom', 'free', 'balanced', 'deep']).default('auto').description('自动按请求判断覆盖范围；也可固定为自定义、免费、均衡（最多三路）或深度检索。免费仍可能需要凭证。'),
-    searchServices: z.array(z.string()).default(['anysearch', 'zhipu', 'zhihu', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'qianfan', 'doubao', 'firecrawl', 'tinyfish', 'serply', 'kimi', 'bing', 'aihot']).description('搜索服务 ID 与调用优先级；空数组不调用搜索服务。'),
-    fetchServices: z.array(z.string()).default(['firecrawl', 'anysearch', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'doubao', 'tinyfish', 'serply', 'kimi', 'aihot']).description('提取服务 ID 与调用优先级；HTTP 静态路径不受此列表控制。'),
-    maxSearchServices: z.natural().min(1).max(16).default(16).description('每个查询最多调用的搜索服务数。'),
-    maxFetchServices: z.natural().min(1).max(11).default(11).description('每个 URL 最多调用的普通提取服务数。'),
+    searchServices: z.array(z.string()).default(['anysearch', 'zhipu', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'firecrawl', 'tinyfish', 'serply', 'kimi', 'bing', 'aihot']).description('搜索服务 ID 与调用优先级；空数组不调用搜索服务。'),
+    fetchServices: z.array(z.string()).default(['firecrawl', 'anysearch', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'tinyfish', 'serply', 'kimi', 'aihot']).description('提取服务 ID 与调用优先级；HTTP 静态路径不受此列表控制。'),
+    maxSearchServices: z.natural().min(1).max(13).default(13).description('每个查询最多调用的搜索服务数。'),
+    maxFetchServices: z.natural().min(1).max(10).default(10).description('每个 URL 最多调用的普通提取服务数。'),
     maxRequests: z.natural().min(1).max(256).default(32).description('每次 provider 操作的插件 HTTP 请求上限，包含额度查询、重试和重排；不含宿主 HTTP 重定向。'),
     searchDeadlineMs: z.natural().min(1).max(3600000).default(15000).description('搜索操作总限时，毫秒。'),
     fetchDeadlineMs: z.natural().min(1).max(3600000).default(50000).description('提取操作总限时，毫秒。'),
@@ -308,11 +295,10 @@ export const Config = z.object({
   engines: z.dict(z.object({
     enabled: z.boolean().default(true).description('是否将此服务加入搜索与可用的提取管线。'),
     apiKeyEnv: z.string().role('credential-ref').description('凭证引用名；省略时使用该服务默认引用。'),
-    fetchApiKeyEnv: z.string().role('credential-ref').description('豆包提取凭证引用；默认 DOUBAO_FETCH_API_KEY。其他服务沿用 apiKeyEnv。'),
     baseURL: z.string().description('HTTP API 基础地址；省略时使用官方地址。'),
     fetchBaseURL: z.string().description('提取 API 基础地址；TinyFish 默认使用独立 Fetch API 域名。'),
     searchMode: z.union(['basic', 'pro']).description('Kimi 搜索档位；默认 pro，basic 只请求摘要，不请求整页正文。'),
-  })).volatile().description('扩展服务：tavily、exa、keenable、crawl4ai、github、qianfan、doubao、firecrawl、tinyfish、serply、kimi、bing、aihot。Bing RSS 与 AIHOT 无需凭证；AIHOT 默认关闭。只配置需要启用的服务。'),
+  })).volatile().description('扩展服务：tavily、exa、keenable、crawl4ai、github、firecrawl、tinyfish、serply、kimi、bing、aihot。Bing RSS 与 AIHOT 无需凭证；AIHOT 默认关闭。只配置需要启用的服务。'),
   apiKeyEnv: z
     .string()
     .role('credential-ref')
@@ -337,10 +323,6 @@ export const Config = z.object({
         .natural()
         .default(DEFAULT_RERANK_POOL)
         .description('送入重排的候选条数上限（RRF 融合后取前 N）。默认 20。'),
-      zhihuQuotaCheck: z
-        .boolean()
-        .default(true)
-        .description('知乎每日额度日检：当日首次搜索前查一次额度，耗尽当日停用知乎路。'),
       rerank: z
         .boolean()
         .default(true)
@@ -367,14 +349,6 @@ export const Config = z.object({
         .volatile()
         .description(
           `AnySearch 凭证引用名。key 值写入 ~/.dsh/.credentials.yaml refs 段同名键（如 ${ANYSEARCH_DEFAULT_API_KEY_ENV}: as_sk_…）。`,
-        ),
-      zhihuAccessSecretEnv: z
-        .string()
-        .role('credential-ref')
-        .default(ZHIHU_DEFAULT_ACCESS_SECRET_ENV)
-        .volatile()
-        .description(
-          `知乎 Access Secret 引用名。值写入 ~/.dsh/.credentials.yaml refs 段同名键（如 ${ZHIHU_DEFAULT_ACCESS_SECRET_ENV}: <32位secret>）。`,
         ),
       siliconflowApiKeyEnv: z
         .string()
@@ -412,8 +386,6 @@ export const Config = z.object({
         .default(ZHIPU_ANTHROPIC_MAX_USES)
         .description('anthropic 通道单次请求的搜索工具调用上限。聚合场景一轮搜索足够（默认 1），多轮只加延迟。'),
       anysearchBaseURL: z.string().default(ANYSEARCH_DEFAULT_BASE_URL).description('AnySearch 搜索端点。'),
-      zhihuBaseURL: z.string().default(ZHIHU_GLOBAL_SEARCH_URL).description('知乎全网搜索端点。'),
-      zhihuQuotaURL: z.string().default(ZHIHU_QUOTA_URL).description('知乎每日额度查询端点。'),
       rerankBaseURL: z.string().default(SILICONFLOW_RERANK_URL).description('硅基流动重排端点。'),
       decisionModel: z.union(['Kev-4b', 'SemIf', 'diffusiongemma', 'decision-model-preview', 'jev-latest']).default('decision-model-preview').volatile().description('自动预设的快速决策模型，保存后下一次请求生效。'),
       decisionTimeoutMs: z.natural().min(100).max(5000).default(2000).description('决策模型限时；自动预设必须取得有效决策后才派发服务。'),
@@ -510,12 +482,9 @@ export function apply(ctx: Context, config: Config): void {
       ? fetchConfig.firecrawlBaseURL ?? FIRECRAWL_SCRAPE_URL
       : (settings?.baseURL ?? 'https://api.firecrawl.dev').replace(/\/+$/, '') + '/v2/search')) return true;
     if (typeof ctx.credentials.describe !== 'function') return true;
-    const slot = id === 'doubao' ? face === 'fetch' ? 'doubao-fetch' : 'doubao-search' : id;
     const reference = face === 'fetch' && id === 'anysearch' ? config.fetch?.anysearchApiKeyEnv?.get() || resolveCredentialRef(config, 'anysearch')
-      : face === 'search' && settings?.apiKeyEnv ? settings.apiKeyEnv
-      : face === 'fetch' && id !== 'firecrawl' && settings?.fetchApiKeyEnv ? settings.fetchApiKeyEnv
-      : settings?.apiKeyEnv && id !== 'firecrawl' && !(face === 'fetch' && id === 'doubao') ? settings.apiKeyEnv
-      : resolveCredentialRef(config, slot as Parameters<typeof resolveCredentialRef>[1]);
+      : settings?.apiKeyEnv && id !== 'firecrawl' ? settings.apiKeyEnv
+      : resolveCredentialRef(config, id as Parameters<typeof resolveCredentialRef>[1]);
     try { return (await ctx.credentials.describe(credentialRef(reference))).configured; }
     catch { return true; } // Unknown status must not silently disable a configured service.
   };
@@ -552,12 +521,10 @@ export function apply(ctx: Context, config: Config): void {
     },
     zhipuApiKeyEnv: () => resolveCredentialRef(config, 'zhipu'),
     anysearchApiKeyEnv: () => resolveCredentialRef(config, 'anysearch'),
-    zhihuAccessSecretEnv: () => resolveCredentialRef(config, 'zhihu'),
     siliconflowApiKeyEnv: () => resolveCredentialRef(config, 'siliconflow'),
     ...(search.maxFanoutMs === undefined ? {} : { maxFanoutMs: search.maxFanoutMs }),
     ...(search.rrfK === undefined ? {} : { rrfK: search.rrfK }),
     ...(search.rerankPool === undefined ? {} : { rerankPool: search.rerankPool }),
-    ...(search.zhihuQuotaCheck === undefined ? {} : { zhihuQuotaCheck: search.zhihuQuotaCheck }),
     ...(search.rerank === undefined ? {} : { rerank: readVolatile(search.rerank) }),
     ...(search.rerankTimeoutMs === undefined ? {} : { rerankTimeoutMs: search.rerankTimeoutMs }),
     // A live reader, not a captured value: the transport is the one field the
@@ -627,8 +594,6 @@ function buildSearchOverrides(search: SearchConfig): SearchEngineOverrides | und
     ...(search.zhipuAnthropicBaseURL === undefined
       ? {}
       : { zhipuAnthropicBaseURL: search.zhipuAnthropicBaseURL }),
-    ...(search.zhihuBaseURL === undefined ? {} : { zhihuBaseURL: search.zhihuBaseURL }),
-    ...(search.zhihuQuotaURL === undefined ? {} : { zhihuQuotaURL: search.zhihuQuotaURL }),
     ...(search.rerankBaseURL === undefined ? {} : { rerankBaseURL: search.rerankBaseURL }),
   };
   return Object.keys(overrides).length === 0 ? undefined : overrides;

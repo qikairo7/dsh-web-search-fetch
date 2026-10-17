@@ -54,7 +54,7 @@ it.each(['tavily', 'tinyfish-serply-bing', 'aihot', 'kimi'])('%s：仅注入两�
         tinyfish: { baseURL: `${server.url}/tinyfish`, fetchBaseURL: `${server.url}/tinyfish` },
         serply: { baseURL: `${server.url}/serply` }, bing: { baseURL: `${server.url}/bing` },
       },
-      search: { rerank: false, zhihuQuotaCheck: false },
+      search: { rerank: false, quotaCheck: false },
     }));
     const after = await ctx.systemPrompt.assemble();
     expect(after.tools.map(tool => tool.name).sort()).toEqual(['web_fetch', 'web_search']);

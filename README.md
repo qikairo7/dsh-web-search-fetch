@@ -52,9 +52,8 @@ dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/re
 | 证据 | 结果与边界 |
 | --- | --- |
 | 当前交付版本 | `0.2.16`；适配 DSH `0.2.1-alpha.5`，延续 alpha.4 的正式适配路径 |
-| 仓库门禁 | 771 项测试、构建、类型检查、仓库与分发检查、双 OS × 双 Node CI |
+| 仓库门禁 | 671 项测试、构建、类型检查、仓库与分发检查、双 OS × 双 Node CI |
 | 隔离生命周期 | `0.2.12` 完成安装、启动、原生工具、设置保存、重启持久化、卸载与回滚 |
-| 全服务实测 | 18 项服务配置；16 路搜索与最多 11 路提取逐项验证，保留失败历史 |
 | 正式会话 | `0.2.13` 四轮模型自主调用原生双工具，覆盖 deep / fast 自动切换和「不读取网页」约束 |
 | 正式 profile 升级 | `0.2.14` 完成 Release 下载校验、升级、宿主重启和 `web_fetch` 三路提取 |
 | 已知未归因问题 | 原 HTTPS 输入的历史整理拒绝未复现；issue #3 保持开放，不以后续成功关闭 |
@@ -68,15 +67,12 @@ dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/re
 | --- | --- | --- | --- |
 | AnySearch AI | 支持 | 支持 | 搜索与正文提取 |
 | 智谱 | 支持 | — | Anthropic 兼容通道与工具 API |
-| 知乎 | 支持 | — | 内容搜索与额度查询 |
 | Firecrawl | 支持 | 支持 | v2 Search 与 Scrape |
 | Tavily | 支持 | 支持 | 搜索与 Extract |
 | Exa | 支持 | 支持 | 搜索与 Contents |
 | Keenable | 支持 | 支持 | 实时搜索与正文提取 |
 | Crawl4AI Cloud | 支持 | 支持 | Cloud 搜索与 Scrape |
 | GitHub | 支持 | 限定 URL | 公开仓库搜索，README / blob 文件提取 |
-| 百度千帆 AI 搜索 | 支持 | — | 网页搜索 |
-| 豆包 Custom | 支持 | 支持 | 搜索与 Fetch 分别配置凭证 |
 | TinyFish | 支持 | 支持 | 独立 Search / Fetch API，共用密钥 |
 | Serply | 支持 | 支持 | Google 搜索与 Markdown 提取 |
 | Kimi | 支持 | 支持 | REST Basic / Pro 搜索与 Markdown 提取 |
@@ -87,7 +83,7 @@ dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/re
 | TypeSafe | 自动预设路由 | — | `jev-latest` 判断覆盖范围 |
 | 直接 HTTP 抓取 | — | 静态资源 | 复用 DSH HTTP 组件，无需服务凭证 |
 
-新安装默认开启 AnySearch、Firecrawl、Tavily 三家推荐服务，其余远程服务与硅基流动重排作为可选增强，默认关闭。直接 HTTP 抓取保留为静态资源的基础提取能力。已保存的显式开关设置优先于安装默认；旧版未设置开关的服务采用新版默认。按需开启增强后，搜索最多 16 路；普通动态提取最多 10 路，适用的 GitHub URL 最多 11 路。Kimi Basic / Pro 二选一，只计一路。AIHOT 专用 API 直接读取，重排和 HTTP 抓取均不计入动态提取路数。实际参与调用的服务取决于配置、凭证、URL 适用范围及熔断状态。
+新安装默认开启 AnySearch、Firecrawl、Tavily 三家推荐服务，其余远程服务与硅基流动重排作为可选增强，默认关闭。直接 HTTP 抓取保留为静态资源的基础提取能力。已保存的显式开关设置优先于安装默认；旧版未设置开关的服务采用新版默认。按需开启增强后，搜索最多 13 路；普通动态提取最多 9 路，适用的 GitHub URL 最多 10 路。Kimi Basic / Pro 二选一，只计一路。AIHOT 专用 API 直接读取，重排和 HTTP 抓取均不计入动态提取路数。实际参与调用的服务取决于配置、凭证、URL 适用范围及熔断状态。
 
 智谱仅支持搜索，不包含阅读器。GitHub 提取限定仓库根 URL 和 `/blob/<ref>/<path>`。Bing RSS 使用公开搜索 feed，无需密钥；其可用性和格式可能变化。
 
@@ -101,7 +97,7 @@ AIHOT 搜索覆盖近 7 天 AI 资讯；启用后，原生 `web_fetch` 可读取
 | --- | --- | --- |
 | 免费服务 | TinyFish Search／Fetch、Bing RSS、GitHub 公开 API、直接 HTTP 抓取、硅基流动 `BAAI/bge-reranker-v2-m3` 与三款 SystemOne 决策模型、阿里 `decision-model-preview` | 受请求频率、访问权限或资源限制约束；硅基流动与阿里仍需配置 API Key |
 | 免费服务（有用途限制） | AIHOT | 个人非商业、公益非商业及组织内部使用；其他用途按服务规则授权 |
-| 提供免费额度 | AnySearch、知乎、Firecrawl、Tavily、Exa、Keenable、Crawl4AI Cloud、Serply | 免费额度的有效期、重置周期和超额计费以服务方及账号为准 |
+| 提供免费额度 | AnySearch、Firecrawl、Tavily、Exa、Keenable、Crawl4AI Cloud、Serply | 免费额度的有效期、重置周期和超额计费以服务方及账号为准 |
 | 按次计费或付费订阅 | 智谱当前搜索通道、Kimi REST 搜索与提取 | Coding Plan 为付费订阅；`tools-api` 使用按次计费的 `search_pro`，套餐额度不属于免费额度；Kimi REST 接口按次计费，账号赠送额度需另行确认 |
 | 按区域限制 | TypeSafe `jev-latest` | 付费模型；直连返回 HTTP 451，配置 DSH 代理后可用 |
 
@@ -117,11 +113,9 @@ AIHOT 搜索覆盖近 7 天 AI 资讯；启用后，原生 `web_fetch` 可读取
 
 免费接口预设仍排除 AnySearch、Firecrawl、Tavily 等额度型服务；「直接体验匿名服务」使用自定义预设，新安装默认仍为自动预设。
 
-百度千帆和豆包 Custom 的免费额度、赠送额度及开通条件需按对应账号确认。选择服务时，同时检查搜索与提取接口是否都在免费范围内。插件按配置并发调用，不自动按价格排序，也不保证只使用免费额度。
-
 硅基流动重排使用免费模型 `BAAI/bge-reranker-v2-m3`，需要注册账号并配置 `SILICONFLOW_API_KEY`。注册入口：[硅基流动（邀请链接）](https://cloud.siliconflow.cn/i/E3nhNFP4)。模型费用以[硅基流动官方定价](https://siliconflow.cn/pricing)为准。
 
-费用依据：[AnySearch](https://anysearch.com/pricing)、[知乎](https://developer.zhihu.com/)、[Firecrawl](https://www.firecrawl.dev/pricing)、[Tavily](https://www.tavily.com/pricing)、[Exa](https://exa.ai/pricing)、[Keenable](https://keenable.ai/)、[Crawl4AI](https://crawl4ai.com/)、[TinyFish](https://www.tinyfish.ai/pricing)、[Serply](https://serply.io/pricing)、[智谱 Coding Plan](https://docs.bigmodel.cn/cn/coding-plan/overview)、[Kimi REST 接口定价](https://platform.kimi.com/docs/pricing/websearch)。
+费用依据：[AnySearch](https://anysearch.com/pricing)、[Firecrawl](https://www.firecrawl.dev/pricing)、[Tavily](https://www.tavily.com/pricing)、[Exa](https://exa.ai/pricing)、[Keenable](https://keenable.ai/)、[Crawl4AI](https://crawl4ai.com/)、[TinyFish](https://www.tinyfish.ai/pricing)、[Serply](https://serply.io/pricing)、[智谱 Coding Plan](https://docs.bigmodel.cn/cn/coding-plan/overview)、[Kimi REST 接口定价](https://platform.kimi.com/docs/pricing/websearch)。
 
 ## 快速开始
 
@@ -191,16 +185,12 @@ dsh --profile <profile> --dump-config
 | --- | --- |
 | `ZHIPU_API_KEY` | 智谱搜索 |
 | `ANYSEARCH_API_KEY` | AnySearch 搜索与提取 |
-| `ZHIHU_ACCESS_SECRET` | 知乎搜索与额度查询 |
 | `FIRECRAWL_API_KEY` | Firecrawl 搜索与提取 |
 | `TAVILY_API_KEY` | Tavily |
 | `EXA_API_KEY` | Exa |
 | `KEENABLE_API_KEY` | Keenable |
 | `CRAWL4AI_API_KEY` | Crawl4AI Cloud |
 | `GITHUB_TOKEN` | GitHub |
-| `QIANFAN_API_KEY` | 百度千帆 AI 搜索 |
-| `DOUBAO_SEARCH_API_KEY` | 豆包搜索 |
-| `DOUBAO_FETCH_API_KEY` | 豆包提取 |
 | `TINYFISH_API_KEY` | TinyFish |
 | `SERPLY_API_KEY` | Serply |
 | `MOONSHOT_API_KEY` | Kimi 搜索与提取 |
@@ -208,7 +198,7 @@ dsh --profile <profile> --dump-config
 | `DASHSCOPE_API_KEY` | 阿里决策模型 |
 | `TYPESAFE_API_KEY` | TypeSafe 决策模型 |
 
-推荐的 AnySearch、Firecrawl、Tavily 官方搜索与提取无需凭证，状态显示“匿名额度”；配置密钥后使用账户模式。Bing RSS、AIHOT 和直接 HTTP 抓取无需凭证。豆包搜索与提取分别填写；服务总开关同时控制其搜索与提取。服务列表支持名称搜索、能力筛选和配置状态筛选；隐藏或折叠的草稿仍会保留。配置状态表示凭证存在，不证明服务健康。
+推荐的 AnySearch、Firecrawl、Tavily 官方搜索与提取无需凭证，状态显示“匿名额度”；配置密钥后使用账户模式。Bing RSS、AIHOT 和直接 HTTP 抓取无需凭证。服务列表支持名称搜索、能力筛选和配置状态筛选；隐藏或折叠的草稿仍会保留。配置状态表示凭证存在，不证明服务健康。
 
 配置文件只填写引用名。凭证值由 DSH 管理，每次操作重新解析。详细说明见[配置参考](./docs/configuration.md)。
 
@@ -269,8 +259,6 @@ flowchart LR
 | [卸载与回滚](./docs/lifecycle.md) | 配置备份、移除保存的设置与恢复原 provider |
 | [运行依赖审阅材料](./docs/dependency-review.md) | 直接依赖来源、许可证、安装脚本、分发完整性与复核命令 |
 | [隔离 profile 验收](./docs/verification/profile-lifecycle-20261016.md) | 0.2.12 安装、启动、原生工具、设置保存、卸载与版本回滚实测 |
-| [全服务隔离实测](./docs/verification/all-services-20261016.md) | 18 项服务配置、16 路单独搜索、11 路提取、五种决策模型及失败历史；包含未发布 PR 修复 |
-| [豆包提取追查](./docs/verification/doubao-fetch-20261016.md) | 已证实的 HTTPS 升级缺陷、修复前后原生工具对照，以及尚未归因的历史 HTTPS 失败 |
 | [正式 DSH 会话实战验收](./docs/verification/live-session-20261016.md) | 0.2.13 正式会话中模型自主调用原生工具、deep / fast 自动切换与「不读取网页」约束 |
 | [0.2.14 正式 profile 安装验证](./docs/verification/formal-profile-v0.2.14-20261016.md) | 正式 Web profile 升级、宿主重启与原生 `web_fetch` 三路提取实测 |
 | [0.2.15 alpha.4 适配验收](./docs/verification/formal-profile-v0.2.15-alpha4-20261016.md) | alpha.4 兼容声明、正式 profile 升级、宿主重启与原生 `web_fetch` 三路提取实测 |

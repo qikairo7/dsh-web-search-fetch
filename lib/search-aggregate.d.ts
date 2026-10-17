@@ -80,7 +80,7 @@ export interface AggregatedSearchOptions {
     /** Candidates handed to rerank, best-first. Default 20. */
     readonly rerankPool?: number;
     /** Whether to probe engines that expose `quota()` once per local day. Default `true`. */
-    readonly zhihuQuotaCheck?: boolean;
+    readonly quotaCheck?: boolean;
     /** Clock override, in epoch milliseconds. Defaults to `Date.now`. */
     readonly now?: () => number;
 }
@@ -121,7 +121,7 @@ export declare class AggregatedSearchProvider implements WebSearchProvider {
     private searchOperation;
     /**
      * Probe the daily allowance of every quota-capable engine, at most once per
-     * local day (DESIGN.md: 知乎额度日检). The day is marked as swept before the
+     * local day. The day is marked as swept before the
      * probes run, so one failed probe cannot make the pipeline retry all day; a
      * probe failure is logged and ignored, never blocking a search.
      */
@@ -175,7 +175,7 @@ export declare function rrfFuse(rankings: readonly EngineRanking[], k: number): 
  * `undefined` when the failure is not a breaker event.
  *
  * Two sources are read, never parsed: the error itself, when it is one of the
- * engines' classified errors (`AnySearchClientError`, `ZhihuWebError`), and its
+ * engines' classified errors (`AnySearchClientError`), and its
  * `cause`, which is where the Zhipu engine hangs its 429 signal. Only the three
  * documented reasons pass through, spelled exactly as the breaker defines them;
  * every other engine classification (auth, invalid request, transport, …) is

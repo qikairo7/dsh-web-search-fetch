@@ -1,6 +1,6 @@
 /**
  * The engine-agnostic daily breaker (DESIGN.md 配额熔断, GLOSSARY 配额熔断):
- * consumes quota-exhaustion signals (e.g. the Zhihu `quota()` reporting
+ * consumes quota-exhaustion signals (e.g. an engine `quota()` reporting
  * `remaining <= 0`) and the rate-limit / insufficient-credit error
  * classifications forwarded by the pipelines (#8/#9), takes the engine out of
  * rotation until local midnight (daily exhaustion) or for a cooldown

@@ -18,10 +18,6 @@
             enabled: false
           github:
             enabled: false
-          qianfan:
-            enabled: false
-          doubao:
-            enabled: false
           firecrawl:
             enabled: true
           tinyfish:
@@ -41,6 +37,5 @@
             firecrawl: true
             tavily: true
             zhipu: false
-            zhihu: false
             siliconflow: false
             http: true

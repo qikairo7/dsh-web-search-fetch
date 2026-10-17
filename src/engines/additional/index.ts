@@ -13,8 +13,6 @@ export const ADDITIONAL_ENGINE_DEFAULTS = {
   keenable: { apiKeyEnv: 'KEENABLE_API_KEY', baseURL: 'https://api.keenable.ai' },
   crawl4ai: { apiKeyEnv: 'CRAWL4AI_API_KEY', baseURL: 'https://api.crawl4ai.com' },
   github: { apiKeyEnv: 'GITHUB_TOKEN', baseURL: 'https://api.github.com' },
-  qianfan: { apiKeyEnv: 'QIANFAN_API_KEY', baseURL: 'https://qianfan.baidubce.com' },
-  doubao: { apiKeyEnv: 'DOUBAO_SEARCH_API_KEY', baseURL: 'https://open.feedcoopapi.com' },
   firecrawl: { apiKeyEnv: 'FIRECRAWL_API_KEY', baseURL: 'https://api.firecrawl.dev' },
   tinyfish: { apiKeyEnv: 'TINYFISH_API_KEY', baseURL: 'https://api.search.tinyfish.ai', fetchBaseURL: 'https://api.fetch.tinyfish.ai' },
   serply: { apiKeyEnv: 'SERPLY_API_KEY', baseURL: 'https://api.serply.io' },
@@ -28,8 +26,6 @@ export type AdditionalEngineId = keyof typeof ADDITIONAL_ENGINE_DEFAULTS;
 export interface AdditionalEngineConfig {
   enabled?: boolean;
   apiKeyEnv?: string;
-  /** Only Doubao has a separate extraction credential. */
-  fetchApiKeyEnv?: string;
   baseURL?: string;
   /** TinyFish uses a separate Fetch API origin; other engines share their search origin. */
   fetchBaseURL?: string;
@@ -55,7 +51,6 @@ export function createAdditionalEngines(config: AdditionalEnginesConfig, resolve
     const id = name as AdditionalEngineId;
     const defaults = ADDITIONAL_ENGINE_DEFAULTS[id];
     const apiKeyEnv = settings.apiKeyEnv ?? defaults.apiKeyEnv;
-    const fetchApiKeyEnv = settings.fetchApiKeyEnv ?? (id === 'doubao' ? 'DOUBAO_FETCH_API_KEY' : apiKeyEnv);
     const makeHttp = (ref: string, timeoutMs: number, baseURL: string) => new EngineHttp({
       id, baseURL, timeoutMs,
       resolveApiKey: () => resolveCredential(credentialRef(ref)),
@@ -64,7 +59,7 @@ export function createAdditionalEngines(config: AdditionalEnginesConfig, resolve
       fetchImpl: budgetedFetch(options.fetchImpl),
     });
     const search = makeHttp(apiKeyEnv, options.searchTimeoutMs, settings.baseURL ?? defaults.baseURL);
-    const fetch = makeHttp(fetchApiKeyEnv, options.fetchTimeoutMs, settings.fetchBaseURL ?? (id === 'tinyfish' ? ADDITIONAL_ENGINE_DEFAULTS.tinyfish.fetchBaseURL : settings.baseURL ?? defaults.baseURL));
+    const fetch = makeHttp(apiKeyEnv, options.fetchTimeoutMs, settings.fetchBaseURL ?? (id === 'tinyfish' ? ADDITIONAL_ENGINE_DEFAULTS.tinyfish.fetchBaseURL : settings.baseURL ?? defaults.baseURL));
     return [adapt(id, search, fetch, settings)];
   });
 }

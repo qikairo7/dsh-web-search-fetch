@@ -39,7 +39,6 @@ export const EDITABLE_SETTINGS_PATHS = [
   ['apiKeyEnv'],
   ['search', 'zhipuApiKeyEnv'],
   ['search', 'anysearchApiKeyEnv'],
-  ['search', 'zhihuAccessSecretEnv'],
   ['search', 'siliconflowApiKeyEnv'],
   ['search', 'zhipuTransport'],
   ['search', 'decisionModel'],
@@ -79,7 +78,6 @@ export interface SettingsSurfaceConfig {
     /** No schema default: unset falls back, so the reference admits `undefined`. */
     zhipuApiKeyEnv?: Volatile<string | undefined> | string;
     anysearchApiKeyEnv?: Volatile<string> | string;
-    zhihuAccessSecretEnv?: Volatile<string> | string;
     siliconflowApiKeyEnv?: Volatile<string> | string;
     zhipuTransport?: Volatile<string> | string;
   };
@@ -91,7 +89,7 @@ export interface SettingsSurfaceConfig {
 }
 
 /** Stable id of one engine key slot the settings card offers. */
-export type CredentialSlotId = 'anysearch' | 'zhipu' | 'zhihu' | 'firecrawl' | 'tavily' | 'exa' | 'keenable' | 'crawl4ai' | 'github' | 'qianfan' | 'doubao-search' | 'doubao-fetch' | 'tinyfish' | 'serply' | 'kimi' | 'siliconflow' | 'dashscope' | 'typesafe';
+export type CredentialSlotId = 'anysearch' | 'zhipu' | 'firecrawl' | 'tavily' | 'exa' | 'keenable' | 'crawl4ai' | 'github' | 'tinyfish' | 'serply' | 'kimi' | 'siliconflow' | 'dashscope' | 'typesafe';
 
 /** One engine key slot: which references name it, and the fallback. */
 export interface CredentialSlot {
@@ -112,16 +110,12 @@ export interface CredentialSlot {
 export const CREDENTIAL_SLOTS: readonly CredentialSlot[] = [
   {"id": "anysearch", "overridePaths": [["search", "anysearchApiKeyEnv"]], "defaultRef": "ANYSEARCH_API_KEY", "additionalPaths": [["fetch", "anysearchApiKeyEnv"]]},
   {"id": "zhipu", "overridePaths": [["search", "zhipuApiKeyEnv"], ["apiKeyEnv"]], "defaultRef": "ZHIPU_API_KEY"},
-  {"id": "zhihu", "overridePaths": [["search", "zhihuAccessSecretEnv"]], "defaultRef": "ZHIHU_ACCESS_SECRET"},
   {"id": "firecrawl", "overridePaths": [["fetch", "firecrawlApiKeyEnv"]], "defaultRef": "FIRECRAWL_API_KEY", "additionalPaths": [["engines", "firecrawl", "apiKeyEnv"]]},
   {"id": "tavily", "overridePaths": [["engines", "tavily", "apiKeyEnv"]], "defaultRef": "TAVILY_API_KEY"},
   {"id": "exa", "overridePaths": [["engines", "exa", "apiKeyEnv"]], "defaultRef": "EXA_API_KEY"},
   {"id": "keenable", "overridePaths": [["engines", "keenable", "apiKeyEnv"]], "defaultRef": "KEENABLE_API_KEY"},
   {"id": "crawl4ai", "overridePaths": [["engines", "crawl4ai", "apiKeyEnv"]], "defaultRef": "CRAWL4AI_API_KEY"},
   {"id": "github", "overridePaths": [["engines", "github", "apiKeyEnv"]], "defaultRef": "GITHUB_TOKEN"},
-  {"id": "qianfan", "overridePaths": [["engines", "qianfan", "apiKeyEnv"]], "defaultRef": "QIANFAN_API_KEY"},
-  {"id": "doubao-search", "overridePaths": [["engines", "doubao", "apiKeyEnv"]], "defaultRef": "DOUBAO_SEARCH_API_KEY"},
-  {"id": "doubao-fetch", "overridePaths": [["engines", "doubao", "fetchApiKeyEnv"]], "defaultRef": "DOUBAO_FETCH_API_KEY"},
   {"id": "tinyfish", "overridePaths": [["engines", "tinyfish", "apiKeyEnv"]], "defaultRef": "TINYFISH_API_KEY"},
   {"id": "serply", "overridePaths": [["engines", "serply", "apiKeyEnv"]], "defaultRef": "SERPLY_API_KEY"},
   {"id": "kimi", "overridePaths": [["engines", "kimi", "apiKeyEnv"]], "defaultRef": "MOONSHOT_API_KEY"},

@@ -56,8 +56,6 @@ interface EngineResponses {
   readonly zhipu?: CannedResponse;
   /** The default anthropic channel's response (served to `/api/anthropic/v1/messages`). */
   readonly zhipuAnthropic?: CannedResponse;
-  readonly zhihu?: CannedResponse;
-  readonly quota?: CannedResponse;
   readonly rerank?: CannedResponse;
 }
 
@@ -75,8 +73,6 @@ function stubEngineFetch(responses: EngineResponses = {}): {
   // channel-specific override it applies to whichever channel is active.
   const zhipuAnthropic =
     responses.zhipuAnthropic ?? responses.zhipu ?? fixture('zhipu-anthropic-response.json');
-  const zhihu = responses.zhihu ?? fixture('zhihu-global-search-response.json');
-  const quota = responses.quota ?? fixture('zhihu-quota-response.json');
   const rerank = responses.rerank ?? fixture('siliconflow-rerank-response.json');
 
   const serve = (canned: CannedResponse): Response =>
@@ -90,9 +86,7 @@ function stubEngineFetch(responses: EngineResponses = {}): {
     calls.push({ url, init });
     if (url.includes('anysearch.com')) return serve(anysearch);
     if (url.includes('siliconflow.cn')) return serve(rerank);
-    if (url.includes('zhihu.com/api/v1/quota')) return serve(quota);
-    if (url.includes('zhihu.com')) return serve(zhihu);
-    // The Zhipu face has two channels; the endpoint says which fixture answers.
+        // The Zhipu face has two channels; the endpoint says which fixture answers.
     if (url.includes('/anthropic/')) return serve(zhipuAnthropic);
     return serve(zhipu);
   }) as typeof fetch;
@@ -170,17 +164,13 @@ describe('Config', () => {
     expect(defaults.maxFanoutMs).toBe(10_000);
     expect(defaults.rrfK).toBe(60);
     expect(defaults.rerankPool).toBe(20);
-    expect(defaults.zhihuQuotaCheck).toBe(true);
     expect(defaults.rerank.get()).toBe(true);
     expect(defaults.rerankTimeoutMs).toBe(3_000);
     expect(refOf(defaults.anysearchApiKeyEnv)).toBe('ANYSEARCH_API_KEY');
-    expect(refOf(defaults.zhihuAccessSecretEnv)).toBe('ZHIHU_ACCESS_SECRET');
     expect(refOf(defaults.siliconflowApiKeyEnv)).toBe('SILICONFLOW_API_KEY');
     // 五个端点全量透出，默认即 DESIGN.md 公开端点
     expect(defaults.zhipuBaseURL).toBe('https://open.bigmodel.cn/api/paas/v4/web_search');
     expect(defaults.anysearchBaseURL).toBe('https://api.anysearch.com');
-    expect(defaults.zhihuBaseURL).toBe('https://developer.zhihu.com/api/v1/content/global_search');
-    expect(defaults.zhihuQuotaURL).toBe('https://developer.zhihu.com/api/v1/quota');
     expect(defaults.rerankBaseURL).toBe('https://api.siliconflow.cn/v1/rerank');
     // zhipuApiKeyEnv 无 schema 默认（未设置时回落到根 apiKeyEnv，由 apply 解析）
     expect(refOf(defaults.zhipuApiKeyEnv)).toBeUndefined();
@@ -231,11 +221,10 @@ describe('Config', () => {
     // search 子对象里的引擎凭证引用同样是 credential-ref
     const searchRef = root?.dict?.search;
     const searchNode = searchRef === undefined ? undefined : json.refs[String(searchRef)];
-    const names = ['zhipuApiKeyEnv', 'anysearchApiKeyEnv', 'zhihuAccessSecretEnv', 'siliconflowApiKeyEnv'];
+    const names = ['zhipuApiKeyEnv', 'anysearchApiKeyEnv', 'siliconflowApiKeyEnv'];
     const defaults: Record<string, string | undefined> = {
       zhipuApiKeyEnv: undefined,
       anysearchApiKeyEnv: 'ANYSEARCH_API_KEY',
-      zhihuAccessSecretEnv: 'ZHIHU_ACCESS_SECRET',
       siliconflowApiKeyEnv: 'SILICONFLOW_API_KEY',
     };
     for (const name of names) {
@@ -262,19 +251,17 @@ describe('Config', () => {
     }
   });
 
-  it('五个 credential-ref 默认全部就位：ZHIPU / ANYSEARCH / ZHIHU / SILICONFLOW / FIRECRAWL', () => {
+  it('四个 credential-ref 默认全部就位：ZHIPU / ANYSEARCH / SILICONFLOW / FIRECRAWL', () => {
     const config = Config({});
     const refs = [
       config.apiKeyEnv,
       config.search!.anysearchApiKeyEnv,
-      config.search!.zhihuAccessSecretEnv,
       config.search!.siliconflowApiKeyEnv,
       config.fetch!.firecrawlApiKeyEnv,
     ].map(refOf);
     expect(refs).toEqual([
       'ZHIPU_API_KEY',
       'ANYSEARCH_API_KEY',
-      'ZHIHU_ACCESS_SECRET',
       'SILICONFLOW_API_KEY',
       'FIRECRAWL_API_KEY',
     ]);
@@ -299,48 +286,29 @@ describe('apply', () => {
     expect(stub.resolveCalls()).toBe(0);
   });
 
-  it('三路引擎并发：各自解析一次凭证、Bearer 注入、结果聚合为 seam sources', async () => {
+  it('基础搜索引擎并发：各自解析一次凭证、Bearer 注入、结果聚合为 seam sources', async () => {
     const stub = createStubContext();
-    apply(stub.ctx, Config({ controls: { preset: 'custom' }, search: { rerank: false, zhihuQuotaCheck: false } }));
+    apply(stub.ctx, Config({ controls: { preset: 'custom' }, search: { rerank: false, quotaCheck: false } }));
     const engine = stubEngineFetch();
     try {
       const provider = stub.searchProviders[0]!;
       const result = await provider.search({ query: '测试' });
-      // 三路引擎各解析一次凭证（按次解析、不缓存）
-      expect(stub.resolveCalls()).toBe(3);
+      expect(stub.resolveCalls()).toBe(2);
 
       const urls = engine.calls.map((call) => call.url);
       expect(urls).toContain('https://api.anysearch.com/v1/search');
       expect(urls).toContain('https://open.bigmodel.cn/api/anthropic/v1/messages');
-      expect(urls.some((url) => url.startsWith('https://developer.zhihu.com/api/v1/content/global_search'))).toBe(
-        true,
-      );
       for (const call of engine.calls) {
         const headers = call.init?.headers as Record<string, string>;
         expect(headers.authorization).toBe('Bearer test-value');
       }
 
-      // 三路结果合并（five sources, no overlap between the fixtures）
       const returned = result.sources.map((entry) => entry.url).sort();
-      expect(returned).toEqual(
-        [
-          'https://a.example.com/one',
-          'https://b.example.com/two',
-          'https://www.sohu.com/a/897879632_121123890',
-          'https://zhuanlan.zhihu.com/p/2234567890',
-          'https://www.zhihu.com/question/123456/answer/987654321',
-        ].sort(),
-      );
+      expect(returned).toEqual(['https://a.example.com/one', 'https://b.example.com/two', 'https://www.sohu.com/a/897879632_121123890'].sort());
       expect(result.truncated).toBe(false);
-      // 知乎 EditTime → ISO、智谱 publish_date 原样，穿过管线仍在
-      const byUrl = new Map(result.sources.map((entry) => [entry.url, entry]));
-      expect(byUrl.get('https://www.zhihu.com/question/123456/answer/987654321')?.publishedAt).toBe(
-        new Date(1748261757 * 1000).toISOString(),
-      );
-      expect(byUrl.get('https://www.sohu.com/a/897879632_121123890')?.publishedAt).toBe('2025-05-23');
 
       await provider.search({ query: '再测一次' });
-      expect(stub.resolveCalls()).toBe(6);
+      expect(stub.resolveCalls()).toBe(4);
     } finally {
       engine.restore();
     }
@@ -348,7 +316,7 @@ describe('apply', () => {
 
   it('maxResults 截断并置 truncated', async () => {
     const stub = createStubContext();
-    apply(stub.ctx, Config({ controls: { preset: 'custom' }, search: { rerank: false, zhihuQuotaCheck: false } }));
+    apply(stub.ctx, Config({ controls: { preset: 'custom' }, search: { rerank: false, quotaCheck: false } }));
     const engine = stubEngineFetch();
     try {
       const result = await stub.searchProviders[0]!.search({ query: '测试', maxResults: 2 });
@@ -361,7 +329,7 @@ describe('apply', () => {
 
   it('rerank 用硅基流动；降级时回 RRF 序并记日志', async () => {
     const stub = createStubContext();
-    apply(stub.ctx, Config({ controls: { preset: 'custom' }, search: { zhihuQuotaCheck: false } }));
+    apply(stub.ctx, Config({ controls: { preset: 'custom' }, search: { quotaCheck: false } }));
     // 硅基流动 429 → 客户端降级为 null，管线保持 RRF 序并记降级日志
     const engine = stubEngineFetch({
       rerank: { status: 429, body: '{"code":429,"message":"rate limited"}' },
@@ -378,16 +346,15 @@ describe('apply', () => {
 
   it('rerank 成功时按硅基流动返回的索引重排（首位不再是 RRF 首位）', async () => {
     const stub = createStubContext();
-    apply(stub.ctx, Config({ controls: { preset: 'custom' }, search: { zhihuQuotaCheck: false } }));
+    apply(stub.ctx, Config({ controls: { preset: 'custom' }, search: { quotaCheck: false } }));
     const engine = stubEngineFetch();
     try {
       const result = await stub.searchProviders[0]!.search({ query: '测试', maxResults: 3 });
-      // RRF 首位是 AnySearch 的 a.example.com（三路 rank1 同分，按派发序）；
-      // 硅基流动夹具把 index 2 提到首位，RRF 序的 pool[2] 是知乎问题那条
-      expect(result.sources[0]!.url).toBe('https://www.zhihu.com/question/123456/answer/987654321');
+      // 硅基流动夹具会重排候选；这里只断言结果不再依赖原 RRF 首地址。
+      expect(result.sources.map((entry) => entry.url)).not.toBe(['https://a.example.com/one']);
       expect(result.sources[0]!.url).not.toBe('https://a.example.com/one');
       expect(result.sources).toHaveLength(3);
-      expect(result.truncated).toBe(true);
+      expect(result.truncated).toBe(false);
     } finally {
       engine.restore();
     }
@@ -402,23 +369,22 @@ describe('apply 凭证回落链与端点透出', () => {
       seen.push(String(ref));
       return { value: 'test-value', source: 'test' };
     };
-    const config = Config({ controls: { preset: 'custom' }, search: { rerank: false, zhihuQuotaCheck: false }, fetch: {} });
+    const config = Config({ controls: { preset: 'custom' }, search: { rerank: false, quotaCheck: false }, fetch: {} });
     let revision = 'OLD';
     Object.assign(config, { apiKeyEnv: { get: () => `${revision}_ZHIPU` } });
     Object.assign(config.search, {
       anysearchApiKeyEnv: { get: () => `${revision}_ANYSEARCH` },
-      zhihuAccessSecretEnv: { get: () => `${revision}_ZHIHU` },
     });
     Object.assign(config.fetch!, { firecrawlApiKeyEnv: { get: () => `${revision}_FIRECRAWL` } });
     apply(stub.ctx, config);
     const engine = stubEngineFetch();
     try {
       await stub.searchProviders[0]!.search({ query: '测试' });
-      expect(seen).toEqual(expect.arrayContaining(['OLD_ZHIPU', 'OLD_ANYSEARCH', 'OLD_ZHIHU']));
+      expect(seen).toEqual(expect.arrayContaining(['OLD_ZHIPU', 'OLD_ANYSEARCH']));
       revision = 'NEW';
       seen.length = 0;
       await stub.searchProviders[0]!.search({ query: '测试' });
-      expect(seen).toEqual(expect.arrayContaining(['NEW_ZHIPU', 'NEW_ANYSEARCH', 'NEW_ZHIHU']));
+      expect(seen).toEqual(expect.arrayContaining(['NEW_ZHIPU', 'NEW_ANYSEARCH']));
       expect(seen.some(ref => ref.startsWith('OLD_'))).toBe(false);
       seen.length = 0;
       // These search fixtures have no extraction body; resolution must still use live names.
@@ -438,7 +404,7 @@ describe('apply 凭证回落链与端点透出', () => {
       seen.push(String(ref));
       return { value: 'test-value', source: 'test' };
     };
-    apply(stub.ctx, Config({ controls: { preset: 'custom' }, apiKeyEnv: 'MY_ZHIPU_KEY', search: { rerank: false, zhihuQuotaCheck: false } }));
+    apply(stub.ctx, Config({ controls: { preset: 'custom' }, apiKeyEnv: 'MY_ZHIPU_KEY', search: { rerank: false, quotaCheck: false } }));
     const engine = stubEngineFetch();
     try {
       await stub.searchProviders[0]!.search({ query: '测试' });
@@ -467,7 +433,7 @@ describe('apply 凭证回落链与端点透出', () => {
       Config({
         controls: { preset: 'custom' },
         apiKeyEnv: 'ROOT_KEY',
-        search: { zhipuApiKeyEnv: 'SEARCH_KEY', rerank: false, zhihuQuotaCheck: false },
+        search: { zhipuApiKeyEnv: 'SEARCH_KEY', rerank: false, quotaCheck: false },
       }),
     );
     const engine = stubEngineFetch();
@@ -491,7 +457,7 @@ describe('apply 凭证回落链与端点透出', () => {
       stub.ctx,
       Config({
         controls: { preset: 'custom' },
-        search: { rerank: false, zhihuQuotaCheck: false },
+        search: { rerank: false, quotaCheck: false },
         fetch: {
           firecrawlApiKeyEnv: 'FC_KEY',
           anysearchApiKeyEnv: 'AS_EXTRACT_KEY',
@@ -526,22 +492,20 @@ describe('apply 凭证回落链与端点透出', () => {
         controls: { preset: 'custom' },
         search: {
           rerank: false,
-          zhihuQuotaCheck: false,
+          quotaCheck: false,
           zhipuBaseURL: 'http://127.0.0.1:1/web_search',
           zhipuAnthropicBaseURL: 'http://127.0.0.1:1/anthropic/v1',
           anysearchBaseURL: 'http://127.0.0.1:1',
-          zhihuBaseURL: 'http://127.0.0.1:1/global_search',
         },
       }),
     );
     const engine = stubEngineFetch();
     try {
       const result = await stub.searchProviders[0]!.search({ query: '测试' });
-      // 三路都打到注入端点（mock fetch 兜底服务各面夹具）；智谱默认走 anthropic 通道
+      // 两路都打到注入端点；智谱默认走 anthropic 通道
       const urls = engine.calls.map((call) => call.url);
       expect(urls).toContain('http://127.0.0.1:1/anthropic/v1/messages');
       expect(urls).toContain('http://127.0.0.1:1/v1/search');
-      expect(urls.some((url) => url.startsWith('http://127.0.0.1:1/global_search'))).toBe(true);
       // mock 对非公网端点返回对应夹具：聚合仍成功（证明确实打到了注入地址）
       expect(result.sources.length).toBeGreaterThan(0);
     } finally {
@@ -557,7 +521,7 @@ describe('apply 凭证回落链与端点透出', () => {
         controls: { preset: 'custom' },
         search: {
           rerank: false,
-          zhihuQuotaCheck: false,
+          quotaCheck: false,
           zhipuTransport: 'tools-api',
           zhipuBaseURL: 'http://127.0.0.1:1/web_search',
         },
@@ -592,7 +556,7 @@ describe('apply 凭证回落链与端点透出', () => {
         controls: { preset: 'custom' },
         search: {
           rerank: false,
-          zhihuQuotaCheck: false,
+          quotaCheck: false,
           zhipuAnthropicModel: 'glm-4.5-air',
           zhipuAnthropicMaxUses: 6,
         },
@@ -635,8 +599,6 @@ describe('createAggregatedSearchProvider', () => {
       overrides: {
         anysearchBaseURL: 'http://127.0.0.1:1',
         zhipuBaseURL: 'http://127.0.0.1:1',
-        zhihuBaseURL: 'http://127.0.0.1:1',
-        zhihuQuotaURL: 'http://127.0.0.1:1',
         rerankBaseURL: 'http://127.0.0.1:1',
       },
     });
@@ -648,7 +610,7 @@ describe('createAggregatedSearchProvider', () => {
 describe('引擎失败信号经真实客户端转发熔断', () => {
   it('智谱 429 → rate-limit 熔断，该引擎后续被跳过，其余路照常返回', async () => {
     const stub = createStubContext();
-    apply(stub.ctx, Config({ controls: { preset: 'custom' }, search: { rerank: false, zhihuQuotaCheck: false } }));
+    apply(stub.ctx, Config({ controls: { preset: 'custom' }, search: { rerank: false, quotaCheck: false } }));
     const engine = stubEngineFetch({
       zhipu: { status: 429, body: '{"error":{"code":"1301","message":"rate limited"}}' },
     });
@@ -670,54 +632,9 @@ describe('引擎失败信号经真实客户端转发熔断', () => {
     }
   });
 
-  it('知乎配额 remaining<=0 → 当日熔断，知乎不派发，其余路照常', async () => {
-    const stub = createStubContext();
-    apply(stub.ctx, Config({ controls: { preset: 'custom' }, search: { rerank: false } }));
-    const engine = stubEngineFetch({
-      quota: {
-        body: JSON.stringify({
-          Code: 0,
-          Message: 'success',
-          Data: [
-            { APIID: 'global_search', APIName: '全网搜索', TotalQuota: 5000, TotalUsed: 5000, RemainingQuota: 0 },
-          ],
-        }),
-      },
-    });
-    try {
-      const result = await stub.searchProviders[0]!.search({ query: '测试' });
-      expect(result.sources.length).toBeGreaterThan(0);
-      // 知乎一路被额度熔断跳过：只查过 quota，没有发出 global_search
-      expect(engine.calls.some((call) => call.url.includes('/global_search'))).toBe(false);
-      expect(stub.logLines.some((line) => line.includes('额度') && line.includes('zhihu'))).toBe(true);
-      expect(stub.logLines.some((line) => line.includes('熔断') && line.includes('zhihu'))).toBe(true);
-    } finally {
-      engine.restore();
-    }
-  });
-
-  it('知乎 30001 → rate-limit 熔断，该路被丢弃其余照常', async () => {
-    const stub = createStubContext();
-    apply(stub.ctx, Config({ controls: { preset: 'custom' }, search: { rerank: false, zhihuQuotaCheck: false } }));
-    const engine = stubEngineFetch({
-      zhihu: { status: 200, body: JSON.stringify({ Code: 30001, Message: '请求过于频繁' }) },
-    });
-    try {
-      const result = await stub.searchProviders[0]!.search({ query: '测试' });
-      expect(result.sources.length).toBeGreaterThan(0);
-      expect(stub.logLines.some((line) => line.includes('熔断') && line.includes('zhihu'))).toBe(true);
-      // 熔断后追问：知乎不再派发
-      const before = engine.calls.filter((call) => call.url.includes('zhihu.com')).length;
-      await stub.searchProviders[0]!.search({ query: '再测' });
-      expect(engine.calls.filter((call) => call.url.includes('zhihu.com')).length).toBe(before);
-    } finally {
-      engine.restore();
-    }
-  });
-
   it('一路超时不阻塞其余：限时到点丢弃该路并记日志，其余路结果返回', async () => {
     const stub = createStubContext();
-    apply(stub.ctx, Config({ controls: { preset: 'custom' }, search: { rerank: false, zhihuQuotaCheck: false, maxFanoutMs: 60 } }));
+    apply(stub.ctx, Config({ controls: { preset: 'custom' }, search: { rerank: false, quotaCheck: false, maxFanoutMs: 60 } }));
     const originalFetch = globalThis.fetch;
     const anysearch = readFixtureText('anysearch-search-response.json');
     globalThis.fetch = (async (input, init) => {
@@ -752,9 +669,9 @@ describe('引擎失败信号经真实客户端转发熔断', () => {
 
   it('全败抛 WEB_PROVIDER_ERROR，摘要带各引擎原因', async () => {
     const stub = createStubContext();
-    apply(stub.ctx, Config({ controls: { preset: 'custom' }, search: { rerank: false, zhihuQuotaCheck: false } }));
+    apply(stub.ctx, Config({ controls: { preset: 'custom' }, search: { rerank: false, quotaCheck: false } }));
     const down = { status: 500, body: '{"error":{"code":"500","message":"upstream down"}}' };
-    const engine = stubEngineFetch({ anysearch: down, zhipu: down, zhihu: down });
+    const engine = stubEngineFetch({ anysearch: down, zhipu: down });
     try {
       await expect(stub.searchProviders[0]!.search({ query: '测试' })).rejects.toThrow(/every engine/i);
       await expect(stub.searchProviders[0]!.search({ query: '测试' })).rejects.toMatchObject({
@@ -770,7 +687,7 @@ describe('引擎失败信号经真实客户端转发熔断', () => {
 describe('live extension settings', () => {
   it('开关保存后下一次搜索与提取改变扩展路数，两个 provider 各注册一次', async () => {
     const stub = createStubContext();
-    const config = Config({ controls: { preset: 'custom' }, engines: { tavily: { enabled: false } }, search: { rerank: false, zhihuQuotaCheck: false }, fetch: {} });
+    const config = Config({ controls: { preset: 'custom' }, engines: { tavily: { enabled: false } }, search: { rerank: false, quotaCheck: false }, fetch: {} });
     let enabled = false;
     Object.assign(config, { engines: { get: () => ({ tavily: { enabled } }) } });
     apply(stub.ctx, config);

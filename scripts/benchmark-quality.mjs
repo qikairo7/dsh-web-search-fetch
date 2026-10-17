@@ -136,7 +136,7 @@ async function evaluateLive() {
     { searchTimeoutMs: 10_000, fetchTimeoutMs: 45_000, fetchImpl: countedFetch });
   const anysearch = new AnySearchEngine({ resolveApiKey: async () => undefined, credentialName: 'ANONYMOUS', fetchImpl: budgetedFetch(countedFetch) });
   const search = createAggregatedSearchProvider({ resolveCredential, additionalEngines, resolveControls: () => controls,
-    overrides: { fetchImpl: countedFetch }, rerank: false, zhihuQuotaCheck: false });
+    overrides: { fetchImpl: countedFetch }, rerank: false, quotaCheck: false });
   const extract = new AggregatedFetchProvider({ additionalEngines, resolveControls: () => controls, legs: createExtractionLegs({ anysearch,
     firecrawl: new FirecrawlClient({ resolveApiKey: async () => undefined, credentialName: 'ANONYMOUS', fetchImpl: budgetedFetch(countedFetch) }),
   }) });

@@ -31,7 +31,6 @@ function plainRefs(config: SettingsSurfaceConfig): Record<string, string | undef
   return {
     zhipu: resolveCredentialRef(config, 'zhipu'),
     anysearch: resolveCredentialRef(config, 'anysearch'),
-    zhihu: resolveCredentialRef(config, 'zhihu'),
     siliconflow: resolveCredentialRef(config, 'siliconflow'),
     firecrawl: resolveCredentialRef(config, 'firecrawl'),
   };
@@ -91,14 +90,13 @@ describe('resolveCredentialRefs', () => {
     expect(plainRefs(Config({}))).toEqual({
       zhipu: 'ZHIPU_API_KEY',
       anysearch: 'ANYSEARCH_API_KEY',
-      zhihu: 'ZHIHU_ACCESS_SECRET',
       siliconflow: 'SILICONFLOW_API_KEY',
       firecrawl: 'FIRECRAWL_API_KEY',
     });
   });
 
   it('槽位顺序稳定（卡片按此顺序渲染）', () => {
-    expect(CREDENTIAL_SLOTS.map((slot) => slot.id)).toEqual(['anysearch', 'zhipu', 'zhihu', 'firecrawl', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'qianfan', 'doubao-search', 'doubao-fetch', 'tinyfish', 'serply', 'kimi', 'siliconflow', 'dashscope', 'typesafe']);
+    expect(CREDENTIAL_SLOTS.map((slot) => slot.id)).toEqual(['anysearch', 'zhipu', 'firecrawl', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'tinyfish', 'serply', 'kimi', 'siliconflow', 'dashscope', 'typesafe']);
     expect(resolveCredentialRefs(Config({})).map((slot) => slot.id)).toEqual(
       CREDENTIAL_SLOTS.map((slot) => slot.id),
     );
@@ -277,18 +275,16 @@ describe('client bundle parity', () => {
 
 
 describe('complete integration credentials', () => {
-  it('扩展服务使用与运行时相同的默认引用，豆包提取独立', () => {
+  it('扩展服务使用与运行时相同的默认引用', () => {
     const refs = Object.fromEntries(resolveCredentialRefs(Config({})).map(slot => [slot.id, slot.ref]));
     expect(refs).toMatchObject({ tavily: 'TAVILY_API_KEY', exa: 'EXA_API_KEY', keenable: 'KEENABLE_API_KEY',
-      crawl4ai: 'CRAWL4AI_API_KEY', github: 'GITHUB_TOKEN', qianfan: 'QIANFAN_API_KEY',
-      'doubao-search': 'DOUBAO_SEARCH_API_KEY', 'doubao-fetch': 'DOUBAO_FETCH_API_KEY' });
+      crawl4ai: 'CRAWL4AI_API_KEY', github: 'GITHUB_TOKEN', tinyfish: 'TINYFISH_API_KEY',
+      serply: 'SERPLY_API_KEY', kimi: 'MOONSHOT_API_KEY' });
   });
   it('扩展配置通过 volatile 根读取自定义凭证与搜索提取分离引用', () => {
-    const config = Config({ engines: { doubao: { apiKeyEnv: 'DS', fetchApiKeyEnv: 'DF' }, firecrawl: { apiKeyEnv: 'FS' } },
+    const config = Config({ engines: { firecrawl: { apiKeyEnv: 'FS' } },
       fetch: { firecrawlApiKeyEnv: 'FF', anysearchApiKeyEnv: 'AF' } });
     const slots = resolveCredentialRefs(config);
-    expect(slots.find(slot => slot.id === 'doubao-search')?.ref).toBe('DS');
-    expect(slots.find(slot => slot.id === 'doubao-fetch')?.ref).toBe('DF');
     expect(slots.find(slot => slot.id === 'firecrawl')?.refs).toEqual(['FF', 'FS']);
     expect(slots.find(slot => slot.id === 'anysearch')?.refs).toEqual(['ANYSEARCH_API_KEY', 'AF']);
   });
