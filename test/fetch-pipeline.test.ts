@@ -24,6 +24,13 @@ function createProvider(overrides: AggregatedFetchProviderOptions = {}): Aggrega
   });
 }
 
+/**
+ * The mock server is a loopback target: production refuses to hand such a URL
+ * to a third-party engine, so every test that exercises the dynamic route
+ * against it must opt out of the guard explicitly (never by skipping cases).
+ */
+const loopbackTarget = { blockPrivateAddresses: false } as const;
+
 interface CountedLeg extends FetchEngineLeg {
   calls: number;
 }
@@ -177,6 +184,7 @@ describe('AggregatedFetchProvider URL 感知分流', () => {
         resolveAddresses,
         legs,
         route: { staticExtensions: ['json'] },
+        ...loopbackTarget,
       });
       const result = await provider.fetch({ url: `${server.url}/data.json` });
       expect(result.statusCode).toBe(200);
@@ -205,7 +213,7 @@ describe('AggregatedFetchProvider URL 感知分流', () => {
         countedLeg('tavily'),
         countedLeg('anysearch'),
       ];
-      const provider = new AggregatedFetchProvider({ legs });
+      const provider = new AggregatedFetchProvider({ legs, ...loopbackTarget });
       const result = await provider.fetch({ url: `${server.url}/blog` });
       expect(result.body.kind).toBe('text');
       expect(result.body.content).toContain(body.split('\n\n')[0]);
@@ -232,7 +240,7 @@ describe('AggregatedFetchProvider URL 感知分流', () => {
           truncated: false,
         })),
       ];
-      const provider = new AggregatedFetchProvider({ legs });
+      const provider = new AggregatedFetchProvider({ legs, ...loopbackTarget });
       const result = await provider.fetch({ url: `${server.url}/paper.pdf` });
       expect(result.body.content).toContain('paper text');
       expect(server.requests).toHaveLength(0);
@@ -252,6 +260,7 @@ describe('AggregatedFetchProvider URL 感知分流', () => {
         resolveAddresses,
         legs,
         route: { enabled: false },
+        ...loopbackTarget,
       });
       const result = await provider.fetch({ url: `${server.url}/any/thing` });
       expect(result.statusCode).toBe(200);
@@ -273,7 +282,7 @@ describe('AggregatedFetchProvider URL 感知分流', () => {
         truncated: false,
       })),
     ];
-    const provider = new AggregatedFetchProvider({ legs, breaker });
+    const provider = new AggregatedFetchProvider({ legs, breaker, ...loopbackTarget });
     const result = await provider.fetch({ url: 'https://blog.example.com/posts/example-domain-guide' });
     expect(result.body.content).toContain('survivor');
     expect(legs[0]!.calls).toBe(0);
@@ -333,7 +342,7 @@ it('关闭 HTTP 不发送请求或改走付费提取，重新启用后恢复静�
   let enabled = false;
   const dynamic = countedLeg('anysearch');
   try {
-    const provider = createProvider({ legs: [dynamic], resolveControls: () => ({ serviceEnabled: { http: enabled } }) });
+    const provider = createProvider({ legs: [dynamic], resolveControls: () => ({ serviceEnabled: { http: enabled } }), ...loopbackTarget });
     await expect(provider.fetch({ url: server.url + '/page.txt' })).rejects.toMatchObject({ code: 'WEB_PROVIDER_ERROR' });
     expect(server.requests).toHaveLength(0);
     expect(dynamic.calls).toBe(0);

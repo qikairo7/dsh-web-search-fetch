@@ -16,6 +16,11 @@ const candidate = (content: string, extra: Partial<WebFetchResult> = {}) => ({ e
 it('returns completed extracts when the total deadline stops an unresponsive lane', async () => {
   const provider = new AggregatedFetchProvider({
     resolveControls: () => ({ fetchDeadlineMs: 30 }),
+    // The address guard resolves the target before any engine is dispatched.
+    // A real DNS round trip cannot fit inside this test's 30 ms budget, so the
+    // resolver is injected here; the deadline semantics under test are the
+    // fan-out's, not the resolver's.
+    lookup: async () => ['93.184.216.34'],
     legs: [
       { engineId: 'fast', extract: async () => body('# Guide\n\nAvailable content.') },
       { engineId: 'hung', extract: () => new Promise(() => {}) },
