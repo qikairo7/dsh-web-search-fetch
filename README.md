@@ -10,7 +10,7 @@
 [快速开始](#快速开始) · [项目定位与证据](#项目定位与证据) · [配置参考](./docs/configuration.md) · [正文整理演示](./docs/content-organization.md#输入与输出演示) · [真实对比](./docs/modsearch-comparison.md) · [依赖审阅材料](./docs/dependency-review.md) · [参与贡献](./CONTRIBUTING.md)
 
 ```sh
-dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.16/dsh-web-search-fetch-0.2.16.tgz
+dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.17/dsh-web-search-fetch-0.2.17.tgz
 ```
 
 安装后打开「设置 → 内置插件 → 网络搜索与提取」，在顶部明确选择一种开始方式：
@@ -24,7 +24,7 @@ dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/re
 
 | 特点 | 当前实现 | 使用价值 |
 | --- | --- | --- |
-| 多来源搜索融合 | 最多 16 个搜索服务并发调用，合并重复 URL 与已知文档别名，使用 RRF（Reciprocal Rank Fusion）融合排名 | 将多路可用结果整理为统一来源列表 |
+| 多来源搜索融合 | 最多 13 个搜索服务并发调用，合并重复 URL 与已知文档别名，使用 RRF（Reciprocal Rank Fusion）融合排名 | 将多路可用结果整理为统一来源列表 |
 | 官方文档优先 | 识别已支持技术项目的官方文档意图，补充限定域名检索；相关官方来源在重排前后优先 | 减少技术检索中官方资料缺失或被无关页面挤占 |
 | 无需密钥首次体验 | AnySearch、Firecrawl、Tavily 官方搜索与提取支持匿名额度，无需填写密钥 | 固定预设可直接体验；自动预设需先配置决策模型凭证 |
 | 多来源正文整理 | 动态提取按章节和共同内容块去重、互补，保留提取来源及文本差异 | 将说明、表格、代码和独有段落整理到一份正文 |
@@ -33,7 +33,7 @@ dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/re
 | 服务统一管理 | DSH 凭证管理、服务开关、智谱通道选择，以及超时、取消、限流冷却和额度熔断 | 一处配置搜索、提取与重排；单路失败时继续使用其他可用结果 |
 | 调用范围与预算 | 自动预设由快速决策模型判断覆盖范围，多路结果充分后经过宽限期结束慢渠道 | 保持多路并发，减少尾部等待；也支持固定预设 |
 
-插件注册两个 ID 为 `aggregated` 的 provider。设置页覆盖 18 项搜索／提取／重排服务和 18 个凭证位，另提供五款决策模型选择。每项服务均提供独立启停开关。静态资源使用 DSH 内置 HTTP 提取器，AIHOT 专用 API 直接读取；其余 URL 按配置进入多服务提取。
+插件注册两个 ID 为 `aggregated` 的 provider。设置页覆盖 15 项搜索／提取／重排服务和 14 个凭证位，另提供五款决策模型选择。每项服务均提供独立启停开关。静态资源使用 DSH 内置 HTTP 提取器，AIHOT 专用 API 直接读取；其余 URL 按配置进入多服务提取。
 
 动态网页提取默认将同一 URL 的多路结果整理成一份正文：按章节和共同段落去重，补充独有内容，保留提取来源和文本差异。代码、表格、链接和原文数字保留；不同标题、明确版本标记、语言或返回目标的内容放入补充片段，识别出的登录与挑战页面不混入正文。引用式链接与脚注按来源保留完整 Markdown 原文，避免同名定义串用。可切换旧版单份正文模式。规则边界见[网页正文整理](./docs/content-organization.md)。
 
@@ -51,7 +51,7 @@ dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/re
 
 | 证据 | 结果与边界 |
 | --- | --- |
-| 当前交付版本 | `0.2.16`；适配 DSH `0.2.1-alpha.5`，延续 alpha.4 的正式适配路径 |
+| 当前交付版本 | `0.2.17`；适配 DSH `0.2.1-alpha.5`，清理已停止支持的知乎、百度千帆与豆包服务 |
 | 仓库门禁 | 671 项测试、构建、类型检查、仓库与分发检查、双 OS × 双 Node CI |
 | 隔离生命周期 | `0.2.12` 完成安装、启动、原生工具、设置保存、重启持久化、卸载与回滚 |
 | 正式会话 | `0.2.13` 四轮模型自主调用原生双工具，覆盖 deep / fast 自动切换和「不读取网页」约束 |
@@ -128,7 +128,7 @@ AIHOT 搜索覆盖近 7 天 AI 资讯；启用后，原生 `web_fetch` 可读取
 | 开发工具 | pnpm 12.10.1 |
 | 外部服务 | 网络连通性；推荐的 AnySearch、Firecrawl、Tavily 官方匿名模式无需凭证，增强服务按需启用 |
 
-已在 Windows、Node.js 24.20.0、DSH `0.2.1-alpha.2` / `0.2.1-alpha.3` 的正式环境及隔离 profile 中验证安装、原生搜索和网页提取。`0.2.14` 另在正式 Web profile 完成升级、重启和原生提取验证。`0.2.15` 已完成 alpha.4 正式 profile 适配与 `web_fetch` 实测。`0.2.16` 按 alpha.5 运行时执行适配检查；`@deepseek-ai/dsh-web` provider 接口在 alpha.3 至 alpha.5 间保持一致。CI 覆盖 Windows／Ubuntu、Node.js 22.19／24 的构建、类型检查与测试；CI 通过不表示这些组合均完成 DSH 实机验收。
+已在 Windows、Node.js 24.20.0、DSH `0.2.1-alpha.2` / `0.2.1-alpha.3` 的正式环境及隔离 profile 中验证安装、原生搜索和网页提取。`0.2.14` 另在正式 Web profile 完成升级、重启和原生提取验证。`0.2.15` 已完成 alpha.4 正式 profile 适配与 `web_fetch` 实测。`0.2.16` 按 alpha.5 运行时执行适配检查；`0.2.17` 在该运行时上清理已停止支持的服务。CI 覆盖 Windows／Ubuntu、Node.js 22.19／24 的构建、类型检查与测试；CI 通过不表示这些组合均完成 DSH 实机验收。
 
 | DSH 版本 | 兼容声明 | 验证范围 |
 | --- | --- | --- |
@@ -146,10 +146,10 @@ AIHOT 搜索覆盖近 7 天 AI 资讯；启用后，原生 `web_fetch` 可读取
 在已配置 DSH 的环境中执行：
 
 ```sh
-dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.16/dsh-web-search-fetch-0.2.16.tgz
+dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.17/dsh-web-search-fetch-0.2.17.tgz
 ```
 
-将 `web` 替换为实际使用的 profile，安装后重启宿主。以上命令使用 `0.2.16` Release 包，不需要 npm 包发布账号或 GitHub 登录。
+将 `web` 替换为实际使用的 profile，安装后重启宿主。以上命令使用 `0.2.17` Release 包，不需要 npm 包发布账号或 GitHub 登录。
 
 自 `0.2.11` 起，Git 固定提交同时包含完整的 `lib/**/*.js` 与 `lib/**/*.d.ts`，安装方无需先编译 TypeScript。固定源码仍需安装运行依赖并满足宿主 peer 依赖；产物齐全不等于 Store 已批准或实际 profile 已完成验收。分发检查方法见[贡献指南](./CONTRIBUTING.md#测试与提交)，运行依赖、完整性与审阅边界见[依赖审阅材料](./docs/dependency-review.md)。
 
