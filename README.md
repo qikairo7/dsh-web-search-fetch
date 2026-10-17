@@ -10,7 +10,7 @@
 [快速开始](#快速开始) · [项目定位与证据](#项目定位与证据) · [配置参考](./docs/configuration.md) · [正文整理演示](./docs/content-organization.md#输入与输出演示) · [真实对比](./docs/modsearch-comparison.md) · [依赖审阅材料](./docs/dependency-review.md) · [参与贡献](./CONTRIBUTING.md)
 
 ```sh
-dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.17/dsh-web-search-fetch-0.2.17.tgz
+dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.18/dsh-web-search-fetch-0.2.18.tgz
 ```
 
 安装后打开「设置 → 内置插件 → 网络搜索与提取」，在顶部明确选择一种开始方式：
@@ -51,8 +51,8 @@ dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/re
 
 | 证据 | 结果与边界 |
 | --- | --- |
-| 当前交付版本 | `0.2.17`；适配 DSH `0.2.1-alpha.5`，清理已停止支持的知乎、百度千帆与豆包服务 |
-| 仓库门禁 | 671 项测试、构建、类型检查、仓库与分发检查、双 OS × 双 Node CI |
+| 当前交付版本 | `0.2.18`；适配 DSH `0.2.1-alpha.5`，移除已停止支持的知乎、百度千帆、豆包与智谱服务 |
+| 仓库门禁 | 523 项测试、构建、类型检查、仓库与分发检查、双 OS × 双 Node CI |
 | 隔离生命周期 | `0.2.12` 完成安装、启动、原生工具、设置保存、重启持久化、卸载与回滚 |
 | 正式会话 | `0.2.13` 四轮模型自主调用原生双工具，覆盖 deep / fast 自动切换和「不读取网页」约束 |
 | 正式 profile 升级 | `0.2.14` 完成 Release 下载校验、升级、宿主重启和 `web_fetch` 三路提取 |
@@ -127,7 +127,7 @@ AIHOT 搜索覆盖近 7 天 AI 资讯；启用后，原生 `web_fetch` 可读取
 | 开发工具 | pnpm 12.10.1 |
 | 外部服务 | 网络连通性；推荐的 AnySearch、Firecrawl、Tavily 官方匿名模式无需凭证，增强服务按需启用 |
 
-已在 Windows、Node.js 24.20.0、DSH `0.2.1-alpha.2` / `0.2.1-alpha.3` 的正式环境及隔离 profile 中验证安装、原生搜索和网页提取。`0.2.14` 另在正式 Web profile 完成升级、重启和原生提取验证。`0.2.15` 已完成 alpha.4 正式 profile 适配与 `web_fetch` 实测。`0.2.16` 按 alpha.5 运行时执行适配检查；`0.2.17` 在该运行时上清理已停止支持的服务。CI 覆盖 Windows／Ubuntu、Node.js 22.19／24 的构建、类型检查与测试；CI 通过不表示这些组合均完成 DSH 实机验收。
+已在 Windows、Node.js 24.20.0、DSH `0.2.1-alpha.2` / `0.2.1-alpha.3` 的正式环境及隔离 profile 中验证安装、原生搜索和网页提取。`0.2.14` 另在正式 Web profile 完成升级、重启和原生提取验证。`0.2.15` 已完成 alpha.4 正式 profile 适配与 `web_fetch` 实测。`0.2.16` 按 alpha.5 运行时执行适配检查；`0.2.17` 清理知乎、百度千帆与豆包，`0.2.18` 继续移除智谱。CI 覆盖 Windows／Ubuntu、Node.js 22.19／24 的构建、类型检查与测试；CI 通过不表示这些组合均完成 DSH 实机验收。
 
 | DSH 版本 | 兼容声明 | 验证范围 |
 | --- | --- | --- |
@@ -145,10 +145,10 @@ AIHOT 搜索覆盖近 7 天 AI 资讯；启用后，原生 `web_fetch` 可读取
 在已配置 DSH 的环境中执行：
 
 ```sh
-dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.17/dsh-web-search-fetch-0.2.17.tgz
+dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.18/dsh-web-search-fetch-0.2.18.tgz
 ```
 
-将 `web` 替换为实际使用的 profile，安装后重启宿主。以上命令使用 `0.2.17` Release 包，不需要 npm 包发布账号或 GitHub 登录。
+将 `web` 替换为实际使用的 profile，安装后重启宿主。以上命令使用 `0.2.18` Release 包，不需要 npm 包发布账号或 GitHub 登录。
 
 自 `0.2.11` 起，Git 固定提交同时包含完整的 `lib/**/*.js` 与 `lib/**/*.d.ts`，安装方无需先编译 TypeScript。固定源码仍需安装运行依赖并满足宿主 peer 依赖；产物齐全不等于 Store 已批准或实际 profile 已完成验收。分发检查方法见[贡献指南](./CONTRIBUTING.md#测试与提交)，运行依赖、完整性与审阅边界见[依赖审阅材料](./docs/dependency-review.md)。
 
