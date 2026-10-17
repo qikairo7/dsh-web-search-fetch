@@ -3,7 +3,7 @@
  * score-ordered index permutation. No HTTP lives here, so every function is
  * directly unit-testable.
  *
- * `readRecord` mirrors the helper in `engines/zhipu/wire.ts` on purpose: each
+ * `readRecord` is shared by wire modules: each
  * engine folder stays self-contained, so the rerank engine does not depend on
  * another engine's module.
  * @module engines/rerank/wire

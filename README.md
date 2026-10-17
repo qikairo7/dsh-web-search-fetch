@@ -24,16 +24,16 @@ dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/re
 
 | 特点 | 当前实现 | 使用价值 |
 | --- | --- | --- |
-| 多来源搜索融合 | 最多 13 个搜索服务并发调用，合并重复 URL 与已知文档别名，使用 RRF（Reciprocal Rank Fusion）融合排名 | 将多路可用结果整理为统一来源列表 |
+| 多来源搜索融合 | 最多 12 个搜索服务并发调用，合并重复 URL 与已知文档别名，使用 RRF（Reciprocal Rank Fusion）融合排名 | 将多路可用结果整理为统一来源列表 |
 | 官方文档优先 | 识别已支持技术项目的官方文档意图，补充限定域名检索；相关官方来源在重排前后优先 | 减少技术检索中官方资料缺失或被无关页面挤占 |
 | 无需密钥首次体验 | AnySearch、Firecrawl、Tavily 官方搜索与提取支持匿名额度，无需填写密钥 | 固定预设可直接体验；自动预设需先配置决策模型凭证 |
 | 多来源正文整理 | 动态提取按章节和共同内容块去重、互补，保留提取来源及文本差异 | 将说明、表格、代码和独有段落整理到一份正文 |
 | 原生双工具 | 仅注册搜索和提取 provider，不新增模型工具，也不需要额外 MCP 服务、浏览器自动化或外部 CLI | 沿用 DSH 的 `web_search`、`web_fetch` 调用方式 |
 | 可选免费重排 | 调用硅基流动免费模型 `BAAI/bge-reranker-v2-m3`；不可用时保留融合顺序 | 对融合候选进行相关性排序，仍需配置 API Key |
-| 服务统一管理 | DSH 凭证管理、服务开关、智谱通道选择，以及超时、取消、限流冷却和额度熔断 | 一处配置搜索、提取与重排；单路失败时继续使用其他可用结果 |
+| 服务统一管理 | DSH 凭证管理、服务开关，以及超时、取消、限流冷却和额度熔断 | 一处配置搜索、提取与重排；单路失败时继续使用其他可用结果 |
 | 调用范围与预算 | 自动预设由快速决策模型判断覆盖范围，多路结果充分后经过宽限期结束慢渠道 | 保持多路并发，减少尾部等待；也支持固定预设 |
 
-插件注册两个 ID 为 `aggregated` 的 provider。设置页覆盖 15 项搜索／提取／重排服务和 14 个凭证位，另提供五款决策模型选择。每项服务均提供独立启停开关。静态资源使用 DSH 内置 HTTP 提取器，AIHOT 专用 API 直接读取；其余 URL 按配置进入多服务提取。
+插件注册两个 ID 为 `aggregated` 的 provider。设置页覆盖 14 项搜索／提取／重排服务和 13 个凭证位，另提供五款决策模型选择。每项服务均提供独立启停开关。静态资源使用 DSH 内置 HTTP 提取器，AIHOT 专用 API 直接读取；其余 URL 按配置进入多服务提取。
 
 动态网页提取默认将同一 URL 的多路结果整理成一份正文：按章节和共同段落去重，补充独有内容，保留提取来源和文本差异。代码、表格、链接和原文数字保留；不同标题、明确版本标记、语言或返回目标的内容放入补充片段，识别出的登录与挑战页面不混入正文。引用式链接与脚注按来源保留完整 Markdown 原文，避免同名定义串用。可切换旧版单份正文模式。规则边界见[网页正文整理](./docs/content-organization.md)。
 
@@ -66,7 +66,6 @@ dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/re
 | 服务 | 搜索 | 网页提取 | 用途 |
 | --- | --- | --- | --- |
 | AnySearch AI | 支持 | 支持 | 搜索与正文提取 |
-| 智谱 | 支持 | — | Anthropic 兼容通道与工具 API |
 | Firecrawl | 支持 | 支持 | v2 Search 与 Scrape |
 | Tavily | 支持 | 支持 | 搜索与 Extract |
 | Exa | 支持 | 支持 | 搜索与 Contents |
@@ -83,9 +82,9 @@ dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/re
 | TypeSafe | 自动预设路由 | — | `jev-latest` 判断覆盖范围 |
 | 直接 HTTP 抓取 | — | 静态资源 | 复用 DSH HTTP 组件，无需服务凭证 |
 
-新安装默认开启 AnySearch、Firecrawl、Tavily 三家推荐服务，其余远程服务与硅基流动重排作为可选增强，默认关闭。直接 HTTP 抓取保留为静态资源的基础提取能力。已保存的显式开关设置优先于安装默认；旧版未设置开关的服务采用新版默认。按需开启增强后，搜索最多 13 路；普通动态提取最多 9 路，适用的 GitHub URL 最多 10 路。Kimi Basic / Pro 二选一，只计一路。AIHOT 专用 API 直接读取，重排和 HTTP 抓取均不计入动态提取路数。实际参与调用的服务取决于配置、凭证、URL 适用范围及熔断状态。
+新安装默认开启 AnySearch、Firecrawl、Tavily 三家推荐服务，其余远程服务与硅基流动重排作为可选增强，默认关闭。直接 HTTP 抓取保留为静态资源的基础提取能力。已保存的显式开关设置优先于安装默认；旧版未设置开关的服务采用新版默认。按需开启增强后，搜索最多 12 路；普通动态提取最多 9 路，适用的 GitHub URL 最多 10 路。Kimi Basic / Pro 二选一，只计一路。AIHOT 专用 API 直接读取，重排和 HTTP 抓取均不计入动态提取路数。实际参与调用的服务取决于配置、凭证、URL 适用范围及熔断状态。
 
-智谱仅支持搜索，不包含阅读器。GitHub 提取限定仓库根 URL 和 `/blob/<ref>/<path>`。Bing RSS 使用公开搜索 feed，无需密钥；其可用性和格式可能变化。
+GitHub 提取限定仓库根 URL 和 `/blob/<ref>/<path>`。Bing RSS 使用公开搜索 feed，无需密钥；其可用性和格式可能变化。
 
 AIHOT 搜索覆盖近 7 天 AI 资讯；启用后，原生 `web_fetch` 可读取热点、事件、日报、周报、月报、重置记录和精选快照／增量 API，不参与通用网页提取。使用方法见 [AIHOT 接入](./docs/aihot.md)。启用前请阅读 [AIHOT 使用规则](https://aihot.news/terms)；服务数据授权与本项目 MIT 代码许可分别适用。
 
@@ -98,7 +97,7 @@ AIHOT 搜索覆盖近 7 天 AI 资讯；启用后，原生 `web_fetch` 可读取
 | 免费服务 | TinyFish Search／Fetch、Bing RSS、GitHub 公开 API、直接 HTTP 抓取、硅基流动 `BAAI/bge-reranker-v2-m3` 与三款 SystemOne 决策模型、阿里 `decision-model-preview` | 受请求频率、访问权限或资源限制约束；硅基流动与阿里仍需配置 API Key |
 | 免费服务（有用途限制） | AIHOT | 个人非商业、公益非商业及组织内部使用；其他用途按服务规则授权 |
 | 提供免费额度 | AnySearch、Firecrawl、Tavily、Exa、Keenable、Crawl4AI Cloud、Serply | 免费额度的有效期、重置周期和超额计费以服务方及账号为准 |
-| 按次计费或付费订阅 | 智谱当前搜索通道、Kimi REST 搜索与提取 | Coding Plan 为付费订阅；`tools-api` 使用按次计费的 `search_pro`，套餐额度不属于免费额度；Kimi REST 接口按次计费，账号赠送额度需另行确认 |
+| 按次计费或付费订阅 | Kimi REST 搜索与提取 | Kimi REST 接口按次计费，账号赠送额度需另行确认 |
 | 按区域限制 | TypeSafe `jev-latest` | 付费模型；直连返回 HTTP 451，配置 DSH 代理后可用 |
 
 推荐服务支持匿名访问，匿名额度仍受 IP、请求频率及服务方额度限制：
@@ -115,7 +114,7 @@ AIHOT 搜索覆盖近 7 天 AI 资讯；启用后，原生 `web_fetch` 可读取
 
 硅基流动重排使用免费模型 `BAAI/bge-reranker-v2-m3`，需要注册账号并配置 `SILICONFLOW_API_KEY`。注册入口：[硅基流动（邀请链接）](https://cloud.siliconflow.cn/i/E3nhNFP4)。模型费用以[硅基流动官方定价](https://siliconflow.cn/pricing)为准。
 
-费用依据：[AnySearch](https://anysearch.com/pricing)、[Firecrawl](https://www.firecrawl.dev/pricing)、[Tavily](https://www.tavily.com/pricing)、[Exa](https://exa.ai/pricing)、[Keenable](https://keenable.ai/)、[Crawl4AI](https://crawl4ai.com/)、[TinyFish](https://www.tinyfish.ai/pricing)、[Serply](https://serply.io/pricing)、[智谱 Coding Plan](https://docs.bigmodel.cn/cn/coding-plan/overview)、[Kimi REST 接口定价](https://platform.kimi.com/docs/pricing/websearch)。
+费用依据：[AnySearch](https://anysearch.com/pricing)、[Firecrawl](https://www.firecrawl.dev/pricing)、[Tavily](https://www.tavily.com/pricing)、[Exa](https://exa.ai/pricing)、[Keenable](https://keenable.ai/)、[Crawl4AI](https://crawl4ai.com/)、[TinyFish](https://www.tinyfish.ai/pricing)、[Serply](https://serply.io/pricing)、[Kimi REST 接口定价](https://platform.kimi.com/docs/pricing/websearch)。
 
 ## 快速开始
 
@@ -183,7 +182,6 @@ dsh --profile <profile> --dump-config
 
 | 默认引用名 | 服务 |
 | --- | --- |
-| `ZHIPU_API_KEY` | 智谱搜索 |
 | `ANYSEARCH_API_KEY` | AnySearch 搜索与提取 |
 | `FIRECRAWL_API_KEY` | Firecrawl 搜索与提取 |
 | `TAVILY_API_KEY` | Tavily |
@@ -271,4 +269,4 @@ flowchart LR
 
 ## 许可与致谢
 
-本项目采用 [MIT 许可](./LICENSE)。AnySearch 服务包含来自 [anysearch-team/anysearch-dsh](https://github.com/anysearch-team/anysearch-dsh) 的 MIT 代码；智谱通道参考了 [PartinGQAQ/dsh-web-search-zhipu](https://github.com/PartinGQAQ/dsh-web-search-zhipu) 的方法与协议常量。来源、改造范围和第三方许可全文见 [NOTICE](./NOTICE)。
+本项目采用 [MIT 许可](./LICENSE)。AnySearch 服务包含来自 [anysearch-team/anysearch-dsh](https://github.com/anysearch-team/anysearch-dsh) 的 MIT 代码。来源、改造范围和第三方许可全文见 [NOTICE](./NOTICE)。

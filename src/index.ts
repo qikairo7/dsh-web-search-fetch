@@ -19,16 +19,6 @@ import type { CredentialRef } from '@deepseek-ai/dsh-credentials';
 import { credentialRef } from '@deepseek-ai/dsh-credentials';
 import z from '@deepseek-ai/schemastery';
 import {
-  ZHIPU_ANTHROPIC_BASE_URL,
-  ZHIPU_ANTHROPIC_DEFAULT_MODEL,
-  ZHIPU_ANTHROPIC_MAX_USES,
-  ZHIPU_DEFAULT_API_KEY_ENV,
-  ZHIPU_DEFAULT_SEARCH_TRANSPORT,
-  ZHIPU_WEB_SEARCH_URL,
-} from './limits.js';
-import { ZhipuClient, translateTransportFailure, extractUpstreamErrorDetail } from './engines/zhipu/client.js';
-import type { ZhipuSearchTransport } from './types.js';
-import {
   ANYSEARCH_DEFAULT_API_KEY_ENV,
   DEFAULT_RERANK_POOL,
   DEFAULT_RRF_K,
@@ -54,17 +44,10 @@ export { createAdditionalEngines, ADDITIONAL_ENGINE_DEFAULTS } from './engines/a
 export type { AdditionalEnginesConfig, AdditionalEngineConfig, AdditionalEngineId } from './engines/additional/index.js';
 import {
   WEB_SEARCH_FETCH_SETTINGS_NAMESPACE,
-  projectEditableSettings,
   resolveCredentialRef,
   readVolatile,
 } from './settings-surface.js';
 
-export {
-  AGGREGATED_PROVIDER_ID,
-  ZHIPU_DEFAULT_API_KEY_ENV,
-  ZHIPU_SEARCH_QUERY_MAX_CHARS,
-  ZHIPU_WEB_SEARCH_URL,
-} from './limits.js';
 export { ANYSEARCH_DEFAULT_BASE_URL } from './engines/anysearch/limits.js';
 export { AnySearchClient } from './engines/anysearch/client.js';
 export { AnySearchClientError } from './engines/anysearch/error.js';
@@ -75,38 +58,6 @@ export type {
 } from './engines/anysearch/types.js';
 export { FIRECRAWL_SCRAPE_URL } from './engines/firecrawl/wire.js';
 export { RERANK_TIMEOUT_MS, SILICONFLOW_RERANK_URL } from './engines/rerank/limits.js';
-export { ZhipuClient, translateTransportFailure, extractUpstreamErrorDetail } from './engines/zhipu/client.js';
-export type { ZhipuClientOptions } from './engines/zhipu/client.js';
-export {
-  buildZhipuSearchRequest,
-  clampZhipuCount,
-  mapZhipuSearchResponse,
-  truncateToCodePoints,
-} from './engines/zhipu/wire.js';
-export {
-  buildZhipuAnthropicEndpoint,
-  buildZhipuAnthropicRequest,
-  isZhipuAnthropicResultBlockType,
-  mapZhipuAnthropicResponse,
-  resolveZhipuAnthropicBaseURL,
-  resolveZhipuAnthropicMaxTokens,
-  resolveZhipuAnthropicMaxUses,
-  resolveZhipuAnthropicModel,
-  resolveZhipuSearchTransport,
-  ZHIPU_ANTHROPIC_RESULT_BLOCK_TYPES,
-} from './engines/zhipu/anthropic-wire.js';
-export type { ZhipuAnthropicRawItem } from './engines/zhipu/anthropic-wire.js';
-export {
-  createZhipuAnthropicStreamAssembler,
-  createZhipuSseDecoder,
-  isZhipuEventStream,
-} from './engines/zhipu/anthropic-stream.js';
-export type {
-  ZhipuAnthropicStreamAssembler,
-  ZhipuAnthropicStreamOutcome,
-  ZhipuSseDecoder,
-  ZhipuSseFrame,
-} from './engines/zhipu/anthropic-stream.js';
 export {
   AggregatedSearchProvider,
   ANYSEARCH_DEFAULT_API_KEY_ENV,
@@ -115,7 +66,6 @@ export {
   DEFAULT_RRF_K,
   DEFAULT_SEARCH_MAX_FANOUT_MS,
   SILICONFLOW_DEFAULT_API_KEY_ENV,
-  ZHIPU_ENGINE_ID,
   createAggregatedSearchProvider,
   normalizeSearchUrl,
   readSearchFailureSignal,
@@ -162,17 +112,6 @@ export type {
 } from './fetch-aggregate.js';
 export { CircuitBreaker, formatBreakerEvent } from './breaker/index.js';
 export type { BreakerSignal, CircuitBreakerOptions } from './breaker/index.js';
-export type {
-  ZhipuAnthropicBlock,
-  ZhipuAnthropicMessage,
-  ZhipuAnthropicRequest,
-  ZhipuAnthropicResponse,
-  ZhipuAnthropicTool,
-  ZhipuSearchRequest,
-  ZhipuSearchResponse,
-  ZhipuSearchResultItem,
-  ZhipuSearchTransport,
-} from './types.js';
 
 /** Cordis plugin name used by loader diagnostics. */
 export const name = 'web-search-fetch';
@@ -194,39 +133,10 @@ export interface SearchConfig {
   rerank?: Volatile<boolean> | boolean;
   /** Rerank whole-operation deadline in milliseconds; defaults to the documented ~3 s. */
   rerankTimeoutMs?: number;
-  /**
-   * Zhipu credential reference for the search face. Unset falls back to the
-   * root `apiKeyEnv`, then to `ZHIPU_API_KEY`.
-   *
-   * Volatile: the settings card reads this to learn which reference its Zhipu
-   * key slot writes, so the reference name must be part of the served form.
-   * It carries no schema default — unset must fall back rather than shadow — so
-   * the reference's value type admits `undefined`.
-   */
-  zhipuApiKeyEnv?: Volatile<string | undefined>;
-  /** AnySearch credential reference; defaults to `ANYSEARCH_API_KEY`. Volatile: see `zhipuApiKeyEnv`. */
+  /** AnySearch credential reference; defaults to `ANYSEARCH_API_KEY`. Volatile. */
   anysearchApiKeyEnv?: Volatile<string>;
-  /** SiliconFlow rerank credential reference; defaults to `SILICONFLOW_API_KEY`. Volatile: see `zhipuApiKeyEnv`. */
+  /** SiliconFlow rerank credential reference; defaults to `SILICONFLOW_API_KEY`. Volatile. */
   siliconflowApiKeyEnv?: Volatile<string>;
-  /** Zhipu `web_search` endpoint (DESIGN.md); defaults to the public endpoint. */
-  zhipuBaseURL?: string;
-  /**
-   * Which Zhipu transport the search face uses (issue #12):
-   * `anthropic` (default) posts to `{anthropicBaseURL}/messages` and bills the
-   * GLM Coding Plan; `tools-api` posts to `/paas/v4/web_search` per call.
-   * Unrecognized values are rejected by the schema and client.
-   *
-   * Volatile: this is the one field the settings card edits, and a volatile
-   * field is also what makes the namespace servable — the settings domain skips
-   * an entry whose schema has no live field. Read it through `.get()`.
-   */
-  zhipuTransport?: Volatile<ZhipuSearchTransport>;
-  /** Zhipu Anthropic-compatible Messages base URL; defaults to the public base. */
-  zhipuAnthropicBaseURL?: string;
-  /** GLM model for the `anthropic` transport; defaults to `glm-4.6`. */
-  zhipuAnthropicModel?: string;
-  /** Server-tool invocation bound for the `anthropic` transport; defaults to 1. */
-  zhipuAnthropicMaxUses?: number;
   /** AnySearch origin (DESIGN.md); defaults to `https://api.anysearch.com`. */
   anysearchBaseURL?: string;
   /** SiliconFlow rerank endpoint (DESIGN.md); defaults to the public endpoint. */
@@ -264,14 +174,6 @@ export interface Config {
   controls?: Volatile<RuntimeControls | undefined>;
   /** Additional engines; a configured entry is enabled unless set to false. */
   engines?: Volatile<AdditionalEnginesConfig | undefined>;
-  /**
-   * Credential reference the Zhipu engine resolves once per search; the value
-   * never enters configuration. Defaults to `ZHIPU_API_KEY`.
-   *
-   * Volatile: the settings card reads this to learn which reference its Zhipu
-   * key slot writes, so the reference name must be part of the served form.
-   */
-  apiKeyEnv?: Volatile<string>;
   /** Search-pipeline knobs (DESIGN.md). */
   search?: SearchConfig;
   /** Fetch-side knobs, all optional. */
@@ -283,9 +185,9 @@ export const Config = z.object({
     serviceEnabled: z.dict(z.boolean()).default({}).description('服务总开关；关闭后不派发该服务，保留各能力的参与范围。'),
     mode: z.union(['organize', 'select']).default('organize').description('正文整理；select 为旧版单份正文模式。'),
     preset: z.union(['auto', 'custom', 'free', 'balanced', 'deep']).default('auto').description('自动按请求判断覆盖范围；也可固定为自定义、免费、均衡（最多三路）或深度检索。免费仍可能需要凭证。'),
-    searchServices: z.array(z.string()).default(['anysearch', 'zhipu', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'firecrawl', 'tinyfish', 'serply', 'kimi', 'bing', 'aihot']).description('搜索服务 ID 与调用优先级；空数组不调用搜索服务。'),
+    searchServices: z.array(z.string()).default(['anysearch', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'firecrawl', 'tinyfish', 'serply', 'kimi', 'bing', 'aihot']).description('搜索服务 ID 与调用优先级；空数组不调用搜索服务。'),
     fetchServices: z.array(z.string()).default(['firecrawl', 'anysearch', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'tinyfish', 'serply', 'kimi', 'aihot']).description('提取服务 ID 与调用优先级；HTTP 静态路径不受此列表控制。'),
-    maxSearchServices: z.natural().min(1).max(13).default(13).description('每个查询最多调用的搜索服务数。'),
+    maxSearchServices: z.natural().min(1).max(12).default(12).description('每个查询最多调用的搜索服务数。'),
     maxFetchServices: z.natural().min(1).max(10).default(10).description('每个 URL 最多调用的普通提取服务数。'),
     maxRequests: z.natural().min(1).max(256).default(32).description('每次 provider 操作的插件 HTTP 请求上限，包含额度查询、重试和重排；不含宿主 HTTP 重定向。'),
     searchDeadlineMs: z.natural().min(1).max(3600000).default(15000).description('搜索操作总限时，毫秒。'),
@@ -299,16 +201,6 @@ export const Config = z.object({
     fetchBaseURL: z.string().description('提取 API 基础地址；TinyFish 默认使用独立 Fetch API 域名。'),
     searchMode: z.union(['basic', 'pro']).description('Kimi 搜索档位；默认 pro，basic 只请求摘要，不请求整页正文。'),
   })).volatile().description('扩展服务：tavily、exa、keenable、crawl4ai、github、firecrawl、tinyfish、serply、kimi、bing、aihot。Bing RSS 与 AIHOT 无需凭证；AIHOT 默认关闭。只配置需要启用的服务。'),
-  apiKeyEnv: z
-    .string()
-    .role('credential-ref')
-    .default(ZHIPU_DEFAULT_API_KEY_ENV)
-    .volatile()
-    .description(
-      '智谱凭证引用名（不是 key 本身）。实际 key 值写入 ~/.dsh/.credentials.yaml 的 refs 段同名键' +
-        `（如 ${ZHIPU_DEFAULT_API_KEY_ENV}: <你的key>），或设置同名环境变量。` +
-        '智谱搜索服务使用此引用（未单独覆盖时）。',
-    ),
   search: z
     .object({
       maxFanoutMs: z
@@ -332,16 +224,6 @@ export const Config = z.object({
         .natural()
         .default(RERANK_TIMEOUT_MS)
         .description('重排调用限时（毫秒），超时降级回纯 RRF 排序。默认 3000。'),
-      // Deliberately no default: unset must fall back to the root `apiKeyEnv`
-      // (a schema default here would shadow it, since apply cannot tell an
-      // explicit default from an unset field).
-      zhipuApiKeyEnv: z
-        .string()
-        .role('credential-ref')
-        .volatile()
-        .description(
-          '智谱搜索面凭证引用名（覆盖根 apiKeyEnv；留空沿用根设置）。key 值写入 ~/.dsh/.credentials.yaml refs 段同名键。',
-        ),
       anysearchApiKeyEnv: z
         .string()
         .role('credential-ref')
@@ -358,33 +240,6 @@ export const Config = z.object({
         .description(
           `硅基流动（重排模型）凭证引用名。值写入 ~/.dsh/.credentials.yaml refs 段同名键（如 ${SILICONFLOW_DEFAULT_API_KEY_ENV}: sk-…）。`,
         ),
-      zhipuBaseURL: z
-        .string()
-        .default(ZHIPU_WEB_SEARCH_URL)
-        .description('智谱 tools-api 通道端点（仅 zhipuTransport=tools-api 时使用）。'),
-      // The transport is a closed set: an unknown spelling must not reach the
-      // wire, and the schema (like the client) rejects it rather than guessing.
-      zhipuTransport: z
-        .union(['anthropic', 'tools-api'])
-        .default(ZHIPU_DEFAULT_SEARCH_TRANSPORT)
-        .volatile()
-        .description(
-          '智谱搜索走哪条通道：anthropic = Anthropic 兼容端点，计费走 GLM Coding Plan 付费订阅额度（默认，不使用按次计费余额）；' +
-            'tools-api = 按次计费的工具 API（需要智谱平台余额）。两条通道用同一把 key。',
-        ),
-      zhipuAnthropicBaseURL: z
-        .string()
-        .default(ZHIPU_ANTHROPIC_BASE_URL)
-        .description('anthropic 通道端点（Coding Plan 计费线）。'),
-      zhipuAnthropicModel: z
-        .string()
-        .default(ZHIPU_ANTHROPIC_DEFAULT_MODEL)
-        .description('anthropic 通道使用的 GLM 对话模型。'),
-      zhipuAnthropicMaxUses: z
-        .natural()
-        .min(1)
-        .default(ZHIPU_ANTHROPIC_MAX_USES)
-        .description('anthropic 通道单次请求的搜索工具调用上限。聚合场景一轮搜索足够（默认 1），多轮只加延迟。'),
       anysearchBaseURL: z.string().default(ANYSEARCH_DEFAULT_BASE_URL).description('AnySearch 搜索端点。'),
       rerankBaseURL: z.string().default(SILICONFLOW_RERANK_URL).description('硅基流动重排端点。'),
       decisionModel: z.union(['Kev-4b', 'SemIf', 'diffusiongemma', 'decision-model-preview', 'jev-latest']).default('decision-model-preview').volatile().description('自动预设的快速决策模型，保存后下一次请求生效。'),
@@ -519,7 +374,6 @@ export function apply(ctx: Context, config: Config): void {
       warn: (message) => log.warn(message),
       error: (message) => log.error(message),
     },
-    zhipuApiKeyEnv: () => resolveCredentialRef(config, 'zhipu'),
     anysearchApiKeyEnv: () => resolveCredentialRef(config, 'anysearch'),
     siliconflowApiKeyEnv: () => resolveCredentialRef(config, 'siliconflow'),
     ...(search.maxFanoutMs === undefined ? {} : { maxFanoutMs: search.maxFanoutMs }),
@@ -527,17 +381,6 @@ export function apply(ctx: Context, config: Config): void {
     ...(search.rerankPool === undefined ? {} : { rerankPool: search.rerankPool }),
     ...(search.rerank === undefined ? {} : { rerank: readVolatile(search.rerank) }),
     ...(search.rerankTimeoutMs === undefined ? {} : { rerankTimeoutMs: search.rerankTimeoutMs }),
-    // A live reader, not a captured value: the transport is the one field the
-    // settings page edits, and a volatile edit is committed into the running
-    // reference without remounting this plugin. A value captured here would keep
-    // dispatching to the channel the user just switched away from.
-    resolveZhipuTransport: () => projectEditableSettings(config).zhipuTransport,
-    ...(search.zhipuAnthropicModel === undefined
-      ? {}
-      : { zhipuAnthropicModel: search.zhipuAnthropicModel }),
-    ...(search.zhipuAnthropicMaxUses === undefined
-      ? {}
-      : { zhipuAnthropicMaxUses: search.zhipuAnthropicMaxUses }),
     ...(searchOverrides === undefined ? {} : { overrides: searchOverrides }),
   });
   ctx.web.registerSearchProvider(provider);
@@ -590,14 +433,7 @@ export function apply(ctx: Context, config: Config): void {
 function buildSearchOverrides(search: SearchConfig): SearchEngineOverrides | undefined {
   const overrides: SearchEngineOverrides = {
     ...(search.anysearchBaseURL === undefined ? {} : { anysearchBaseURL: search.anysearchBaseURL }),
-    ...(search.zhipuBaseURL === undefined ? {} : { zhipuBaseURL: search.zhipuBaseURL }),
-    ...(search.zhipuAnthropicBaseURL === undefined
-      ? {}
-      : { zhipuAnthropicBaseURL: search.zhipuAnthropicBaseURL }),
     ...(search.rerankBaseURL === undefined ? {} : { rerankBaseURL: search.rerankBaseURL }),
   };
   return Object.keys(overrides).length === 0 ? undefined : overrides;
 }
-
-/** Kept so `apiKeyEnv`'s credential-ref contract stays reachable to callers. */
-export { credentialRef };

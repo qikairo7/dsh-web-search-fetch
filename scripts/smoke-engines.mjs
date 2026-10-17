@@ -63,7 +63,7 @@ try {
   }
   const fetched = await call('web_fetch', { url: 'https://example.com' });
   if (fetched.isError) throw new Error('native fetch failed');
-  if ([...report.pipeline.extractionSucceeded, ...report.pipeline.extractionFailed].includes('zhipu-reader')) throw new Error('removed reader was dispatched');
+
   if (!fetchOnly) {
     const extra = createAdditionalEngines(config.engines, resolveCredential, { searchTimeoutMs: 10000, fetchTimeoutMs: 45000 });
     await Promise.all(extra.map(async engine => {

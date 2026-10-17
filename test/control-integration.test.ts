@@ -12,7 +12,7 @@ import { startMockServer } from './helpers/mock-server.js';
 import './helpers/anysearch-network-guard.js';
 import { readFixtureText } from './helpers/fixtures.js';
 
-const fixtureRefs = ['TAVILY_API_KEY', 'EXA_API_KEY', 'ZHIPU_API_KEY', 'SILICONFLOW_API_KEY'];
+const fixtureRefs = ['TAVILY_API_KEY', 'EXA_API_KEY', 'SILICONFLOW_API_KEY'];
 
 class Credentials extends Service {
   constructor(ctx: Context) { super(ctx, 'credentials'); }

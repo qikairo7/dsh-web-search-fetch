@@ -16,8 +16,6 @@
 import type { AdditionalEnginesConfig } from './engines/additional/index.js';
 import type { Volatile } from '@deepseek-ai/cordis';
 import type { CredentialInfo } from '@deepseek-ai/dsh-credentials';
-import { ZHIPU_DEFAULT_SEARCH_TRANSPORT } from './limits.js';
-import type { ZhipuSearchTransport } from './types.js';
 
 /**
  * Settings namespace of this plugin's configuration surface.
@@ -36,11 +34,8 @@ export const EDITABLE_SETTINGS_PATHS = [
   ['search', 'rerank'],
   ['engines'],
   ['fetch', 'anysearchApiKeyEnv'],
-  ['apiKeyEnv'],
-  ['search', 'zhipuApiKeyEnv'],
   ['search', 'anysearchApiKeyEnv'],
   ['search', 'siliconflowApiKeyEnv'],
-  ['search', 'zhipuTransport'],
   ['search', 'decisionModel'],
   ['fetch', 'firecrawlApiKeyEnv'],
 ] as const;
@@ -71,15 +66,11 @@ export function isEditableSettingsPath(path: readonly string[]): boolean {
  */
 export interface SettingsSurfaceConfig {
   engines?: Volatile<AdditionalEnginesConfig | undefined> | AdditionalEnginesConfig;
-  /** Root Zhipu reference; the last link of the Zhipu chain. */
-  apiKeyEnv?: Volatile<string> | string;
   /** Search-face configuration. */
   search?: {
     /** No schema default: unset falls back, so the reference admits `undefined`. */
-    zhipuApiKeyEnv?: Volatile<string | undefined> | string;
     anysearchApiKeyEnv?: Volatile<string> | string;
     siliconflowApiKeyEnv?: Volatile<string> | string;
-    zhipuTransport?: Volatile<string> | string;
   };
   /** Fetch-face configuration. */
   fetch?: {
@@ -89,7 +80,7 @@ export interface SettingsSurfaceConfig {
 }
 
 /** Stable id of one engine key slot the settings card offers. */
-export type CredentialSlotId = 'anysearch' | 'zhipu' | 'firecrawl' | 'tavily' | 'exa' | 'keenable' | 'crawl4ai' | 'github' | 'tinyfish' | 'serply' | 'kimi' | 'siliconflow' | 'dashscope' | 'typesafe';
+export type CredentialSlotId = 'anysearch' | 'firecrawl' | 'tavily' | 'exa' | 'keenable' | 'crawl4ai' | 'github' | 'tinyfish' | 'serply' | 'kimi' | 'siliconflow' | 'dashscope' | 'typesafe';
 
 /** One engine key slot: which references name it, and the fallback. */
 export interface CredentialSlot {
@@ -109,7 +100,6 @@ export interface CredentialSlot {
 /** All credential inputs from the complete integration list, in service order. */
 export const CREDENTIAL_SLOTS: readonly CredentialSlot[] = [
   {"id": "anysearch", "overridePaths": [["search", "anysearchApiKeyEnv"]], "defaultRef": "ANYSEARCH_API_KEY", "additionalPaths": [["fetch", "anysearchApiKeyEnv"]]},
-  {"id": "zhipu", "overridePaths": [["search", "zhipuApiKeyEnv"], ["apiKeyEnv"]], "defaultRef": "ZHIPU_API_KEY"},
   {"id": "firecrawl", "overridePaths": [["fetch", "firecrawlApiKeyEnv"]], "defaultRef": "FIRECRAWL_API_KEY", "additionalPaths": [["engines", "firecrawl", "apiKeyEnv"]]},
   {"id": "tavily", "overridePaths": [["engines", "tavily", "apiKeyEnv"]], "defaultRef": "TAVILY_API_KEY"},
   {"id": "exa", "overridePaths": [["engines", "exa", "apiKeyEnv"]], "defaultRef": "EXA_API_KEY"},
@@ -223,26 +213,6 @@ export function projectCredentialStatus(
       writable: views.every(info => info?.writable !== false),
     };
   });
-}
-
-/**
- * Project the editable settings the card renders as controls.
- *
- * Reads through the volatile reference, so this reports the value a saved edit
- * is visible as rather than the value captured when the plugin mounted.
- * @param config - the parsed plugin configuration.
- * @returns the transport the search face would dispatch to.
- */
-export function projectEditableSettings(config: SettingsSurfaceConfig): {
-  zhipuTransport: ZhipuSearchTransport;
-} {
-  const transport = readVolatile(config.search?.zhipuTransport);
-  return {
-    zhipuTransport:
-      transport === 'anthropic' || transport === 'tools-api'
-        ? transport
-        : ZHIPU_DEFAULT_SEARCH_TRANSPORT,
-  };
 }
 
 /**

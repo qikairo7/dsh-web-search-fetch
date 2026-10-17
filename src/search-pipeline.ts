@@ -6,7 +6,7 @@
  * and configuration into that module's {@link SearchEngineClient} list and
  * builds the one provider `ctx.web` registers.
  *
- * The base engines are AnySearch and Zhipu; configured HTTP adapters
+ * The base engine is AnySearch; configured HTTP adapters
  * join the same list. Each base engine is adapted here
  * rather than in its own engine folder, because the engines deliberately ship
  * no registration and no seam class (a new engine is a new adapter file, and
@@ -15,7 +15,7 @@
  * key reaches the next search without a restart.
  *
  * The engine modules expose their failures in their own vocabularies
- * (`AnySearchClientError`, the Zhipu 429 signal on `cause`);
+ * (`AnySearchClientError`);
  * `search-aggregate.ts`'s `readSearchFailureSignal` is the single place that
  * projects them onto the breaker's closed set, so nothing here renames or
  * re-invents a reason.
@@ -32,13 +32,6 @@ import { liveCredentialRef } from './credential-ref.js';
 import { AnySearchEngine } from './engines/anysearch/index.js';
 import { RerankClient } from './engines/rerank/client.js';
 import { SILICONFLOW_RERANK_URL } from './engines/rerank/limits.js';
-import { ZhipuClient } from './engines/zhipu/client.js';
-import type {
-  ZhipuContentSize,
-  ZhipuSearchEngine as ZhipuEngineTier,
-  ZhipuSearchTransport,
-} from './types.js';
-import { ZHIPU_DEFAULT_API_KEY_ENV } from './limits.js';
 import {
   AggregatedSearchProvider,
   DEFAULT_RERANK_POOL,
@@ -53,7 +46,6 @@ export { AGGREGATED_PROVIDER_ID } from './limits.js';
 
 /** Stable engine ids; also the circuit breaker's keys and the log labels. */
 export const ANYSEARCH_ENGINE_ID = 'anysearch';
-export const ZHIPU_ENGINE_ID = 'zhipu';
 
 /** Credential-reference defaults for the engines this pipeline wires. */
 export const ANYSEARCH_DEFAULT_API_KEY_ENV = 'ANYSEARCH_API_KEY';
@@ -66,10 +58,6 @@ export type ResolveCredential = (ref: CredentialRef) => Promise<string | undefin
 export interface SearchEngineOverrides {
   /** AnySearch base URL override. */
   readonly anysearchBaseURL?: string;
-  /** Zhipu `web_search` endpoint override (the `tools-api` channel). */
-  readonly zhipuBaseURL?: string;
-  /** Zhipu Anthropic-compatible Messages base URL override (the `anthropic` channel). */
-  readonly zhipuAnthropicBaseURL?: string;
   /** SiliconFlow rerank endpoint override. */
   readonly rerankBaseURL?: string;
   /** `fetch` implementation override, forwarded to every client. */
@@ -88,32 +76,10 @@ export interface AggregatedSearchPipelineOptions {
   readonly resolveCredential: ResolveCredential;
   /** Where engine outcomes and breaker transitions are logged. */
   readonly logger?: SearchLogSink;
-  /** Zhipu credential reference name; defaults to `ZHIPU_API_KEY`. */
-  readonly zhipuApiKeyEnv?: CredentialRefSource;
   /** AnySearch credential reference name; defaults to `ANYSEARCH_API_KEY`. */
   readonly anysearchApiKeyEnv?: CredentialRefSource;
   /** SiliconFlow credential reference name; defaults to `SILICONFLOW_API_KEY`. */
   readonly siliconflowApiKeyEnv?: CredentialRefSource;
-  /** Zhipu `search_engine` tier; defaults to the client's own (`search_pro`). */
-  readonly zhipuSearchEngine?: ZhipuEngineTier;
-  /** Zhipu `content_size`; defaults to the client's own (`medium`). */
-  readonly zhipuContentSize?: ZhipuContentSize;
-  /** Zhipu search transport; defaults to the client's own (`anthropic`). */
-  readonly zhipuTransport?: ZhipuSearchTransport;
-  /**
-   * Live Zhipu transport reader, taking precedence over
-   * {@link AggregatedSearchPipelineOptions.zhipuTransport}.
-   *
-   * The settings page edits the transport, and a volatile config field is
-   * committed into the running reference instead of remounting the plugin. A
-   * pipeline built with a fixed value would keep dispatching to the channel the
-   * user just switched away from; a reader is consulted per operation.
-   */
-  readonly resolveZhipuTransport?: () => ZhipuSearchTransport | undefined;
-  /** Zhipu GLM model for the `anthropic` transport; defaults to `glm-4.6`. */
-  readonly zhipuAnthropicModel?: string;
-  /** Zhipu server-tool invocation bound for the `anthropic` transport; defaults to 1. */
-  readonly zhipuAnthropicMaxUses?: number;
   /** Per-engine deadline and client transport budget, in milliseconds. */
   readonly maxFanoutMs?: number;
   /** RRF constant `k`; defaults to 60. */
@@ -148,7 +114,6 @@ export function createAggregatedSearchProvider(
   // away from. `liveCredentialRef` consults the source per operation instead.
   // `credentialName` on each client stays the boot-time snapshot — it only
   // labels diagnostics; resolution always goes through the live reader.
-  const zhipuApiKeyEnv = liveCredentialRef(options.zhipuApiKeyEnv, ZHIPU_DEFAULT_API_KEY_ENV);
   const anysearchApiKeyEnv = liveCredentialRef(options.anysearchApiKeyEnv, ANYSEARCH_DEFAULT_API_KEY_ENV);
   const siliconflowApiKeyEnv = liveCredentialRef(
     options.siliconflowApiKeyEnv,
@@ -164,29 +129,6 @@ export function createAggregatedSearchProvider(
     ...(options.overrides?.anysearchBaseURL === undefined
       ? {}
       : { baseURL: options.overrides.anysearchBaseURL }),
-    ...(fetchImpl === undefined ? {} : { fetchImpl }),
-  });
-
-  const zhipuClient = new ZhipuClient({
-    resolveApiKey: () => options.resolveCredential(ref(zhipuApiKeyEnv())),
-    credentialName: zhipuApiKeyEnv(),
-    timeoutMs,
-    ...(options.zhipuTransport === undefined ? {} : { transport: options.zhipuTransport }),
-    ...(options.resolveZhipuTransport === undefined
-      ? {}
-      : { resolveTransport: options.resolveZhipuTransport }),
-    ...(options.zhipuSearchEngine === undefined ? {} : { searchEngine: options.zhipuSearchEngine }),
-    ...(options.zhipuContentSize === undefined ? {} : { contentSize: options.zhipuContentSize }),
-    ...(options.zhipuAnthropicModel === undefined
-      ? {}
-      : { anthropicModel: options.zhipuAnthropicModel }),
-    ...(options.zhipuAnthropicMaxUses === undefined
-      ? {}
-      : { anthropicMaxUses: options.zhipuAnthropicMaxUses }),
-    ...(options.overrides?.zhipuBaseURL === undefined ? {} : { baseURL: options.overrides.zhipuBaseURL }),
-    ...(options.overrides?.zhipuAnthropicBaseURL === undefined
-      ? {}
-      : { anthropicBaseURL: options.overrides.zhipuAnthropicBaseURL }),
     ...(fetchImpl === undefined ? {} : { fetchImpl }),
   });
 
@@ -212,7 +154,6 @@ export function createAggregatedSearchProvider(
 
   const engines = [
       wrapAnySearch(anysearch),
-      new ZhipuSearchEngine(zhipuClient),
       ...(options.additionalEngines ?? []),
     ];
   return new AggregatedSearchProvider({
@@ -249,32 +190,6 @@ function wrapAnySearch(engine: AnySearchEngine): SearchEngineClient {
     id: ANYSEARCH_ENGINE_ID,
     search: (request, signal) => engine.search(request, signal),
   };
-}
-
-/**
- * Zhipu as a pipeline engine. Channel selection and request shaping both live
- * in the client (transport, engine tier, snippet size, the tools-api 70-char
- * cap), so the adapter is a single `searchSeam` call: the pipeline sees one
- * seam-shaped result either way, and the client's own seam error vocabulary
- * (including the 429 breaker signal on `cause`) passes through untouched.
- */
-class ZhipuSearchEngine implements SearchEngineClient {
-  readonly id = ZHIPU_ENGINE_ID;
-
-  constructor(private readonly client: ZhipuClient) {}
-
-  async search(request: WebSearchRequest, signal?: AbortSignal): Promise<WebSearchResult> {
-    try {
-      return await this.client.searchSeam(request.query, request.maxResults, signal);
-    } catch (error) {
-      if (error instanceof WebError) throw error;
-      throw new WebError(
-        error instanceof Error ? error.message : `Zhipu web search failed: ${String(error)}`,
-        'WEB_PROVIDER_ERROR',
-        { cause: error },
-      );
-    }
-  }
 }
 
 /**
