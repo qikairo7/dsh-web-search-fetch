@@ -1,6 +1,6 @@
 {
   "name": "dsh-web-search-fetch",
-  "version": "0.2.19",
+  "version": "0.2.20",
   "description": "DeepSeek Harness 多来源网络搜索与网页提取插件",
   "packageManager": "pnpm@12.10.1",
   "keywords": [
@@ -106,6 +106,7 @@
     "@deepseek-ai/schemastery": "3.18.5",
     "@joplin/turndown-plugin-gfm": "1.0.68",
     "fast-xml-parser": "5.11.2",
+    "ipaddr.js": "2.5.0",
     "turndown": "7.2.4",
     "undici": "8.11.2"
   },

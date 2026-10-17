@@ -28,12 +28,70 @@ import { createHash } from 'node:crypto';
 import { organizeDocuments } from './fetch-document/organize.js';
 import { operationNotes, requestCount, deadlineReached, currentDecisionDepth, noteOperation } from './request-budget.js';
 import { SettlementWindow } from './settlement-window.js';
-import { markdown, splitBlocks, cleanBlocks, challengeBlocks } from './fetch-document/blocks.js';
+import { markdown, splitBlocks, cleanBlocks, challengeBlocks, paragraphChars } from './fetch-document/blocks.js';
 import { WebError } from '@deepseek-ai/dsh-web';
 import type { WebFetchResult } from '@deepseek-ai/dsh-web';
 import type { BreakerSignal, CircuitBreaker } from './breaker/index.js';
 import { FirecrawlError } from './engines/firecrawl/client.js';
 import { failureSignalOf } from './engines/anysearch/engine.js';
+
+// ---------------------------------------------------------------------------
+// 两段式探测（第一路原文够用就不进入多路整理）
+// ---------------------------------------------------------------------------
+
+/** Paragraph characters a probe result must reach before it is served as-is. */
+export const PROBE_MIN_PARAGRAPH_CHARS = 400;
+
+/**
+ * One field of the two-stage decision: the URL a raw result is served for.
+ * The probe is the fetch face's default path for the automatic preset in
+ * organize mode — it spends exactly one request and returns the page's own
+ * text when that text is already a complete answer.
+ */
+export interface ProbeVerdict {
+  /** Whether the probe result can be returned without any fan-out or markers. */
+  readonly sufficient: boolean;
+  /** Why the probe was not sufficient, for the pipeline log. */
+  readonly reason?: 'challenge' | 'target-mismatch' | 'non-2xx' | 'body-thin';
+}
+
+/**
+ * Decide whether one probe result is already a complete answer.
+ *
+ * The bar is deliberately narrow: the probe must be a `2xx` for the requested
+ * target (a same-resource HTTPS upgrade is allowed), must not be a login or
+ * challenge page, and must carry at least {@link PROBE_MIN_PARAGRAPH_CHARS}
+ * characters of ordinary paragraphs. Anything less escalates to the multi-path
+ * organization, where several extracts are merged and marked.
+ * @param requestedUrl - the URL the caller asked for.
+ * @param result - what the probe request returned.
+ * @returns the verdict, with the escalation reason when it is not sufficient.
+ */
+export function probeVerdict(requestedUrl: string, result: WebFetchResult): ProbeVerdict {
+  if (result.statusCode < 200 || result.statusCode >= 300) return { sufficient: false, reason: 'non-2xx' };
+  if (!sameResource(requestedUrl, result.url)) return { sufficient: false, reason: 'target-mismatch' };
+  const blocks = cleanBlocks(splitBlocks(markdown(result.body.content, result.body.kind)));
+  if (challengeBlocks(blocks)) return { sufficient: false, reason: 'challenge' };
+  if (paragraphChars(blocks) < PROBE_MIN_PARAGRAPH_CHARS) return { sufficient: false, reason: 'body-thin' };
+  return { sufficient: true };
+}
+
+/**
+ * Whether two URLs name the same resource. A same-resource HTTPS upgrade is
+ * accepted (query, path and port must match); every other change is not.
+ */
+function sameResource(requested: string, returned: string): boolean {
+  try {
+    const expected = new URL(requested);
+    const actual = new URL(returned);
+    expected.hash = '';
+    actual.hash = '';
+    if (expected.protocol === 'http:' && actual.protocol === 'https:') expected.protocol = 'https:';
+    return expected.href === actual.href;
+  } catch {
+    return requested === returned;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // URL 感知分流（规则表：可配、可单测的纯函数）
@@ -370,6 +428,14 @@ export interface AggregateDynamicFetchOptions {
   readonly perEngineTimeoutMs?: number;
   /** Engine-weight overrides for selection; missing entries keep defaults. */
   readonly engineWeights?: Partial<Record<string, number>>;
+  /**
+   * Extracts already retrieved by the first-path probe: they join the
+   * organization as ordinary candidates instead of being requested again, so
+   * escalating never duplicates one channel's request.
+   */
+  readonly seeds?: readonly FetchCandidate[];
+  /** Engines whose result is already in {@link seeds}; never dispatched twice. */
+  readonly skipEngineIds?: readonly string[];
 }
 
 /** Specificity ranking for the all-failed error (higher wins). */
@@ -380,6 +446,19 @@ const SPECIFIC_CODE_RANK: Readonly<Record<string, number>> = {
   WEB_UNSUPPORTED_CONTENT_TYPE: 3,
   WEB_FETCH_TIMEOUT: 2,
 };
+
+/**
+ * Codes that describe the **target**, not the engine: the page is blocked,
+ * invalid, too large or of an unsupported type. Everything else is the engine's
+ * own failure. The split is what makes an all-failed message actionable — a
+ * blocked target will fail on every engine, an unavailable engine will not.
+ */
+const TARGET_REJECTED_CODES: ReadonlySet<string> = new Set([
+  'WEB_BLOCKED_URL',
+  'WEB_INVALID_URL',
+  'WEB_UNSUPPORTED_CONTENT_TYPE',
+  'WEB_FETCH_TOO_LARGE',
+]);
 
 interface LegFailureNote {
   readonly engineId: string;
@@ -404,8 +483,10 @@ export async function aggregateDynamicFetch(
   const { url, legs, signal, breaker, logger } = options;
   const timeoutMs = options.perEngineTimeoutMs ?? DEFAULT_FETCH_ENGINE_TIMEOUT_MS;
   const weights = options.engineWeights ?? {};
+  const seeds = options.seeds ?? [];
+  const skipEngineIds = new Set(options.skipEngineIds ?? []);
 
-  if (legs.length === 0) {
+  if (legs.length === 0 && seeds.length === 0) {
     throw new WebError('no extraction engines are configured', 'WEB_PROVIDER_ERROR');
   }
   if (isAborted(signal)) {
@@ -418,13 +499,18 @@ export async function aggregateDynamicFetch(
       logger?.warn(`[提取] 引擎 ${leg.engineId} 处于熔断，已跳过`);
       continue;
     }
+    if (skipEngineIds.has(leg.engineId)) {
+      logger?.info(`[提取] 服务 ${leg.engineId} 的首路结果已在候选集中，不重复派发`);
+      continue;
+    }
     active.push(leg);
   }
-  if (active.length === 0) {
+  if (active.length === 0 && seeds.length === 0) {
     throw new WebError('all extraction engines are broken', 'WEB_PROVIDER_ERROR');
   }
 
   const candidatesByLeg: (FetchCandidate | undefined)[] = new Array(active.length);
+  // Probe seeds first: 择优 and organization treat them as ordinary candidates.
   const notes: LegFailureNote[] = [];
   const window = new SettlementWindow(signal, currentDecisionDepth() === 'deep');
   const substantial = new Map<string, { title: string; anchors: Set<string> }>();
@@ -489,7 +575,7 @@ export async function aggregateDynamicFetch(
   if (isAborted(signal) && !deadlineReached()) {
     throw new WebError('fetch aborted', 'WEB_ABORTED', { cause: signal?.reason });
   }
-  const candidates = candidatesByLeg.filter((candidate): candidate is FetchCandidate => candidate !== undefined);
+  const candidates = [...seeds, ...candidatesByLeg.filter((candidate): candidate is FetchCandidate => candidate !== undefined)];
   if (candidates.length === 0) {
     if (deadlineReached()) throw new WebError('fetch deadline exceeded', 'WEB_FETCH_TIMEOUT');
     throw allFailedError(notes);
@@ -537,17 +623,27 @@ function isAborted(signal: AbortSignal | undefined): boolean {
   return signal?.aborted === true;
 }
 
-/** Compose the all-failed error: every leg's reason, the most specific code. */
+/**
+ * Compose the all-failed error: every leg's reason, grouped into "the target
+ * rejected us" and "the engines were unavailable", with the most specific code.
+ *
+ * The grouping matters more than the code: when every engine reports the same
+ * target-level rejection, retrying will not help and the message says so;
+ * when the engines themselves failed, the message names them.
+ */
 function allFailedError(notes: readonly LegFailureNote[]): WebError {
   let best = notes[0];
   for (const note of notes) {
     if (best === undefined || failureRank(note.code) > failureRank(best.code)) best = note;
   }
-  const detail = notes.map((note) => `${note.engineId}: ${note.description}`).join('; ');
-  return new WebError(
-    `all extraction engines failed: ${detail}`,
-    best?.code ?? 'WEB_PROVIDER_ERROR',
-  );
+  const rejected = notes.filter(note => TARGET_REJECTED_CODES.has(note.code));
+  const unavailable = notes.filter(note => !TARGET_REJECTED_CODES.has(note.code));
+  const describe = (group: readonly LegFailureNote[]): string =>
+    group.map((note) => `${note.engineId} (${note.code}: ${note.description})`).join('; ');
+  const parts: string[] = [];
+  if (rejected.length > 0) parts.push(`目标被拒绝 target-rejected：${describe(rejected)}`);
+  if (unavailable.length > 0) parts.push(`引擎不可用 engine-unavailable：${describe(unavailable)}`);
+  return new WebError(`all extraction engines failed. ${parts.join(' | ')}`, best?.code ?? 'WEB_PROVIDER_ERROR');
 }
 
 /**

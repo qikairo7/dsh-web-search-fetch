@@ -175,6 +175,9 @@ importers:
       fast-xml-parser:
         specifier: 5.11.2
         version: 5.11.2
+      ipaddr.js:
+        specifier: 2.5.0
+        version: 2.5.0
       turndown:
         specifier: 7.2.4
         version: 7.2.4

@@ -119,6 +119,9 @@ describe('Config', () => {
       ],
       perEngineTimeoutMs: 45_000,
       engineWeights: {},
+      blockPrivateAddresses: true,
+      probeTimeoutMs: 15_000,
+      singleChannelEscalate: false,
       firecrawlBaseURL: 'https://api.firecrawl.dev/v2/scrape',
       anysearchBaseURL: 'https://api.anysearch.com',
     });
@@ -140,6 +143,18 @@ describe('Config', () => {
     expect(overridden?.firecrawlBaseURL).toBe('http://127.0.0.1:9/scrape');
     expect(overridden?.anysearchBaseURL).toBe('http://127.0.0.1:9');
     expect(overridden?.staticRouting).toBe(true);
+  });
+
+  it('controls 预设与决策开关给出 0.2.20 默认值', () => {
+    const defaults = Config({}).controls!.get();
+    expect(defaults.preset).toBe('auto');
+    expect(defaults.decisionRouting).toBe('off');
+    // The budget is per page, not per transport: an organized result replaces
+    // the page a reader would have opened, so its default is one long article.
+    expect(defaults.maxOutputChars).toBe(15_000);
+    expect(Config({ controls: { preset: 'single' } }).controls!.get().preset).toBe('single');
+    expect(Config({ controls: { preset: 'multi' } }).controls!.get().preset).toBe('multi');
+    expect(Config({ controls: { decisionRouting: 'model' } }).controls!.get().decisionRouting).toBe('model');
   });
 
   it('search 子对象给出 DESIGN §4 默认值，可逐项覆盖', () => {

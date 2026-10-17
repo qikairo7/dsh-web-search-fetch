@@ -3,16 +3,22 @@ import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-const skip = new Set(['.git', 'node_modules', 'lib', '.scratch', 'coverage', 'AGENTS.md', 'CLAUDE.md']);
+// `AGENTS.md`, `CLAUDE.md`, `docs/adr`, `docs/agents` and `.workflow-lite` are
+// local, gitignored working notes: they are never part of the public source, so
+// this check does not read them (it also skips the other generated or private
+// trees). Entries are matched against the path relative to the repository root,
+// with `/` as the separator on every platform.
+const skip = new Set(['.git', 'node_modules', 'lib', '.scratch', '.workflow-lite', 'coverage', 'AGENTS.md', 'CLAUDE.md', 'docs/adr', 'docs/agents']);
 const errors = [];
 const files = [];
 
 function walk(dir) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (skip.has(entry.name)) continue;
     const path = join(dir, entry.name);
+    const name = relative(root, path).split(sep).join('/');
+    if (skip.has(name)) continue;
     if (entry.isSymbolicLink()) {
-      errors.push(`Symlink is not allowed in the public source: ${relative(root, path)}`);
+      errors.push(`Symlink is not allowed in the public source: ${name}`);
     } else if (entry.isDirectory()) {
       walk(path);
     } else {

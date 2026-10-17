@@ -27,7 +27,7 @@ import {
   createAggregatedSearchProvider,
 } from './search-pipeline.js';
 import type { SearchEngineOverrides } from './search-pipeline.js';
-import { AggregatedFetchProvider, createExtractionLegs } from './fetch-pipeline.js';
+import { AggregatedFetchProvider, DEFAULT_PROBE_TIMEOUT_MS, createExtractionLegs } from './fetch-pipeline.js';
 import { CircuitBreaker, formatBreakerEvent } from './breaker/index.js';
 import { FirecrawlClient } from './engines/firecrawl/client.js';
 import { FIRECRAWL_DEFAULT_API_KEY_ENV, FIRECRAWL_SCRAPE_URL, isFirecrawlKeylessEndpoint } from './engines/firecrawl/wire.js';
@@ -40,6 +40,7 @@ import { budgetedFetch, currentControls, noteOperation } from './request-budget.
 import type { RuntimeControls } from './request-budget.js';
 import { DecisionClient, decisionFetch } from './engines/decision/client.js';
 import { DECISION_MODEL_PROVIDER } from './engines/decision/wire.js';
+import { DEFAULT_MAX_OUTPUT_CHARS } from './fetch-document/organize.js';
 export { createAdditionalEngines, ADDITIONAL_ENGINE_DEFAULTS } from './engines/additional/index.js';
 export type { AdditionalEnginesConfig, AdditionalEngineConfig, AdditionalEngineId } from './engines/additional/index.js';
 import {
@@ -81,7 +82,7 @@ export type {
   SearchEngineOverrides,
   SearchLogSink,
 } from './search-pipeline.js';
-export { AggregatedFetchProvider, DEFAULT_HTTP_FETCH_LIMITS, createExtractionLegs } from './fetch-pipeline.js';
+export { AggregatedFetchProvider, DEFAULT_HTTP_FETCH_LIMITS, DEFAULT_PROBE_TIMEOUT_MS, createExtractionLegs } from './fetch-pipeline.js';
 export type { AggregatedFetchProviderOptions, ExtractionEngineClients } from './fetch-pipeline.js';
 export {
   aggregateDynamicFetch,
@@ -159,6 +160,12 @@ export interface FetchConfig {
   perEngineTimeoutMs?: number;
   /** 择优 weight overrides per engine id; missing entries keep the defaults. */
   engineWeights?: Record<string, number>;
+  /** Refuse loopback/private destinations before any third-party engine sees them. Default `true`. */
+  blockPrivateAddresses?: boolean;
+  /** Deadline of the automatic preset's first-path probe, in milliseconds. Default 15 s. */
+  probeTimeoutMs?: number;
+  /** Let the `single` preset fall back to multi-path organization. Default `false`. */
+  singleChannelEscalate?: boolean;
   /** Firecrawl credential reference; defaults to `FIRECRAWL_API_KEY`. */
   firecrawlApiKeyEnv?: Volatile<string>;
   /** AnySearch extract credential reference; falls back to the search-face one. */
@@ -184,7 +191,8 @@ export const Config = z.object({
   controls: z.object({
     serviceEnabled: z.dict(z.boolean()).default({}).description('服务总开关；关闭后不派发该服务，保留各能力的参与范围。'),
     mode: z.union(['organize', 'select']).default('organize').description('正文整理；select 为旧版单份正文模式。'),
-    preset: z.union(['auto', 'custom', 'free', 'balanced', 'deep']).default('auto').description('自动按请求判断覆盖范围；也可固定为自定义、免费、均衡（最多三路）或深度检索。免费仍可能需要凭证。'),
+    preset: z.union(['auto', 'single', 'multi', 'custom', 'free', 'balanced', 'deep']).default('auto').description('调用范围：自动按请求在单通道与多通道之间判断；也可固定为单通道、多通道、自定义、免费、均衡（最多三路）或深度。免费仍可能需要凭证。'),
+    decisionRouting: z.union(['off', 'model']).default('off').description('自动预设如何判断调用范围。off 用本地规则，不调用模型；model 先问决策模型，失败或不可用时改回本地规则，不影响本次结果。'),
     searchServices: z.array(z.string()).default(['anysearch', 'deepseek', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'firecrawl', 'tinyfish', 'serply', 'kimi', 'bing', 'aihot']).description('搜索服务 ID 与调用优先级；空数组不调用搜索服务。'),
     fetchServices: z.array(z.string()).default(['firecrawl', 'anysearch', 'deepseek', 'tavily', 'exa', 'keenable', 'crawl4ai', 'github', 'tinyfish', 'serply', 'kimi', 'aihot']).description('提取服务 ID 与调用优先级；HTTP 静态路径不受此列表控制。'),
     maxSearchServices: z.natural().min(1).max(13).default(13).description('每个查询最多调用的搜索服务数。'),
@@ -192,7 +200,7 @@ export const Config = z.object({
     maxRequests: z.natural().min(1).max(256).default(32).description('每次 provider 操作的插件 HTTP 请求上限，包含额度查询、重试和重排；不含宿主 HTTP 重定向。'),
     searchDeadlineMs: z.natural().min(1).max(3600000).default(15000).description('搜索操作总限时，毫秒。'),
     fetchDeadlineMs: z.natural().min(1).max(3600000).default(50000).description('提取操作总限时，毫秒。'),
-    maxOutputChars: z.natural().min(1000).max(1000000).default(100000).description('正文整理输出上限，按完整内容块保留，包含来源与差异说明。'),
+    maxOutputChars: z.natural().min(1000).max(1000000).default(DEFAULT_MAX_OUTPUT_CHARS).description('单页整理输出上限，默认 15,000；按完整内容块保留，包含来源与差异说明。长文可调高，上限 1,000,000。'),
   }).default({}).volatile().description('正文整理与操作调用控制，保存后下一次调用生效。'),
   engines: z.dict(z.object({
     enabled: z.boolean().default(true).description('是否将此服务加入搜索与可用的提取管线。'),
@@ -265,6 +273,20 @@ export const Config = z.object({
         .natural()
         .default(DEFAULT_FETCH_ENGINE_TIMEOUT_MS)
         .description('动态页单个服务抓取限时（毫秒）。默认 45000。'),
+      blockPrivateAddresses: z
+        .boolean()
+        .default(true)
+        .description('拒绝把本机或内网地址外发给第三方提取服务。解析失败不拦截；列在静态域名画像里的主机不受影响，由内置 HTTP 提取器按自身策略处理。'),
+      probeTimeoutMs: z
+        .natural()
+        .min(1000)
+        .max(120000)
+        .default(DEFAULT_PROBE_TIMEOUT_MS)
+        .description('自动预设首路探测的限时（毫秒）。探测到一个请求就够用的完整正文时直接返回原文，不再派发其他服务。默认 15000。'),
+      singleChannelEscalate: z
+        .boolean()
+        .default(false)
+        .description('单通道预设是否在唯一通道失败或正文不足时改走多路整理。默认关闭：明确选择单通道时只用一路。'),
       engineWeights: z
         .dict(z.number())
         .default({})
@@ -422,6 +444,9 @@ export function apply(ctx: Context, config: Config): void {
       logger: log,
       perEngineTimeoutMs,
       engineWeights: fetchConfig.engineWeights ?? {},
+      blockPrivateAddresses: fetchConfig.blockPrivateAddresses ?? true,
+      probeTimeoutMs: fetchConfig.probeTimeoutMs ?? DEFAULT_PROBE_TIMEOUT_MS,
+      singleChannelEscalate: fetchConfig.singleChannelEscalate ?? false,
     }),
   );
 

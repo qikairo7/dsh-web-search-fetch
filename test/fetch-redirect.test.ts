@@ -11,7 +11,10 @@ it('accepts the generic same-host HTTPS upgrade and returns the final URL', () =
   const output = organizeDocuments(request, [{ engineId: 'engine-a', result: result() }]);
   expect(output.url).toBe('https://example.com/');
   expect(output.body.content).toContain('Public example content.');
-  expect(output.body.content).toContain('F1:B2');
+  // A single extract names its one source in the compact footer; an inline
+  // per-block marker would only repeat it (see organize.ts).
+  expect(output.body.content).toContain('F1: engine-a 200');
+  expect(output.body.content).not.toContain('提取来源：');
 });
 
 it('does not merge an original HTTP document into the upgraded HTTPS main body', () => {

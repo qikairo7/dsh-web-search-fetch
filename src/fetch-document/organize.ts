@@ -1,8 +1,29 @@
 import type { WebFetchResult } from '@deepseek-ai/dsh-web';
 import { WebError } from '@deepseek-ai/dsh-web';
 import type { FetchCandidate } from '../fetch-aggregate.js';
-import { markdown, splitBlocks, cleanBlocks, challengeBlocks, structured } from './blocks.js';
+import { markdown, splitBlocks, cleanBlocks, challengeBlocks, paragraphChars, structured, compactTable, LISTING_TABLE_MAX_ROWS } from './blocks.js';
 import type { ContentBlock } from './blocks.js';
+
+/** Total characters the supplemental sections may add to one organized document. */
+export const SUPPLEMENT_TOTAL_BUDGET_CHARS = 4_000;
+
+/**
+ * Default page budget of one organized document, in characters.
+ *
+ * The budget belongs to the page, not to the transport: an organized result is
+ * what the caller reads in place of the page, so the default bounds it to one
+ * long article. Raising `controls.maxOutputChars` raises it per deployment.
+ */
+export const DEFAULT_MAX_OUTPUT_CHARS = 15_000;
+
+/** Characters one supplemental entry may add; longer entries are cut here. */
+export const SUPPLEMENT_ENTRY_BUDGET_CHARS = 1_200;
+
+/** Reference body below this many paragraph characters is reported as thin. */
+export const THIN_BODY_PARAGRAPH_CHARS = 200;
+
+/** Reference body at or above this many paragraph characters is already substantial. */
+export const SUBSTANTIAL_BODY_PARAGRAPH_CHARS = 1_200;
 
 interface Node { block: ContentBlock; refs: string[]; removed?: boolean }
 interface Section { key: string; nodes: Node[] }
@@ -132,7 +153,7 @@ function mergeSection(destination: Section, incoming: Section, differences: Diff
 }
 
 /** Deterministic union of a single page's extracts; this never calls a language model. */
-export function organizeDocuments(url: string, candidates: readonly FetchCandidate[], maxChars = 100_000, notes: readonly string[] = []): WebFetchResult {
+export function organizeDocuments(url: string, candidates: readonly FetchCandidate[], maxChars = DEFAULT_MAX_OUTPUT_CHARS, notes: readonly string[] = []): WebFetchResult {
   if (!candidates.length) throw new WebError('no extraction candidates', 'WEB_PROVIDER_ERROR');
   // Bound synchronous conversion and alignment work independently of output size.
   if (candidates.some(candidate => candidate.result.body.content.length > 1_000_000)) throw new WebError('extraction input too large', 'WEB_FETCH_TOO_LARGE');
@@ -165,7 +186,8 @@ export function organizeDocuments(url: string, candidates: readonly FetchCandida
     const reasons = documents.map(doc => `${doc.candidate.engineId}: ${!matchesTarget(url, doc.candidate.result.url) ? 'target-mismatch' : challenge(doc) ? 'login-or-challenge' : 'incompatible-document'}`);
     throw new WebError(`没有可整理的目标网页正文：返回目标不同或属于登录、挑战页面 (${reasons.join('; ')})`, 'WEB_PROVIDER_ERROR');
   }
-  const reference = [...usable].sort((a, b) => b.sections.length - a.sections.length || b.blocks.length - a.blocks.length)[0]!;
+  const reference = [...usable].sort((a, b) => paragraphChars(b.blocks) - paragraphChars(a.blocks) || b.blocks.length - a.blocks.length)[0]!;
+  const referenceParagraphs = paragraphChars(reference.blocks);
   const referenceDefinitions = documents.some(doc => !challenge(doc) && doc.blocks.some(block => block.kind !== 'code' && /^ {0,3}\[[^\]\n]+\]:/m.test(block.text)));
   const main = referenceDefinitions ? [{ key: '', nodes: [originalMarkdown(reference)] }] : reference.sections;
   const additions: Addition[] = [];
@@ -219,8 +241,14 @@ export function organizeDocuments(url: string, candidates: readonly FetchCandida
   }
   let length = 0;
   let omitted = 0;
-  const footer = '\n\n## 提取来源与处理说明\n\n' + documents.map(doc => `${doc.id}: ${doc.candidate.engineId}; 状态 ${doc.candidate.result.statusCode}; ${doc.candidate.result.truncated ? '上游已截断' : '上游未标记截断'}; 接收时间：${doc.candidate.receivedAt ?? '未提供'}; 返回 URL：${JSON.stringify(doc.candidate.result.url)}`).join('\n\n')
-    + '\n\n来源标记 F#:B# 对应提取服务及原始内容块；多份提取不是独立事实佐证。'
+  // The footer answers one question: which extract served this page, and in
+  // what state. One compact line per extract — a per-block provenance list
+  // repeated for every service is what made the old output mostly overhead.
+  const footer = '\n\n## 提取来源与处理说明\n\n'
+    + documents.map(doc => `${doc.id}: ${doc.candidate.engineId} ${doc.candidate.result.statusCode}`).join('\n')
+    + (referenceParagraphs < THIN_BODY_PARAGRAPH_CHARS
+      ? `\n\nbody-thin：参照正文仅 ${referenceParagraphs} 字符（阈值 ${THIN_BODY_PARAGRAPH_CHARS}），可能不是该页的完整正文。`
+      : '')
     + (removedNoise ? `\n\n已移除 ${removedNoise} 个明确的导航或页面控件内容块。` : '')
     + (referenceDefinitions ? '\n\n检测到引用定义：按来源分别展示原始 Markdown，避免链接或脚注串用。' : '')
     + (notes.length ? `\n\n${notes.join('\n')}` : '');
@@ -230,13 +258,32 @@ export function organizeDocuments(url: string, candidates: readonly FetchCandida
     chunks.push(text); length += text.length + 2;
     return true;
   };
-  const render = (node: Node) => `${node.block.text}\n\n提取来源：${node.refs.join(', ')}`;
-  for (const section of main) for (const node of section.nodes) if (!node.removed) append(render(node));
+  // Block provenance is only worth its characters when several extracts share
+  // the body: with one source the marker repeats the footer. Above one source
+  // the marker stays, because it is what makes a merged body auditable.
+  const markerSources = new Set(candidates.map(candidate => candidate.engineId)).size;
+  const render = (node: Node) => markerSources >= 2
+    ? `${node.block.text}\n\n提取来源：${node.refs.join(', ')}`
+    : node.block.text;
+  let trimmedTables = 0;
+  // A listing table is page furniture: in the rendered document it consumes the
+  // same budget as prose, so it is trimmed before a paragraph ever is.
+  const renderBlock = (node: Node): string => {
+    if (node.block.kind !== 'table') return render(node);
+    const compact = compactTable(node.block.text);
+    if (compact.omittedRows > 0) trimmedTables += 1;
+    return render({ ...node, block: { ...node.block, text: compact.text } });
+  };
+  for (const section of main) for (const node of section.nodes) if (!node.removed) append(renderBlock(node));
   if (additions.length) {
         const incompatible = additions.filter(addition => addition.nodes.length > 0
           && /^(标题或版本不同|语言不同)/.test(addition.reason));
         const incompatibleBlocks = incompatible.reduce((count, addition) => count + addition.nodes.length, 0);
-        const summarize = incompatible.length > 1 || incompatibleBlocks > 20;
+        // A substantial reference body does not need every block of every
+        // incompatible extract beside it; the count is the useful signal there.
+        const summarize = referenceParagraphs >= SUBSTANTIAL_BODY_PARAGRAPH_CHARS
+          ? incompatible.length > 0
+          : incompatible.length > 1 || incompatibleBlocks > 20;
         const grouped = summarize ? additions.filter(addition => !incompatible.includes(addition)) : additions;
         if (summarize) {
           grouped.push({
@@ -249,21 +296,65 @@ export function organizeDocuments(url: string, candidates: readonly FetchCandida
             })),
           });
         }
-        if (append('## 补充片段')) {
+        // Supplements are capped twice: per entry and in total. The body is the
+        // answer; supplements are evidence that something else existed. The
+        // budget counts the whole section — heading, separators and labels
+        // included — because that is what the reader's page size sees.
+        let supplementChars = 0;
+        const supplementRoom = (text: string, count = 1): string | undefined => {
+          const capped = text.length > SUPPLEMENT_ENTRY_BUDGET_CHARS
+            ? `${text.slice(0, SUPPLEMENT_ENTRY_BUDGET_CHARS)}…`
+            : text;
+          if (supplementChars + capped.length + 2 > SUPPLEMENT_TOTAL_BUDGET_CHARS) { omitted += count; return undefined; }
+          return capped;
+        };
+        const appendSupplement = (text: string, count = 1): boolean => {
+          const capped = supplementRoom(text, count);
+          if (capped === undefined) return false;
+          if (!append(capped, count)) return false;
+          supplementChars += capped.length + 2;
+          return true;
+        };
+        const supplementHeading = '## 补充片段';
+        if (supplementChars + supplementHeading.length + 2 <= SUPPLEMENT_TOTAL_BUDGET_CHARS && append(supplementHeading)) {
+          supplementChars += supplementHeading.length + 2;
+          // One label per source and reason: repeating the same sentence before
+          // every block of one extract spends the budget on the label instead of
+          // the evidence. Later blocks of that group are separated by a blank
+          // line and belong to the label above them.
+          let currentLabel: string | undefined;
           for (const addition of grouped) {
-        const label = `${addition.doc.id}：${addition.reason}`;
-        if (!addition.nodes.length) append(label);
-            if (addition.summaryOnly) append(`${label}\n\n${addition.nodes.map(node => node.block.text).join('\n')}`);
-            else for (const node of addition.nodes) if (!node.removed) append(`${label}\n\n${render(node)}`);
-      }
-    } else omitted += additions.reduce((count, addition) => count + addition.nodes.length, 0);
+            const label = `${addition.doc.id}：${addition.reason}`;
+            if (!addition.nodes.length) {
+              const capped = supplementRoom(label);
+              if (capped === undefined) continue;
+              append(capped);
+              supplementChars += capped.length + 2;
+              continue;
+            }
+            for (const node of addition.summaryOnly ? addition.nodes : addition.nodes.filter(item => !item.removed)) {
+              const body = addition.summaryOnly ? node.block.text : renderBlock(node);
+              if (label === currentLabel) {
+                if (!appendSupplement(body)) break;
+                continue;
+              }
+              const entry = supplementRoom(`${label}\n\n${body}`);
+              if (entry === undefined) break;
+              if (!append(entry)) break;
+              supplementChars += entry.length + 2;
+              currentLabel = label;
+            }
+          }
+        } else omitted += additions.reduce((count, addition) => count + Math.max(1, addition.nodes.length), 0);
   }
   if (differences.length) {
     if (append('## 文本差异')) {
       for (const difference of differences) append(`位置：${difference.section.replace(/heading:/g, '')}；保留原文变体，未判断哪份正确。\n\n${difference.variants.map(render).join('\n\n')}`, difference.variants.length);
     } else omitted += differences.reduce((count, difference) => count + difference.variants.length, 0);
   }
-  const content = chunks.join('\n\n') + footer + (omitted ? `\n\n输出预算不足，已省略 ${omitted} 个完整内容块或说明。` : '');
+  const content = chunks.join('\n\n') + footer
+    + (trimmedTables ? `\n\n已裁剪 ${trimmedTables} 个清单类表格：仅保留前 ${LISTING_TABLE_MAX_ROWS} 行，其余行未显示。` : '')
+    + (omitted ? `\n\n输出预算不足，已省略 ${omitted} 个完整内容块或说明。` : '');
   if (content.length > maxChars) throw new WebError('正文输出预算不足以容纳来源说明', 'WEB_FETCH_TOO_LARGE');
   return { url: reference.candidate.result.url, statusCode: reference.candidate.result.statusCode, body: { kind: 'text', content }, truncated: omitted > 0 || documents.some(doc => !challenge(doc) && doc.candidate.result.truncated) };
 }

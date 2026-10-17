@@ -7,13 +7,13 @@ import type { WebFetchResult } from '@deepseek-ai/dsh-web';
 import { budgetedFetch } from '../src/request-budget.js';
 
 afterEach(() => vi.useRealTimers());
-const auto = { preset: 'auto' as const, decision: { decide: async () => ({ depth: 'balanced' as const, model: 'test' }) } };
+const multi = { preset: 'multi' as const, decision: { decide: async () => ({ depth: 'balanced' as const, model: 'test' }) } };
 const page = (content: string): WebFetchResult => ({ url: 'https://docs.test/guide', statusCode: 200, truncated: false, body: { kind: 'text', content } });
 
 it('补查缺失的官方文档，并在重排之后仍保留相关官方来源优先', async () => {
   const queries: string[] = [];
   const provider = new AggregatedSearchProvider({
-    breaker: new CircuitBreaker(), resolveControls: () => auto,
+    breaker: new CircuitBreaker(), resolveControls: () => multi,
     engines: ['a', 'b', 'c'].map(id => ({ id, search: async request => {
       queries.push(request.query);
       return { truncated: false, sources: request.query.includes('site:docs.python.org')
@@ -57,7 +57,7 @@ it('去掉明确的导航控件，合并标题锚点差异，保留代码、正�
 
 it('自动搜索在三路充分结果后取消慢路，不等待其十秒超时', async () => {
   vi.useFakeTimers(); let stopped = false;
-  const provider = new AggregatedSearchProvider({ breaker: new CircuitBreaker(), resolveControls: () => auto,
+  const provider = new AggregatedSearchProvider({ breaker: new CircuitBreaker(), resolveControls: () => multi,
     engines: ['a', 'b', 'c', 'slow'].map((id, index) => ({ id, search: async (_request, signal) => {
       if (id === 'slow') { signal?.addEventListener('abort', () => { stopped = true; }); await new Promise(resolve => setTimeout(resolve, 10_000)); }
       return { truncated: false, sources: Array.from({ length: 5 }, (_, n) => ({ url: `https://source${index}.test/${n}`, title: 'Useful reference ' + n })) };
@@ -123,7 +123,7 @@ it('真实文档的转义分隔符、面包屑与主题控件不会挤占正文'
 it('官方补查也必须取得 HTTP 预算，不能绕过调用上限', async () => {
   let requests = 0;
   const transport = budgetedFetch(async () => { requests++; return new Response('{}'); });
-  const provider = new AggregatedSearchProvider({ breaker: new CircuitBreaker(), resolveControls: () => ({ ...auto, maxRequests: 1 }),
+  const provider = new AggregatedSearchProvider({ breaker: new CircuitBreaker(), resolveControls: () => ({ ...multi, maxRequests: 1 }),
     engines: [{ id: 'a', search: async () => { await transport('https://service.test/search'); return { truncated: false, sources: [{ url: 'https://blog.test/python', title: 'Python TaskGroup' }] }; } }],
   });
   const result = await provider.search({ query: 'Python TaskGroup official docs' });

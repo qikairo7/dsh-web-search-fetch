@@ -37,15 +37,24 @@ it('uses priority, enabled capability lists, credential presence and preset caps
   });
 });
 
-it('auto preset keeps simple requests fast and research requests broad without manual switching', async () => {
+it('auto preset keeps simple requests single-channel and research requests multi-channel without manual switching', async () => {
   const services = ['anysearch', 'firecrawl', 'tavily', 'exa', 'kimi'];
+  // The local rule is the default: a plain request uses one channel …
   await runOperation({ preset: 'auto', request: 'search', requestText: 'DeepSeek Harness 使用入门' }, 'search', undefined, async () => {
-    expect(await selectServices(services, id => id, 'search')).toEqual(['anysearch', 'firecrawl', 'tavily']);
-    expect(operationNotes().join(' ')).toContain('快速响应');
+    expect(await selectServices(services, id => id, 'search')).toEqual(['anysearch']);
+    expect(operationNotes().join(' ')).toContain('单通道');
   });
+  // … and a comparison/research intent fans out.
   await runOperation({ preset: 'auto', request: 'search', requestText: '对比 DeepSeek 与 OpenAI 最新文档' }, 'search', undefined, async () => {
     expect(await selectServices(services, id => id, 'search')).toEqual(services);
-    expect(operationNotes().join(' ')).toContain('广覆盖');
+    expect(operationNotes().join(' ')).toContain('多通道');
+  });
+  // The explicit presets name the breadth directly.
+  await runOperation({ preset: 'single', request: 'search', requestText: '对比 DeepSeek 与 OpenAI 最新文档' }, 'search', undefined, async () => {
+    expect(await selectServices(services, id => id, 'search')).toEqual(['anysearch']);
+  });
+  await runOperation({ preset: 'multi', request: 'search', requestText: 'DeepSeek Harness 使用入门' }, 'search', undefined, async () => {
+    expect(await selectServices(services, id => id, 'search')).toEqual(services);
   });
 });
 
@@ -69,25 +78,44 @@ it('auto preset chooses extraction breadth from the URL instead of asking the us
   });
 });
 
-it('requires a valid decision before automatic fan-out', async () => {
+it('decision routing is opt-in, and an unavailable model degrades to the local rule', async () => {
   const services = ['anysearch', 'firecrawl', 'tavily', 'exa', 'kimi'];
-  const controls = (depth: 'fast' | 'balanced' | 'deep' | null) => ({
+  const controls = (depth: 'fast' | 'balanced' | 'deep' | null, outcome: 'ok' | 'throw' = 'ok') => ({
     preset: 'auto' as const,
+    decisionRouting: 'model' as const,
     request: 'search' as const,
     requestText: 'DeepSeek Harness 使用入门',
     decision: {
-      decide: async () => depth === null ? null : { depth, model: 'Kev-4b', confidence: 0.82 },
+      decide: async () => {
+        if (outcome === 'throw') throw new Error('decision endpoint returned 503');
+        return depth === null ? null : { depth, model: 'Kev-4b', confidence: 0.82 };
+      },
     },
   });
+  // fast/balanced/deep map onto 1/3/all channels.
   await runOperation(controls('fast'), 'search', undefined, async () => {
-    expect(await selectServices(services, id => id, 'search')).toEqual(['anysearch', 'firecrawl', 'tavily']);
+    expect(await selectServices(services, id => id, 'search')).toEqual(['anysearch']);
     expect(operationNotes().join(' ')).toContain('决策模型 Kev-4b 判定为 fast');
   });
   await runOperation(controls('balanced'), 'search', undefined, async () => {
-    expect((await selectServices(services, id => id, 'search'))).toHaveLength(5);
+    expect(await selectServices(services, id => id, 'search')).toHaveLength(3);
     expect(operationNotes().join(' ')).toContain('置信度 82%');
   });
+  await runOperation(controls('deep'), 'search', undefined, async () => {
+    expect(await selectServices(services, id => id, 'search')).toEqual(services);
+  });
+  // An unusable or unreachable model never fails the search: the local rule runs.
   await runOperation(controls(null), 'search', undefined, async () => {
-    await expect(selectServices(services, id => id, 'search')).rejects.toMatchObject({ code: 'WEB_PROVIDER_ERROR' });
+    expect(await selectServices(services, id => id, 'search')).toEqual(['anysearch']);
+    expect(operationNotes().join(' ')).toContain('改用本地规则');
+  });
+  await runOperation(controls('deep', 'throw'), 'search', undefined, async () => {
+    expect(await selectServices(services, id => id, 'search')).toEqual(['anysearch']);
+    expect(operationNotes().join(' ')).toContain('改用本地规则');
+  });
+  // Without the opt-in, the model is never consulted.
+  await runOperation({ ...controls('deep'), decisionRouting: 'off' as const }, 'search', undefined, async () => {
+    expect(await selectServices(services, id => id, 'search')).toEqual(['anysearch']);
+    expect(operationNotes().join(' ')).not.toContain('决策模型');
   });
 });

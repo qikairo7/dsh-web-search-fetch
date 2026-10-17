@@ -10,9 +10,9 @@ window.__ModuleLoader__.load({
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
         //#region locales
         const zh = {
-            decisionTitle: '自动决策', decisionModelLabel: '决策模型', decisionKeyHint: '仅用于自动判断调用范围。留空保留原密钥；保存后下一次请求生效。', decisionFallback: '自动预设需要有效决策。请求默认限时 2 秒；失败时提示检查凭证与网络。', servicesTitle: '服务与凭证', settingsTitle: '调用设置', advanced: '高级调用限制', advancedHint: '请求数、超时与正文长度',
+            decisionTitle: '自动决策', decisionRoutingLabel: '判断方式', decisionRouting_off: '本地规则', decisionRouting_model: '决策模型', decisionRoutingHint: '本地规则默认使用，不需要凭证；选择决策模型后先问模型，失败时仍按本地规则执行。', decisionModelLabel: '决策模型', decisionKeyHint: '仅用于自动判断调用范围。留空保留原密钥；保存后下一次请求生效。', decisionFallback: '决策模型请求默认限时 2 秒；失败或不可用时改用本地规则，不影响本次搜索与提取结果。', servicesTitle: '服务与凭证', settingsTitle: '调用设置', advanced: '高级调用限制', advancedHint: '请求数、超时与正文长度',
             startGuide: '推荐服务与匿名额度', organizeHint: '合并多份正文，去重与互补，保留来源与差异。', selectHint: '兼容旧版，仅返回一份提取正文。',
-            autoPresetHint: '由决策模型自动判断调用范围，无需手动切换。模型不可用时提示检查配置，本次不派发搜索或提取服务。', customPresetHint: '按服务开关、参与范围与调用限制执行。', balancedPresetHint: '每次最多调用三路服务，兼顾覆盖范围与调用用量。', deepPresetHint: '调用已选择且可用的服务，仍受调用限制约束。',
+            autoPresetHint: '按问题本地判断：只有对比、综述、调研或时效类问题才多路并发，其余先走单通道，不需要模型凭证。', singlePresetHint: '只调用一路服务，返回该路原文，不合并、不加来源标记。', multiPresetHint: '并发调用参与范围内所有可用服务，合并正文并标注来源。', customPresetHint: '按服务开关、参与范围与调用限制执行。', balancedPresetHint: '每次最多调用三路服务，兼顾覆盖范围与调用用量。', deepPresetHint: '调用已选择且可用的服务，仍受调用限制约束。',
             invalidNumber: '请输入范围内的整数：', invalidControls: '请先修正调用限制', resetField: '撤销此项', range: '范围',
 
             title: '网络搜索与提取', intro: '默认自动预设需要决策模型凭证；AnySearch、Firecrawl、Tavily 的官方匿名搜索与提取本身无需密钥。请选择一种开始方式。',
@@ -26,7 +26,7 @@ window.__ModuleLoader__.load({
             decisionStaged: '决策模型凭证待保存，保存后才能使用自动预设。',
             fixedReady: '当前使用固定预设，无需决策模型凭证。',
             controlsTitle: '正文整理与调用控制', modeLabel: '网页正文处理', organizeMode: '整理正文', selectMode: '单份正文',
-            presetLabel: '调用预设', autoPreset: '自动', customPreset: '自定义', freePreset: '免费接口', balancedPreset: '均衡', deepPreset: '深度',
+            presetLabel: '调用预设', autoPreset: '自动', singlePreset: '单通道', multiPreset: '多通道', customPreset: '自定义', freePreset: '免费接口', balancedPreset: '均衡', deepPreset: '深度',
             maxSearchServices: '每个查询的搜索服务上限', maxFetchServices: '每个 URL 的提取服务上限', maxRequests: '每次操作的 HTTP 请求上限',
             searchDeadlineMs: '搜索总限时（毫秒）', fetchDeadlineMs: '提取总限时（毫秒）', maxOutputChars: '整理输出上限（字符）',
             participateSearch: '参与搜索', participateFetch: '参与提取',
@@ -77,10 +77,10 @@ window.__ModuleLoader__.load({
             clean: '暂无待保存更改', dirty: '项未保存', refresh: '刷新凭证状态',
         };
         const en = {
-            decisionTitle: 'Automatic routing', decisionModelLabel: 'Decision model', decisionKeyHint: 'Routes automatic requests only. Leave blank to keep the key. Changes apply to the next request.', decisionFallback: 'Decision requests default to a 2-second timeout. Automatic routing requires a valid decision; check credentials and network on failure.',
+            decisionTitle: 'Automatic routing', decisionRoutingLabel: 'How to decide', decisionRouting_off: 'Local rule', decisionRouting_model: 'Decision model', decisionRoutingHint: 'The local rule is the default and needs no credentials. With a decision model, the model is asked first and the local rule still runs if it fails.', decisionModelLabel: 'Decision model', decisionKeyHint: 'Routes automatic requests only. Leave blank to keep the key. Changes apply to the next request.', decisionFallback: 'Decision requests default to a 2-second timeout. An unavailable model falls back to the local rule and never fails the call.',
             servicesTitle: 'Services & credentials', settingsTitle: 'Call settings', advanced: 'Advanced limits', advancedHint: 'Requests, deadlines and content length',
             startGuide: 'Recommended services and anonymous quotas', organizeHint: 'Combine extracts, remove duplicates and retain sources and differences.', selectHint: 'Legacy behavior: return one extract.',
-            autoPresetHint: 'Choose fast or broad fan-out from the query and URL, effective on the next call.', customPresetHint: 'Use service switches, participation and call limits.', balancedPresetHint: 'Use up to three services per operation to balance coverage and usage.', deepPresetHint: 'Use selected, available services within the call limits.',
+            autoPresetHint: 'Decide locally: only comparison, review, research or recency questions fan out; everything else starts with one channel and needs no model credentials.', singlePresetHint: 'Use exactly one service and return its own text, with no merge and no source markers.', multiPresetHint: 'Fan out to every available service in scope, merge the bodies and mark their sources.', customPresetHint: 'Use service switches, participation and call limits.', balancedPresetHint: 'Use up to three services per operation to balance coverage and usage.', deepPresetHint: 'Use selected, available services within the call limits.',
             invalidNumber: 'Enter an integer within ', invalidControls: 'Correct the call limits first', resetField: 'Undo this field', range: 'Range',
 
             title: 'Web search & fetch', intro: 'The default Auto preset requires decision-model credentials. Official anonymous search and extraction from AnySearch, Firecrawl and Tavily need no key. Choose how to start.',
@@ -94,7 +94,7 @@ window.__ModuleLoader__.load({
             decisionStaged: 'Decision-model credentials are unsaved. Save before using Auto.',
             fixedReady: 'A fixed preset is selected; no decision-model credentials are required.',
             controlsTitle: 'Content organization and call limits', modeLabel: 'Page content', organizeMode: 'Organize', selectMode: 'Single extract',
-            presetLabel: 'Call preset', autoPreset: 'Auto', customPreset: 'Custom', freePreset: 'Free APIs', balancedPreset: 'Balanced', deepPreset: 'Deep',
+            presetLabel: 'Call preset', autoPreset: 'Auto', singlePreset: 'Single channel', multiPreset: 'Multi channel', customPreset: 'Custom', freePreset: 'Free APIs', balancedPreset: 'Balanced', deepPreset: 'Deep',
             maxSearchServices: 'Search services per query', maxFetchServices: 'Extraction services per URL', maxRequests: 'HTTP requests per operation',
             searchDeadlineMs: 'Search deadline (ms)', fetchDeadlineMs: 'Extraction deadline (ms)', maxOutputChars: 'Organized output limit (characters)',
             participateSearch: 'Participate in search', participateFetch: 'Participate in extraction',
@@ -159,7 +159,7 @@ window.__ModuleLoader__.load({
             maxRequests: { initial: 32, min: 1, max: 256 },
             searchDeadlineMs: { initial: 15000, min: 1, max: 3600000 },
             fetchDeadlineMs: { initial: 50000, min: 1, max: 3600000 },
-            maxOutputChars: { initial: 100000, min: 1000, max: 1000000 },
+            maxOutputChars: { initial: 15000, min: 1000, max: 1000000 },
         };
         const EXTENSIONS = ["deepseek", "tavily", "exa", "keenable", "crawl4ai", "github", "firecrawl", "tinyfish", "serply", "kimi", "bing", "aihot"];
 		/**
@@ -296,10 +296,11 @@ window.__ModuleLoader__.load({
                 if (this.saving) return;
                 const ranges = Object.fromEntries(Object.entries(NUMBER_CONTROLS).map(([name, spec]) => [name, spec.max]));
                 if (name in ranges && (!Number.isInteger(value) || value < (name === 'maxOutputChars' ? 1000 : 1) || value > ranges[name])) return;
-                if (name === 'mode' && !['organize', 'select'].includes(value) || name === 'preset' && !['auto', 'custom', 'free', 'balanced', 'deep'].includes(value)) return;
+                if (name === 'mode' && !['organize', 'select'].includes(value) || name === 'preset' && !['auto', 'single', 'multi', 'custom', 'free', 'balanced', 'deep'].includes(value)) return;
+                if (name === 'decisionRouting' && !['off', 'model'].includes(value)) return;
                 if (['searchServices', 'fetchServices'].includes(name) && (!Array.isArray(value) || value.some(id => !SERVICES.some(service => service.id === id)))) return;
                 if (name === 'serviceEnabled' && (value === null || typeof value !== 'object' || Array.isArray(value) || Object.values(value).some(flag => typeof flag !== 'boolean'))) return;
-                if (!['mode', 'preset', 'searchServices', 'fetchServices', 'serviceEnabled', ...Object.keys(ranges)].includes(name)) return;
+                if (!['mode', 'preset', 'decisionRouting', 'searchServices', 'fetchServices', 'serviceEnabled', ...Object.keys(ranges)].includes(name)) return;
                 this.numberDrafts.delete(name);
                 this.baselineRevision ??= this.scope.getSnapshot().revision;
                 const served = this.section()?.controls?.[name] ?? (name === 'serviceEnabled' ? {}
@@ -791,7 +792,7 @@ window.__ModuleLoader__.load({
             const modeId = 'wsf-mode-' + state.controls.mode;
             const presetId = 'wsf-preset-' + state.controls.preset;
             const decisionKey = state.keys.find(row => row.id === DECISION_MODELS.find(item => item.value === state.decisionModel).key);
-            const startStatus = state.controls.preset !== 'auto' ? 'fixedReady' : decisionKey.staged ? 'decisionStaged'
+            const startStatus = state.controls.preset !== 'auto' || state.controls.decisionRouting !== 'model' ? 'fixedReady' : decisionKey.staged ? 'decisionStaged'
                 : decisionKey.ready !== true ? 'decisionChecking' : decisionKey.configured ? 'decisionConfigured' : 'decisionMissing';
             return jsxs('form', { className: 'wsf-settings', 'aria-label': t('title'), 'aria-busy': state.saving,
                 onSubmit: event => event.preventDefault(), children: [
@@ -822,10 +823,10 @@ window.__ModuleLoader__.load({
                             jsx(ui.SegmentedControl, { id: 'wsf-preset', value: state.controls.preset,
                                 className: 'wsf-preset-segments',
                                 label: t('presetLabel'), disabled, onChange: value => editControl('preset', value),
-                                options: ['auto', 'free', 'balanced', 'deep', 'custom'].map(value => ({ value, label: t(value + 'Preset') })) }),
+                                options: ['auto', 'single', 'multi', 'free', 'balanced', 'deep', 'custom'].map(value => ({ value, label: t(value + 'Preset') })) }),
                             jsx('select', { className: 'wsf-select wsf-preset-compact', 'aria-label': t('presetLabel'), disabled,
                                 value: state.controls.preset, onChange: event => editControl('preset', event.target.value),
-                                children: ['auto', 'free', 'balanced', 'deep', 'custom'].map(value => jsx('option', { value, children: t(value + 'Preset') }, value)) }),
+                                children: ['auto', 'single', 'multi', 'free', 'balanced', 'deep', 'custom'].map(value => jsx('option', { value, children: t(value + 'Preset') }, value)) }),
                         ] }),
                         jsx('p', { id: presetId + '-panel', role: 'tabpanel', 'aria-labelledby': presetId, className: 'wsf-muted',
                             children: t(state.controls.preset === 'free' ? 'freeHint' : state.controls.preset + 'PresetHint') }),
@@ -841,12 +842,17 @@ window.__ModuleLoader__.load({
                     ] }),
                     state.controls.preset === 'auto' && jsxs('div', { className: 'wsf-preference', children: [
                         jsx('h3', { children: t('decisionTitle') }),
+                        jsx('label', { htmlFor: 'wsf-decision-routing', className: 'wsf-setting-label', children: t('decisionRoutingLabel') }),
+                        jsx(ui.SegmentedControl, { id: 'wsf-decision-routing', value: state.controls.decisionRouting ?? 'off',
+                            label: t('decisionRoutingLabel'), disabled, onChange: value => editControl('decisionRouting', value),
+                            options: ['off', 'model'].map(value => ({ value, label: t('decisionRouting_' + value) })) }),
+                        jsx('p', { className: 'wsf-muted', children: t('decisionRoutingHint') }),
                         jsx('label', { htmlFor: 'wsf-decision-model', className: 'wsf-setting-label', children: t('decisionModelLabel') }),
-                        jsx('select', { id: 'wsf-decision-model', ref: decisionInput, className: 'wsf-select', value: state.decisionModel, disabled,
+                        jsx('select', { id: 'wsf-decision-model', ref: decisionInput, className: 'wsf-select', value: state.decisionModel, disabled: disabled || state.controls.decisionRouting !== 'model',
                             'aria-label': t('decisionModelLabel'), onChange: event => editDecision(event.target.value),
                             children: DECISION_MODELS.map(item => jsx('option', { value: item.value, children: item.label }, item.value)) }),
                         jsx('p', { className: 'wsf-muted', children: t('decisionKeyHint') }),
-                        jsx(KeyField, { t, idPrefix: 'decision-', row: state.keys.find(row => row.id === DECISION_MODELS.find(item => item.value === state.decisionModel).key), disabled,
+                        jsx(KeyField, { t, idPrefix: 'decision-', row: state.keys.find(row => row.id === DECISION_MODELS.find(item => item.value === state.decisionModel).key), disabled: disabled || state.controls.decisionRouting !== 'model',
                             onEdit: text => editKey(DECISION_MODELS.find(item => item.value === state.decisionModel).key, text) }),
                         jsx('p', { className: 'wsf-muted', children: t('decisionFallback') }),
                     ] }),

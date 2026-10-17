@@ -2,15 +2,15 @@
 
 ## 范围与状态
 
-本文回应 [DSH Store #1415 的复检意见](https://github.com/AI-Scarlett/DSH-Store/issues/1415#issuecomment-6195716034)，提供 `0.2.11` 的作者侧分发修复与依赖材料。固定 Git 树缺少入口的问题已补齐；Store 的独立供应链审阅及准入决定仍待完成。`0.2.16` 未改变本插件直接运行依赖；开发依赖升级到 DSH `0.2.1-alpha.5`，用于编译、类型检查和测试适配。`0.2.19` 增加 DeepSeek Search / Fetch 来源，但未改变直接运行依赖。依赖清单和审阅边界不因版本号提升而自动免除复核。
+本文回应 [DSH Store #1415 的复检意见](https://github.com/AI-Scarlett/DSH-Store/issues/1415#issuecomment-6195716034)，提供 `0.2.11` 的作者侧分发修复与依赖材料。固定 Git 树缺少入口的问题已补齐；Store 的独立供应链审阅及准入决定仍待完成。`0.2.16` 未改变本插件直接运行依赖；开发依赖升级到 DSH `0.2.1-alpha.5`，用于编译、类型检查和测试适配。`0.2.19` 增加 DeepSeek Search / Fetch 来源，未改变直接运行依赖。`0.2.20` 新增直接运行依赖 `ipaddr.js@2.5.0`（本机与内网地址判定），版本与宿主 `dsh-web-fetch-http` 使用的一致。依赖清单和审阅边界不因版本号提升而自动免除复核。
 
 后续已完成 `0.2.12` 在 DSH `0.2.1-alpha.3` 上的隔离安装、启动、原生工具、设置保存、卸载与版本回滚，见[生命周期验收记录](./verification/profile-lifecycle-20261016.md)。后续运行证据与本文的依赖审阅材料分别记录，均不代替 Store 的独立审阅。
 
 `0.2.14` 已完成正式 Web profile 升级、宿主重启和原生 `web_fetch` 验证，见[正式 profile 安装验证](./verification/formal-profile-v0.2.14-20261016.md)。该运行证据不替代本页的依赖审阅，也不改变 Store 的独立结论。`0.2.15` 的 alpha.4 适配证据以对应 Release 记录为准。
 
-[依赖清单](./dependency-inventory.json) 记录 2026-10-16 查询 npm 官方 Registry 得到的版本、来源仓库、许可证、tarball URL、SHA-512 integrity、安装脚本、源码构建脚本及公告响应。它覆盖 5 个直接运行依赖及其锁定传递依赖，共 15 个包；宿主提供的 peer 依赖与开发依赖不在此范围内。
+[依赖清单](./dependency-inventory.json) 记录 2026-10-16 查询 npm 官方 Registry 得到的版本、来源仓库、许可证、tarball URL、SHA-512 integrity、安装脚本、源码构建脚本及公告响应。该快照覆盖当时的 5 个直接运行依赖及其锁定传递依赖，共 15 个包；宿主提供的 peer 依赖与开发依赖不在此范围内。`ipaddr.js@2.5.0` 于 `0.2.20` 加入，尚未写入该快照，其来源、许可证与 integrity 以 npm 官方 Registry 和锁文件为准；重新生成清单属于后续动作，本轮不声称已完成。
 
-Registry 元数据中的 integrity 与项目锁文件逐项一致，15 个包均未声明 `preinstall`、`install`、`postinstall`。公共漏洞公告接口此次返回空对象，仅表示本次查询未返回公告。未验证发布者签名或 provenance，也未据此断言包内代码安全。本文及清单均不替代 Store 或其他审阅者的独立审计。
+Registry 元数据中的 integrity 与项目锁文件逐项一致，清单中的 15 个包均未声明 `preinstall`、`install`、`postinstall`。公共漏洞公告接口此次返回空对象，仅表示本次查询未返回公告。未验证发布者签名或 provenance，也未据此断言包内代码安全。本文及清单均不替代 Store 或其他审阅者的独立审计。
 
 ## 直接运行依赖
 
@@ -18,15 +18,16 @@ Registry 元数据中的 integrity 与项目锁文件逐项一致，15 个包均
 | --- | --- | --- |
 | `@deepseek-ai/schemastery@3.18.5-alpha.2` | [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) | 在 `src/index.ts` 声明配置 schema。上游官方命名空间是依赖来源，本插件包名不占用该命名空间。传递引入 cosmokit 与 Standard Schema 类型。 |
 | `@joplin/turndown-plugin-gfm@1.0.68` | [Joplin GFM 插件](https://github.com/laurent22/joplin-turndown-plugin-gfm) | 在 `src/fetch-document/blocks.ts` 补充表格等 HTML 转换规则。npm 包带构建产物；源码 `prepare` 为 `npm run build`，安装本项目时不从依赖的 Git 源构建。 |
+| `ipaddr.js@2.5.0` | [ipaddr.js](https://github.com/whitequark/ipaddr.js) | 在 `src/address-guard.ts` 判定本机与内网地址，作为派发第三方提取服务前的守卫。纯解析库，无网络访问、无安装脚本。与宿主 `dsh-web-fetch-http` 使用同一版本，避免两套地址分类规则。 |
 | `fast-xml-parser@5.11.2` | [fast-xml-parser](https://github.com/NaturalIntelligence/fast-xml-parser) | 在 `src/engines/additional/adapters.ts` 解析 Bing RSS。不可信输入先拒绝 `DOCTYPE` 并验证 XML；仍需审阅解析器及其传递依赖的资源消耗与输入处理。 |
 | `turndown@7.2.4` | [Turndown](https://github.com/mixmark-io/turndown) | 在 `src/fetch-document/blocks.ts` 将 HTML 转成 Markdown，移除 script、style、noscript。通过 domino 解析 DOM，不执行页面脚本；这不等于对输出做安全过滤或验证内容可信度。 |
 | `undici@8.11.2` | [Node.js Undici](https://github.com/nodejs/undici) | 在 `src/engines/decision/client.ts` 发出决策请求，复用宿主代理 dispatcher，保持 Undici 主版本一致。具备网络访问能力，需连同自定义端点及凭证发送范围审阅。声明 Node.js `>=22.19.0`。 |
 
-五个直接依赖均声明 MIT。传递依赖中 `@mixmark-io/domino@2.2.0` 声明 BSD-2-Clause，其余声明 MIT；完整许可证及来源字段见清单。依赖不内联到插件编译文件，由包管理器安装并保留自身许可文件。
+六个直接依赖均声明 MIT（`ipaddr.js@2.5.0` 同为 MIT，按锁文件与 npm 元数据核对）。传递依赖中 `@mixmark-io/domino@2.2.0` 声明 BSD-2-Clause，其余声明 MIT；完整许可证及来源字段见清单。依赖不内联到插件编译文件，由包管理器安装并保留自身许可文件。
 
 ## 分发与权限
 
-- `lib/` 包含 49 个 ESM 模块和 49 个类型声明，随固定 Git 提交提供。`client/index.js` 与 `cordis.patch.yml` 同时保留，安装方不需要执行 TypeScript 构建。
+- `lib/` 包含 40 个 ESM 模块和 40 个类型声明，随固定 Git 提交提供。`client/index.js` 与 `cordis.patch.yml` 同时保留，安装方不需要执行 TypeScript 构建。
 - 本插件没有 `preinstall`、`install`、`postinstall` 或 `prepare`。作者打包时的 `prepack` 运行本仓库清理脚本及 TypeScript 编译器；这与安装已生成的固定源码是不同操作。
 - Bundle 的 `web` 行覆盖该配置层的整个 config，选择 `aggregated` 搜索／提取 provider；新增入口为 `web-search-fetch`。应用前应单独审阅配置覆盖对原有 provider 设置的影响。
 - 插件代码以宿主进程权限运行。凭证读写、外部网络、自定义端点、日志与资源限制见[安全说明](../SECURITY.md)。依赖没有安装脚本，不表示运行时没有权限或风险。

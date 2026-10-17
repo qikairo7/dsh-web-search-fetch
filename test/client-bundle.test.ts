@@ -957,4 +957,52 @@ describe('card controller', () => {
     expect(statuses.filter(status => status === 'partial')).toHaveLength(2);
   });
 
+  it('预设选项含单通道与多通道，并给出双语标签', () => {
+    const { face, page } = mount({ value: {} });
+    const entry = page.registrations.find(entry => entry.options.name === 'settings.plugins.tab')!;
+    const card = (entry.component as (props: unknown) => unknown)({
+      ...face, t: (key: string) => key,
+      useWebSearchFetch: (select: (value: unknown) => unknown) => select(face.hooks.webSearchFetch.getSnapshot()),
+    });
+    const segmented: string[][] = [];
+    function visit(value: any): void {
+      if (!value || typeof value !== 'object') return;
+      if (Array.isArray(value.props?.options) && value.props.options.every((option: any) => typeof option?.value === 'string')) {
+        segmented.push(value.props.options.map((option: any) => option.value));
+      }
+      for (const child of Object.values(value)) if (typeof child === 'object') Array.isArray(child) ? child.forEach(visit) : visit(child);
+    }
+    visit(card);
+    const presets = segmented.find(options => options.includes('auto') && options.includes('custom'))!;
+    expect(presets).toEqual(['auto', 'single', 'multi', 'free', 'balanced', 'deep', 'custom']);
+    const bundles = page.localeRegistrations[0]!.bundles as { zh: Record<string, string>; en: Record<string, string> };
+    for (const name of ['singlePreset', 'multiPreset', 'singlePresetHint', 'multiPresetHint', 'decisionRoutingLabel', 'decisionRouting_off', 'decisionRouting_model', 'decisionRoutingHint']) {
+      expect(bundles.zh[name], name).toBeTruthy();
+      expect(bundles.en[name], name).toBeTruthy();
+    }
+  });
+
+  it('自动预设默认用本地规则，切到决策模型才要求凭证', () => {
+    const { face } = mount({ value: {} });
+    expect(face.hooks.webSearchFetch.getSnapshot().controls.decisionRouting).toBeUndefined();
+    face.editControl('decisionRouting', 'model');
+    expect(face.hooks.webSearchFetch.getSnapshot().controls.decisionRouting).toBe('model');
+    face.editControl('decisionRouting', 'nonsense');
+    expect(face.hooks.webSearchFetch.getSnapshot().controls.decisionRouting).toBe('model');
+    face.editControl('decisionRouting', 'off');
+    expect(face.hooks.webSearchFetch.getSnapshot().controls.decisionRouting).toBe('off');
+  });
+
+  it('新增预设可选并可保存', async () => {
+    const { face, scope } = mount({ value: {} });
+    face.editControl('preset', 'single');
+    expect(face.hooks.webSearchFetch.getSnapshot().controls.preset).toBe('single');
+    face.editControl('preset', 'multi');
+    expect(face.hooks.webSearchFetch.getSnapshot().controls.preset).toBe('multi');
+    face.editControl('preset', 'bogus');
+    expect(face.hooks.webSearchFetch.getSnapshot().controls.preset).toBe('multi');
+    await face.save();
+    expect(scope.mutations.flat()).toContainEqual({ op: 'set', path: ['controls', 'preset'], value: 'multi' });
+  });
+
 });

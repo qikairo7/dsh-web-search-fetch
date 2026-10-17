@@ -1,5 +1,32 @@
 import type { WebFetchResult } from '@deepseek-ai/dsh-web';
 import type { BreakerSignal, CircuitBreaker } from './breaker/index.js';
+/** Paragraph characters a probe result must reach before it is served as-is. */
+export declare const PROBE_MIN_PARAGRAPH_CHARS = 400;
+/**
+ * One field of the two-stage decision: the URL a raw result is served for.
+ * The probe is the fetch face's default path for the automatic preset in
+ * organize mode — it spends exactly one request and returns the page's own
+ * text when that text is already a complete answer.
+ */
+export interface ProbeVerdict {
+    /** Whether the probe result can be returned without any fan-out or markers. */
+    readonly sufficient: boolean;
+    /** Why the probe was not sufficient, for the pipeline log. */
+    readonly reason?: 'challenge' | 'target-mismatch' | 'non-2xx' | 'body-thin';
+}
+/**
+ * Decide whether one probe result is already a complete answer.
+ *
+ * The bar is deliberately narrow: the probe must be a `2xx` for the requested
+ * target (a same-resource HTTPS upgrade is allowed), must not be a login or
+ * challenge page, and must carry at least {@link PROBE_MIN_PARAGRAPH_CHARS}
+ * characters of ordinary paragraphs. Anything less escalates to the multi-path
+ * organization, where several extracts are merged and marked.
+ * @param requestedUrl - the URL the caller asked for.
+ * @param result - what the probe request returned.
+ * @returns the verdict, with the escalation reason when it is not sufficient.
+ */
+export declare function probeVerdict(requestedUrl: string, result: WebFetchResult): ProbeVerdict;
 /** The two dispatch routes of the fetch pipeline. */
 export type FetchRoute = 'static' | 'dynamic';
 /**
@@ -135,6 +162,14 @@ export interface AggregateDynamicFetchOptions {
     readonly perEngineTimeoutMs?: number;
     /** Engine-weight overrides for selection; missing entries keep defaults. */
     readonly engineWeights?: Partial<Record<string, number>>;
+    /**
+     * Extracts already retrieved by the first-path probe: they join the
+     * organization as ordinary candidates instead of being requested again, so
+     * escalating never duplicates one channel's request.
+     */
+    readonly seeds?: readonly FetchCandidate[];
+    /** Engines whose result is already in {@link seeds}; never dispatched twice. */
+    readonly skipEngineIds?: readonly string[];
 }
 /**
  * Run the dynamic path for one URL: dispatch every non-broken engine

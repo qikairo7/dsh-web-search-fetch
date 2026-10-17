@@ -5,18 +5,18 @@
 
 **面向资料研究的 DSH 插件：融合多来源搜索，整理网页正文，保留来源与差异。**
 
-面向 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）的网络搜索与网页提取插件。它把多个服务聚合到原生 `web_search` / `web_fetch` 两个 provider 后面，不新增模型工具、MCP 服务、常驻浏览器或外部 CLI。新安装默认启用 AnySearch、Firecrawl、Tavily，使用官方匿名额度开始；自动预设另需配置决策模型凭证。DSH `0.2.1-rc.2` 新增的 DeepSeek Search / Fetch 直连 API 已作为默认关闭的可选来源接入。配置更多服务后，搜索结果经过 URL 去重与 RRF 融合，动态网页按多路正文整理，并保留来源与差异。
+面向 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）的网络搜索与网页提取插件。它把多个服务聚合到原生 `web_search` / `web_fetch` 两个 provider 后面，不新增模型工具、MCP 服务、常驻浏览器或外部 CLI。新安装默认启用 AnySearch、Firecrawl、Tavily，使用官方匿名额度开始；自动预设默认由本地规则判断调用范围，不需要模型凭证。DSH `0.2.1-rc.2` 新增的 DeepSeek Search / Fetch 直连 API 已作为默认关闭的可选来源接入。配置更多服务后，搜索结果经过 URL 去重与 RRF 融合，动态网页按多路正文整理，并保留来源与差异。
 
 [快速开始](#快速开始) · [项目定位与证据](#项目定位与证据) · [配置参考](./docs/configuration.md) · [正文整理演示](./docs/content-organization.md#输入与输出演示) · [真实对比](./docs/modsearch-comparison.md) · [依赖审阅材料](./docs/dependency-review.md) · [参与贡献](./CONTRIBUTING.md)
 
 ```sh
-dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.19/dsh-web-search-fetch-0.2.19.tgz
+dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.20/dsh-web-search-fetch-0.2.20.tgz
 ```
 
 安装后打开「设置 → 内置插件 → 网络搜索与提取」，在顶部明确选择一种开始方式：
 
-- **配置自动决策**：展开模型与凭证设置，配置对应平台密钥并保存，使用默认自动预设。
-- **直接体验匿名服务**：切换为自定义固定预设，仅选择官方端点且未配密钥的推荐服务和直接 HTTP 抓取，关闭其他服务；保存后即可使用，无需决策模型凭证。已有密钥与自定义端点不会被清除。
+- **配置自动决策**：展开调用设置，默认的自动预设已经可用；需要让模型参与判断时，把判断方式切换为决策模型，配置对应平台密钥并保存。
+- **直接体验匿名服务**：切换为自定义固定预设，仅选择官方端点且未配密钥的推荐服务和直接 HTTP 抓取，关闭其他服务；保存后即可使用，无需任何决策模型凭证。已有密钥与自定义端点不会被清除。
 
 匿名模式受服务方额度与限流约束，不能保证无限使用。未安装 DSH 的环境需先完成[宿主安装](https://github.com/deepseek-ai/deepseek-harness)。
 
@@ -26,20 +26,23 @@ dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/re
 | --- | --- | --- |
 | 多来源搜索融合 | 最多 13 个搜索服务并发调用，合并重复 URL 与已知文档别名，使用 RRF（Reciprocal Rank Fusion）融合排名 | 将多路可用结果整理为统一来源列表 |
 | 官方文档优先 | 识别已支持技术项目的官方文档意图，补充限定域名检索；相关官方来源在重排前后优先 | 减少技术检索中官方资料缺失或被无关页面挤占 |
-| 无需密钥首次体验 | AnySearch、Firecrawl、Tavily 官方搜索与提取支持匿名额度，无需填写密钥 | 固定预设可直接体验；自动预设需先配置决策模型凭证 |
+| 无需密钥首次体验 | AnySearch、Firecrawl、Tavily 官方搜索与提取支持匿名额度，无需填写密钥 | 自动与固定预设都不要求决策模型凭证 |
+| 两段式提取 | 自动预设在整理模式下先派发一路探测，正文够用就直接返回原文，不合并、不加来源标记 | 短页与常见文章一次请求即可，省额度也省尾部等待 |
 | 多来源正文整理 | 动态提取按章节和共同内容块去重、互补，保留提取来源及文本差异 | 将说明、表格、代码和独有段落整理到一份正文 |
 | 原生双工具 | 仅注册搜索和提取 provider，不新增模型工具，也不需要额外 MCP 服务、浏览器自动化或外部 CLI | 沿用 DSH 的 `web_search`、`web_fetch` 调用方式 |
 | 可选免费重排 | 调用硅基流动免费模型 `BAAI/bge-reranker-v2-m3`；不可用时保留融合顺序 | 对融合候选进行相关性排序，仍需配置 API Key |
 | 服务统一管理 | DSH 凭证管理、服务开关，以及超时、取消、限流冷却和额度熔断 | 一处配置搜索、提取与重排；单路失败时继续使用其他可用结果 |
-| 调用范围与预算 | 自动预设由快速决策模型判断覆盖范围，多路结果充分后经过宽限期结束慢渠道 | 保持多路并发，减少尾部等待；也支持固定预设 |
+| 调用范围与预算 | 自动预设按本地规则在单通道与多通道之间判断，多路结果充分后经过宽限期结束慢渠道 | 简单问题只用一路，复杂问题才并发；也支持固定预设 |
 
-插件注册两个 ID 为 `aggregated` 的 provider。设置页覆盖 15 项搜索／提取／重排服务和 14 个凭证位，另提供五款决策模型选择。每项服务均提供独立启停开关。静态资源使用 DSH 内置 HTTP 提取器，AIHOT 专用 API 直接读取；其余 URL 按配置进入多服务提取。
+插件注册两个 ID 为 `aggregated` 的 provider。设置页覆盖 15 项搜索／提取／重排服务和 14 个凭证位，另提供可选的五款决策模型与判断方式切换。每项服务均提供独立启停开关。静态资源使用 DSH 内置 HTTP 提取器，AIHOT 专用 API 直接读取；其余 URL 按配置进入多服务提取。
 
 动态网页提取默认将同一 URL 的多路结果整理成一份正文：按章节和共同段落去重，补充独有内容，保留提取来源和文本差异。代码、表格、链接和原文数字保留；不同标题、明确版本标记、语言或返回目标的内容放入补充片段，识别出的登录与挑战页面不混入正文。引用式链接与脚注按来源保留完整 Markdown 原文，避免同名定义串用。可切换旧版单份正文模式。规则边界见[网页正文整理](./docs/content-organization.md)。
 
-默认使用自动预设：决策模型先判断 `fast`（3 路）、`balanced`（5 路）或 `deep`（已选服务范围），再派发搜索和提取；外部决策模型是自动预设的必要依赖；超时或凭证缺失时返回明确错误，本次不派发服务。设置页也可固定为免费接口、均衡、深度或自定义，并独立选择搜索／提取服务、限制服务数量、HTTP 请求数、操作总限时和正文输出长度。保存后下一次调用生效；免费额度与付费服务不会自动纳入免费接口预设。
+默认使用自动预设：按本地规则判断调用范围——查询含对比、综述、调研、时效等意图时走多通道，其余先走单通道；提取侧在整理模式下先派发一路探测，正文段落不少于 400 字符且目标一致时直接返回该路原文，否则升级为多路整理。设置页也可固定为单通道、多通道、免费接口、均衡、深度或自定义，并独立选择搜索／提取服务、限制服务数量、HTTP 请求数、操作总限时和正文输出长度。保存后下一次调用生效；免费额度与付费服务不会自动纳入免费接口预设。
 
-自动预设不会等到第一路返回就结束：搜索需至少三路服务返回充分的相关结果；正文提取需至少三路较长正文具有相同标题和共同段落。满足条件后继续等待短暂宽限期，再取消未完成渠道，并标记结果可能不完整。明确的导航和主题控件不进入整理正文；代码、表格、有效链接与文本差异保留。
+把 `controls.decisionRouting` 切换为 `model` 后，自动预设改为先问决策模型（`fast` 一路、`balanced` 三路、`deep` 已选服务范围）；模型不可用、超时或凭证缺失时改用本地规则，本次仍返回结果，并在说明里写清降级原因。决策路由默认关闭。
+
+多通道下不会等到第一路返回就结束：搜索需至少三路服务返回充分的相关结果；正文提取需至少三路较长正文具有相同标题和共同段落。满足条件后继续等待短暂宽限期，再取消未完成渠道，并标记结果可能不完整。明确的导航和主题控件不进入整理正文；代码、表格、有效链接与文本差异保留。
 
 搜索融合和正文整理不构成事实交叉验证。多路并发及补充检索会消耗对应服务额度。参数与使用边界见[配置参考](./docs/configuration.md)，离线验证方法见[正文整理](./docs/content-organization.md)，中文、新闻、长文、挑战页及慢渠道的指标见[质量评测](./docs/quality-evaluation.md)。
 
@@ -51,8 +54,8 @@ dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/re
 
 | 证据 | 结果与边界 |
 | --- | --- |
-| 当前交付版本 | `0.2.19`；适配 DSH `0.2.1-rc.2`，新增默认关闭的 DeepSeek Search / Fetch 直连 API 来源 |
-| 仓库门禁 | 526 项测试、构建、类型检查、仓库与分发检查、双 OS × 双 Node CI |
+| 当前交付版本 | `0.2.20`；单通道/多通道预设、两段式提取、内网地址守卫与输出治理 |
+| 仓库门禁 | 576 项测试、构建、类型检查、仓库与分发检查、双 OS × 双 Node CI |
 | 隔离生命周期 | `0.2.12` 完成安装、启动、原生工具、设置保存、重启持久化、卸载与回滚 |
 | 正式会话 | `0.2.13` 四轮模型自主调用原生双工具，覆盖 deep / fast 自动切换和「不读取网页」约束 |
 | 正式 profile 升级 | `0.2.14` 完成 Release 下载校验、升级、宿主重启和 `web_fetch` 三路提取 |
@@ -79,8 +82,8 @@ dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/re
 | Bing RSS | 支持 | — | 匿名公开 RSS 搜索 |
 | AIHOT | AI 资讯关键词 | 专用 API | 默认关闭，支持热点、事件、报告与精选读取 |
 | 硅基流动 | 重排 | — | 融合结果相关性排序 |
-| 阿里决策模型 | 自动预设路由 | — | `decision-model-preview` 判断覆盖范围 |
-| TypeSafe | 自动预设路由 | — | `jev-latest` 判断覆盖范围 |
+| 阿里决策模型 | 可选的自动预设路由 | — | `decision-model-preview` 判断覆盖范围，仅在 `decisionRouting: model` 时调用 |
+| TypeSafe | 可选的自动预设路由 | — | `jev-latest` 判断覆盖范围，仅在 `decisionRouting: model` 时调用 |
 | 直接 HTTP 抓取 | — | 静态资源 | 复用 DSH HTTP 组件，无需服务凭证 |
 
 新安装默认开启 AnySearch、Firecrawl、Tavily 三家推荐服务，其余远程服务与硅基流动重排作为可选增强，默认关闭。直接 HTTP 抓取保留为静态资源的基础提取能力。已保存的显式开关设置优先于安装默认；旧版未设置开关的服务采用新版默认。按需开启增强后，搜索最多 13 路；普通动态提取最多 10 路，适用的 GitHub URL 最多 11 路。Kimi Basic / Pro 二选一，只计一路。AIHOT 专用 API 直接读取，重排和 HTTP 抓取均不计入动态提取路数。实际参与调用的服务取决于配置、凭证、URL 适用范围及熔断状态。
@@ -129,7 +132,7 @@ AIHOT 搜索覆盖近 7 天 AI 资讯；启用后，原生 `web_fetch` 可读取
 | 开发工具 | pnpm 12.10.1 |
 | 外部服务 | 网络连通性；推荐的 AnySearch、Firecrawl、Tavily 官方匿名模式无需凭证，增强服务按需启用 |
 
-已在 Windows、Node.js 24.20.0、DSH `0.2.1-alpha.2` / `0.2.1-alpha.3` 的正式环境及隔离 profile 中验证安装、原生搜索和网页提取。`0.2.14` 另在正式 Web profile 完成升级、重启和原生提取验证。`0.2.15` 已完成 alpha.4 正式 profile 适配与 `web_fetch` 实测。`0.2.16` 按 alpha.5 运行时执行适配检查；`0.2.17` 清理知乎、百度千帆与豆包，`0.2.18` 继续移除智谱，`0.2.19` 增加 rc.2 DeepSeek 新 API 来源。CI 覆盖 Windows／Ubuntu、Node.js 22.19／24 的构建、类型检查与测试；CI 通过不表示这些组合均完成 DSH 实机验收。
+已在 Windows、Node.js 24.20.0、DSH `0.2.1-alpha.2` / `0.2.1-alpha.3` 的正式环境及隔离 profile 中验证安装、原生搜索和网页提取。`0.2.14` 另在正式 Web profile 完成升级、重启和原生提取验证。`0.2.15` 已完成 alpha.4 正式 profile 适配与 `web_fetch` 实测。`0.2.16` 按 alpha.5 运行时执行适配检查；`0.2.17` 清理知乎、百度千帆与豆包，`0.2.18` 继续移除智谱，`0.2.19` 增加 rc.2 DeepSeek 新 API 来源，`0.2.20` 调整调用范围、两段式提取、内网地址守卫与输出治理。CI 覆盖 Windows／Ubuntu、Node.js 22.19／24 的构建、类型检查与测试；CI 通过不表示这些组合均完成 DSH 实机验收。
 
 | DSH 版本 | 兼容声明 | 验证范围 |
 | --- | --- | --- |
@@ -148,10 +151,10 @@ AIHOT 搜索覆盖近 7 天 AI 资讯；启用后，原生 `web_fetch` 可读取
 在已配置 DSH 的环境中执行：
 
 ```sh
-dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.19/dsh-web-search-fetch-0.2.19.tgz
+dsh plugin --profile web add https://github.com/qikairo7/dsh-web-search-fetch/releases/download/v0.2.20/dsh-web-search-fetch-0.2.20.tgz
 ```
 
-将 `web` 替换为实际使用的 profile，安装后重启宿主。以上命令使用 `0.2.19` Release 包，不需要 npm 包发布账号或 GitHub 登录。
+将 `web` 替换为实际使用的 profile，安装后重启宿主。以上命令使用 `0.2.20` Release 包，不需要 npm 包发布账号或 GitHub 登录。
 
 自 `0.2.11` 起，Git 固定提交同时包含完整的 `lib/**/*.js` 与 `lib/**/*.d.ts`，安装方无需先编译 TypeScript。固定源码仍需安装运行依赖并满足宿主 peer 依赖；产物齐全不等于 Store 已批准或实际 profile 已完成验收。分发检查方法见[贡献指南](./CONTRIBUTING.md#测试与提交)，运行依赖、完整性与审阅边界见[依赖审阅材料](./docs/dependency-review.md)。
 
@@ -233,11 +236,15 @@ flowchart LR
     Fanout --> Fusion[URL 去重与 RRF 融合]
     Fusion --> Rerank[可选相关性重排]
     Rerank --> Sources[统一来源列表]
-    Fetch[web_fetch] --> API{已启用的 AIHOT 专用 API?}
+    Fetch[web_fetch] --> Guard{目标地址是内网或回环?}
+    Guard -->|是| Blocked[拒绝外发：WEB_BLOCKED_URL]
+    Guard -->|否| API{已启用的 AIHOT 专用 API?}
     API -->|是| AIHOT[读取 Markdown 或完整 JSON]
     API -->|否| Route{URL 分流规则}
     Route -->|静态资源| HTTP[DSH HTTP 提取器]
-    Route -->|其他 URL| Extract[多来源并发提取]
+    Route -->|其他 URL| Probe{自动预设：首路探测}
+    Probe -->|正文够用| Original[直接返回该路原文]
+    Probe -->|不足| Extract[多来源并发提取]
     Extract --> Mode{正文处理模式}
     Mode -->|默认整理| Organize[内容块去重与互补]
     Organize --> Body[正文、来源与文本差异]
@@ -265,6 +272,7 @@ flowchart LR
 | [0.2.14 正式 profile 安装验证](./docs/verification/formal-profile-v0.2.14-20261016.md) | 正式 Web profile 升级、宿主重启与原生 `web_fetch` 三路提取实测 |
 | [0.2.15 alpha.4 适配验收](./docs/verification/formal-profile-v0.2.15-alpha4-20261016.md) | alpha.4 兼容声明、正式 profile 升级、宿主重启与原生 `web_fetch` 三路提取实测 |
 | [0.2.19 DeepSeek rc.2 适配验收](./docs/verification/v0.2.19-deepseek-rc2-20261017.md) | DeepSeek 新来源本地门禁、正式 profile 安装、宿主重启与原生双工具实测 |
+| [0.2.20 验收记录](./docs/verification/v0.2.20-acceptance-20261017.md) | 调用范围、两段式提取、内网地址守卫与输出治理的门禁与实测 |
 | [贡献指南](./CONTRIBUTING.md) | 本地开发、测试和提交要求 |
 | [安全说明](./SECURITY.md) | 外部请求、凭证保护和漏洞报告 |
 

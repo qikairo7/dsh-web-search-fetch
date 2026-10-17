@@ -27,7 +27,7 @@ export { FIRECRAWL_SCRAPE_URL } from './engines/firecrawl/wire.js';
 export { RERANK_TIMEOUT_MS, SILICONFLOW_RERANK_URL } from './engines/rerank/limits.js';
 export { AggregatedSearchProvider, ANYSEARCH_DEFAULT_API_KEY_ENV, ANYSEARCH_ENGINE_ID, DEFAULT_RERANK_POOL, DEFAULT_RRF_K, DEFAULT_SEARCH_MAX_FANOUT_MS, SILICONFLOW_DEFAULT_API_KEY_ENV, createAggregatedSearchProvider, normalizeSearchUrl, readSearchFailureSignal, rrfFuse, } from './search-pipeline.js';
 export type { AggregatedSearchOptions, AggregatedSearchPipelineOptions, FusedCandidate, RerankHandle, ResolveCredential, SearchEngineClient, SearchEngineOverrides, SearchLogSink, } from './search-pipeline.js';
-export { AggregatedFetchProvider, DEFAULT_HTTP_FETCH_LIMITS, createExtractionLegs } from './fetch-pipeline.js';
+export { AggregatedFetchProvider, DEFAULT_HTTP_FETCH_LIMITS, DEFAULT_PROBE_TIMEOUT_MS, createExtractionLegs } from './fetch-pipeline.js';
 export type { AggregatedFetchProviderOptions, ExtractionEngineClients } from './fetch-pipeline.js';
 export { aggregateDynamicFetch, anysearchBreakerSignal, bodyFingerprint, classifyFetchRoute, DEFAULT_ENGINE_WEIGHTS, DEFAULT_FETCH_ENGINE_TIMEOUT_MS, DEFAULT_STATIC_EXTENSIONS, extractBodyTitle, extractUrlSlug, firecrawlBreakerSignal, isUsableCandidate, scoreCandidate, selectBestCandidate, titleSimilarity, } from './fetch-aggregate.js';
 export { DecisionClient } from './engines/decision/client.js';
@@ -79,6 +79,12 @@ export interface FetchConfig {
     perEngineTimeoutMs?: number;
     /** 择优 weight overrides per engine id; missing entries keep the defaults. */
     engineWeights?: Record<string, number>;
+    /** Refuse loopback/private destinations before any third-party engine sees them. Default `true`. */
+    blockPrivateAddresses?: boolean;
+    /** Deadline of the automatic preset's first-path probe, in milliseconds. Default 15 s. */
+    probeTimeoutMs?: number;
+    /** Let the `single` preset fall back to multi-path organization. Default `false`. */
+    singleChannelEscalate?: boolean;
     /** Firecrawl credential reference; defaults to `FIRECRAWL_API_KEY`. */
     firecrawlApiKeyEnv?: Volatile<string>;
     /** AnySearch extract credential reference; falls back to the search-face one. */
@@ -102,7 +108,8 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
     controls: z<NoInfer<Schemastery.ObjectS<NoInfer<{
         serviceEnabled: z<Dict<boolean, string>, Dict<boolean, string>, "defined">;
         mode: z<"select" | "organize", "select" | "organize", "defined">;
-        preset: z<"auto" | "custom" | "free" | "balanced" | "deep", "auto" | "custom" | "free" | "balanced" | "deep", "defined">;
+        preset: z<"auto" | "single" | "multi" | "custom" | "free" | "balanced" | "deep", "auto" | "single" | "multi" | "custom" | "free" | "balanced" | "deep", "defined">;
+        decisionRouting: z<"off" | "model", "off" | "model", "defined">;
         searchServices: z<string[], string[], "defined">;
         fetchServices: z<string[], string[], "defined">;
         maxSearchServices: z<number, number, "defined">;
@@ -114,7 +121,8 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
     }>>>, NoInfer<Schemastery.ObjectT<NoInfer<{
         serviceEnabled: z<Dict<boolean, string>, Dict<boolean, string>, "defined">;
         mode: z<"select" | "organize", "select" | "organize", "defined">;
-        preset: z<"auto" | "custom" | "free" | "balanced" | "deep", "auto" | "custom" | "free" | "balanced" | "deep", "defined">;
+        preset: z<"auto" | "single" | "multi" | "custom" | "free" | "balanced" | "deep", "auto" | "single" | "multi" | "custom" | "free" | "balanced" | "deep", "defined">;
+        decisionRouting: z<"off" | "model", "off" | "model", "defined">;
         searchServices: z<string[], string[], "defined">;
         fetchServices: z<string[], string[], "defined">;
         maxSearchServices: z<number, number, "defined">;
@@ -167,6 +175,9 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
         staticDomains: z<string[], string[], "defined">;
         staticExtensions: z<string[], string[], "defined">;
         perEngineTimeoutMs: z<number, number, "defined">;
+        blockPrivateAddresses: z<boolean, boolean, "defined">;
+        probeTimeoutMs: z<number, number, "defined">;
+        singleChannelEscalate: z<boolean, boolean, "defined">;
         engineWeights: z<Dict<number, string>, Dict<number, string>, "defined">;
         firecrawlApiKeyEnv: z<string, string, "volatile-defined">;
         anysearchApiKeyEnv: z<string, string, "volatile">;
@@ -177,6 +188,9 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
         staticDomains: z<string[], string[], "defined">;
         staticExtensions: z<string[], string[], "defined">;
         perEngineTimeoutMs: z<number, number, "defined">;
+        blockPrivateAddresses: z<boolean, boolean, "defined">;
+        probeTimeoutMs: z<number, number, "defined">;
+        singleChannelEscalate: z<boolean, boolean, "defined">;
         engineWeights: z<Dict<number, string>, Dict<number, string>, "defined">;
         firecrawlApiKeyEnv: z<string, string, "volatile-defined">;
         anysearchApiKeyEnv: z<string, string, "volatile">;
@@ -187,7 +201,8 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
     controls: z<NoInfer<Schemastery.ObjectS<NoInfer<{
         serviceEnabled: z<Dict<boolean, string>, Dict<boolean, string>, "defined">;
         mode: z<"select" | "organize", "select" | "organize", "defined">;
-        preset: z<"auto" | "custom" | "free" | "balanced" | "deep", "auto" | "custom" | "free" | "balanced" | "deep", "defined">;
+        preset: z<"auto" | "single" | "multi" | "custom" | "free" | "balanced" | "deep", "auto" | "single" | "multi" | "custom" | "free" | "balanced" | "deep", "defined">;
+        decisionRouting: z<"off" | "model", "off" | "model", "defined">;
         searchServices: z<string[], string[], "defined">;
         fetchServices: z<string[], string[], "defined">;
         maxSearchServices: z<number, number, "defined">;
@@ -199,7 +214,8 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
     }>>>, NoInfer<Schemastery.ObjectT<NoInfer<{
         serviceEnabled: z<Dict<boolean, string>, Dict<boolean, string>, "defined">;
         mode: z<"select" | "organize", "select" | "organize", "defined">;
-        preset: z<"auto" | "custom" | "free" | "balanced" | "deep", "auto" | "custom" | "free" | "balanced" | "deep", "defined">;
+        preset: z<"auto" | "single" | "multi" | "custom" | "free" | "balanced" | "deep", "auto" | "single" | "multi" | "custom" | "free" | "balanced" | "deep", "defined">;
+        decisionRouting: z<"off" | "model", "off" | "model", "defined">;
         searchServices: z<string[], string[], "defined">;
         fetchServices: z<string[], string[], "defined">;
         maxSearchServices: z<number, number, "defined">;
@@ -252,6 +268,9 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
         staticDomains: z<string[], string[], "defined">;
         staticExtensions: z<string[], string[], "defined">;
         perEngineTimeoutMs: z<number, number, "defined">;
+        blockPrivateAddresses: z<boolean, boolean, "defined">;
+        probeTimeoutMs: z<number, number, "defined">;
+        singleChannelEscalate: z<boolean, boolean, "defined">;
         engineWeights: z<Dict<number, string>, Dict<number, string>, "defined">;
         firecrawlApiKeyEnv: z<string, string, "volatile-defined">;
         anysearchApiKeyEnv: z<string, string, "volatile">;
@@ -262,6 +281,9 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
         staticDomains: z<string[], string[], "defined">;
         staticExtensions: z<string[], string[], "defined">;
         perEngineTimeoutMs: z<number, number, "defined">;
+        blockPrivateAddresses: z<boolean, boolean, "defined">;
+        probeTimeoutMs: z<number, number, "defined">;
+        singleChannelEscalate: z<boolean, boolean, "defined">;
         engineWeights: z<Dict<number, string>, Dict<number, string>, "defined">;
         firecrawlApiKeyEnv: z<string, string, "volatile-defined">;
         anysearchApiKeyEnv: z<string, string, "volatile">;
