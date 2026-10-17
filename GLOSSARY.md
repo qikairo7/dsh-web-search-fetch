@@ -3,7 +3,7 @@
 | 术语 | 含义 |
 | --- | --- |
 | 聚合 | 并发查询多个搜索服务，合并、去重并排序为统一结果集 |
-| 服务 | 插件直接调用的外部 HTTP 服务，例如 AnySearch、智谱、知乎和 Firecrawl |
+| 服务 | 插件直接调用的外部 HTTP 服务，例如 AnySearch、智谱和 Firecrawl |
 | provider | 注册到 DSH `ctx.web` 的搜索或提取实现；本插件使用 ID `aggregated` |
 | 原生工具 | DSH 提供给模型的 `web_search` 和 `web_fetch` |
 | seam | DSH 工具与 provider 之间的接口，统一请求、结果和 `WEB_*` 错误 |

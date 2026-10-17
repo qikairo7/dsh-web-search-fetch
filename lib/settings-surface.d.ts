@@ -28,7 +28,7 @@ export declare const WEB_SEARCH_FETCH_SETTINGS_NAMESPACE = "web-search-fetch";
 /** Fields served by native settings: transport, credential references and the extension map.
  * The map is volatile as a whole so path mutations can preserve custom endpoints and refs.
  */
-export declare const EDITABLE_SETTINGS_PATHS: readonly [readonly ["controls"], readonly ["search", "rerank"], readonly ["engines"], readonly ["fetch", "anysearchApiKeyEnv"], readonly ["apiKeyEnv"], readonly ["search", "zhipuApiKeyEnv"], readonly ["search", "anysearchApiKeyEnv"], readonly ["search", "zhihuAccessSecretEnv"], readonly ["search", "siliconflowApiKeyEnv"], readonly ["search", "zhipuTransport"], readonly ["search", "decisionModel"], readonly ["fetch", "firecrawlApiKeyEnv"]];
+export declare const EDITABLE_SETTINGS_PATHS: readonly [readonly ["controls"], readonly ["search", "rerank"], readonly ["engines"], readonly ["fetch", "anysearchApiKeyEnv"], readonly ["apiKeyEnv"], readonly ["search", "zhipuApiKeyEnv"], readonly ["search", "anysearchApiKeyEnv"], readonly ["search", "siliconflowApiKeyEnv"], readonly ["search", "zhipuTransport"], readonly ["search", "decisionModel"], readonly ["fetch", "firecrawlApiKeyEnv"]];
 /** One editable config path. */
 export type EditableSettingsPath = (typeof EDITABLE_SETTINGS_PATHS)[number];
 /**
@@ -55,7 +55,6 @@ export interface SettingsSurfaceConfig {
         /** No schema default: unset falls back, so the reference admits `undefined`. */
         zhipuApiKeyEnv?: Volatile<string | undefined> | string;
         anysearchApiKeyEnv?: Volatile<string> | string;
-        zhihuAccessSecretEnv?: Volatile<string> | string;
         siliconflowApiKeyEnv?: Volatile<string> | string;
         zhipuTransport?: Volatile<string> | string;
     };
@@ -66,7 +65,7 @@ export interface SettingsSurfaceConfig {
     };
 }
 /** Stable id of one engine key slot the settings card offers. */
-export type CredentialSlotId = 'anysearch' | 'zhipu' | 'zhihu' | 'firecrawl' | 'tavily' | 'exa' | 'keenable' | 'crawl4ai' | 'github' | 'qianfan' | 'doubao-search' | 'doubao-fetch' | 'tinyfish' | 'serply' | 'kimi' | 'siliconflow' | 'dashscope' | 'typesafe';
+export type CredentialSlotId = 'anysearch' | 'zhipu' | 'firecrawl' | 'tavily' | 'exa' | 'keenable' | 'crawl4ai' | 'github' | 'tinyfish' | 'serply' | 'kimi' | 'siliconflow' | 'dashscope' | 'typesafe';
 /** One engine key slot: which references name it, and the fallback. */
 export interface CredentialSlot {
     /** Stable slot id the card labels and renders in this order. */

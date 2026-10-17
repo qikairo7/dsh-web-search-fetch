@@ -68,7 +68,7 @@ function ours(cohort) {
     searchDeadlineMs: 15_000, fetchDeadlineMs: 50_000, maxOutputChars: 50_000, mode: 'organize' };
   const additionalEngines = createAdditionalEngines(settings, resolveCredential, { searchTimeoutMs: 10_000, fetchTimeoutMs: 45_000 });
   const search = createAggregatedSearchProvider({ resolveCredential, additionalEngines, resolveControls: () => controls,
-    rerank: false, zhihuQuotaCheck: false, maxFanoutMs: 10_000 });
+    rerank: false, quotaCheck: false, maxFanoutMs: 10_000 });
   const fetch = new AggregatedFetchProvider({ additionalEngines, resolveControls: () => controls, legs: createExtractionLegs({
     firecrawl: new FirecrawlClient({ resolveApiKey: () => resolveCredential('FIRECRAWL_API_KEY'), credentialName: 'FIRECRAWL_API_KEY', fetchImpl: budgetedFetch() }),
     anysearch: new AnySearchEngine({ resolveApiKey: async () => undefined, credentialName: 'UNCONFIGURED' }),

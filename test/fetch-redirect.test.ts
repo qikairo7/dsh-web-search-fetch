@@ -7,8 +7,8 @@ const result = (url = 'https://example.com/', content = '# Example Domain\n\nPub
   url, statusCode: 200, body: { kind: 'text', content }, truncated: false,
 });
 
-it('accepts the observed Doubao same-host HTTPS upgrade and returns the final URL', () => {
-  const output = organizeDocuments(request, [{ engineId: 'doubao', result: result() }]);
+it('accepts the generic same-host HTTPS upgrade and returns the final URL', () => {
+  const output = organizeDocuments(request, [{ engineId: 'engine-a', result: result() }]);
   expect(output.url).toBe('https://example.com/');
   expect(output.body.content).toContain('Public example content.');
   expect(output.body.content).toContain('F1:B2');
@@ -17,7 +17,7 @@ it('accepts the observed Doubao same-host HTTPS upgrade and returns the final UR
 it('does not merge an original HTTP document into the upgraded HTTPS main body', () => {
   const output = organizeDocuments(request, [
     { engineId: 'original', result: result('http://example.com/', '# Example Domain\n\nInsecure origin content.') },
-    { engineId: 'doubao', result: result() },
+    { engineId: 'engine-a', result: result() },
   ]);
   expect(output.url).toBe('https://example.com/');
   const main = output.body.content.split('## 补充片段')[0]!;
@@ -35,17 +35,17 @@ it.each([
   [request, 'https://example.com:8443/'],
   [request, 'https://user:password@example.com/'],
 ])('continues rejecting a different or unsafe target: %s -> %s', (input, returned) => {
-  expect(() => organizeDocuments(input, [{ engineId: 'doubao', result: result(returned) }])).toThrow('没有可整理');
+  expect(() => organizeDocuments(input, [{ engineId: 'engine-a', result: result(returned) }])).toThrow('没有可整理');
 });
 
 it('preserves structured content and its final URL on an HTTPS upgrade', () => {
   const fetched = result('https://example.com/', '{"items":[]}');
-  expect(organizeDocuments(request, [{ engineId: 'doubao', result: fetched }])).toEqual(fetched);
+  expect(organizeDocuments(request, [{ engineId: 'engine-a', result: fetched }])).toEqual(fetched);
 });
 
 it('preserves a non-2xx body and final URL on an allowed HTTPS upgrade', () => {
   const fetched = { ...result(), statusCode: 404 };
-  const output = organizeDocuments(request, [{ engineId: 'doubao', result: fetched }]);
+  const output = organizeDocuments(request, [{ engineId: 'engine-a', result: fetched }]);
   expect(output.url).toBe('https://example.com/');
   expect(output.statusCode).toBe(404);
   expect(output.body.content).toContain('Public example content.');
@@ -62,10 +62,10 @@ it('does not let an upgraded challenge hide a usable original document', () => {
 
 it('identifies the rejected engine and reason without exposing URL credentials', () => {
   try {
-    organizeDocuments('https://example.com', [{ engineId: 'doubao', result: result('https://other.test/?secret=private-value') }]);
+    organizeDocuments('https://example.com', [{ engineId: 'engine-a', result: result('https://other.test/?secret=private-value') }]);
     throw new Error('expected rejection');
   } catch (error) {
-    expect(String(error)).toContain('doubao: target-mismatch');
+    expect(String(error)).toContain('engine-a: target-mismatch');
     expect(String(error)).not.toContain('private-value');
     expect(String(error)).not.toContain('other.test');
   }

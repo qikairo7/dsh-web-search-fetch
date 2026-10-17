@@ -24,14 +24,6 @@ export declare const ADDITIONAL_ENGINE_DEFAULTS: {
         readonly apiKeyEnv: "GITHUB_TOKEN";
         readonly baseURL: "https://api.github.com";
     };
-    readonly qianfan: {
-        readonly apiKeyEnv: "QIANFAN_API_KEY";
-        readonly baseURL: "https://qianfan.baidubce.com";
-    };
-    readonly doubao: {
-        readonly apiKeyEnv: "DOUBAO_SEARCH_API_KEY";
-        readonly baseURL: "https://open.feedcoopapi.com";
-    };
     readonly firecrawl: {
         readonly apiKeyEnv: "FIRECRAWL_API_KEY";
         readonly baseURL: "https://api.firecrawl.dev";
@@ -62,8 +54,6 @@ export type AdditionalEngineId = keyof typeof ADDITIONAL_ENGINE_DEFAULTS;
 export interface AdditionalEngineConfig {
     enabled?: boolean;
     apiKeyEnv?: string;
-    /** Only Doubao has a separate extraction credential. */
-    fetchApiKeyEnv?: string;
     baseURL?: string;
     /** TinyFish uses a separate Fetch API origin; other engines share their search origin. */
     fetchBaseURL?: string;
@@ -85,7 +75,7 @@ export declare function createAdditionalEngines(config: AdditionalEnginesConfig,
     fetchImpl?: typeof fetch;
 }): AdditionalEngine[];
 export declare function additionalExtractionLegs(engines: readonly AdditionalEngine[], url: string): {
-    engineId: "tinyfish" | "bing" | "github" | "aihot" | "firecrawl" | "tavily" | "exa" | "keenable" | "crawl4ai" | "qianfan" | "doubao" | "serply" | "kimi";
+    engineId: "tinyfish" | "bing" | "github" | "aihot" | "firecrawl" | "tavily" | "exa" | "keenable" | "crawl4ai" | "serply" | "kimi";
     extract: (url: string, signal?: AbortSignal) => Promise<WebFetchResult>;
     signalOf: typeof additionalBreakerSignal;
 }[];

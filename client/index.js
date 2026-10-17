@@ -33,15 +33,12 @@ window.__ModuleLoader__.load({
             controlsHint: '整理保留原文和提取来源；差异不会自动判定真伪。请求上限包括重试、额度检查与重排，不是金额上限；宿主 HTTP 抓取另有独立限制。处理情况见本次工具结果和日志。',
             freeHint: '免费预设仅使用 Bing RSS、TinyFish、GitHub 公开 API 和已启用的 AIHOT；部分仍需密钥，AIHOT 仍受用途限制。不调用免费额度用尽后收费的接口。',
             keysHint: '留空保留原密钥。保存后只显示配置状态。', keyHint: '留空保留原密钥',
-            anysearch: 'AnySearch API Key', zhipu: '智谱 API Key', zhihu: '知乎 Access Secret',
+            anysearch: 'AnySearch API Key', zhipu: '智谱 API Key',
             firecrawl: 'Firecrawl API Key', tavily: 'Tavily API Key', exa: 'Exa API Key', keenable: 'Keenable API Key',
-            crawl4ai: 'Crawl4AI Cloud API Key', github: 'GitHub Token', qianfan: '百度千帆 API Key',
-            'doubao-search': '豆包搜索 API Key', 'doubao-fetch': '豆包提取 API Key',
-            tinyfish: 'TinyFish API Key', serply: 'Serply API Key', kimi: 'Kimi API Key', siliconflow: '硅基流动 API Key',
-            'anysearch-service': 'AnySearch AI', 'zhipu-service': '智谱', 'zhihu-service': '知乎',
+            crawl4ai: 'Crawl4AI Cloud API Key', github: 'GitHub Token', tinyfish: 'TinyFish API Key', serply: 'Serply API Key', kimi: 'Kimi API Key', siliconflow: '硅基流动 API Key',
+            'anysearch-service': 'AnySearch AI', 'zhipu-service': '智谱',
             'firecrawl-service': 'Firecrawl', 'tavily-service': 'Tavily', 'exa-service': 'Exa', 'keenable-service': 'Keenable',
-            'crawl4ai-service': 'Crawl4AI Cloud', 'github-service': 'GitHub', 'qianfan-service': '百度千帆 AI 搜索',
-            'doubao-service': '豆包 Custom', 'tinyfish-service': 'TinyFish', 'serply-service': 'Serply', 'kimi-service': 'Kimi',
+            'crawl4ai-service': 'Crawl4AI Cloud', 'github-service': 'GitHub', 'tinyfish-service': 'TinyFish', 'serply-service': 'Serply', 'kimi-service': 'Kimi',
             'bing-service': 'Bing RSS', 'aihot-service': 'AIHOT', 'siliconflow-service': '硅基流动', 'http-service': '直接 HTTP 抓取',
             all: '全部', search: '搜索', fetch: '提取', rerank: '重排', searchFetch: '搜索 · 提取',
             githubCapabilities: '仓库搜索 · README / 文件提取', staticFetch: '静态资源提取', aiNews: 'AI 资讯搜索 · API 读取',
@@ -60,7 +57,6 @@ window.__ModuleLoader__.load({
             tavilyHint: '推荐服务。官方 search / extract 支持 keyless 匿名额度，受共享限流约束；配置 API Key 后使用账户额度。自定义端点需要密钥。',
             firecrawlHint: '推荐服务。官方端点未配置密钥时使用匿名额度，受服务方额度及限流约束。填写密钥后使用账户额度，自定义端点仍需密钥。总开关控制搜索与提取，下方可分别选择参与范围。',
             githubHint: '搜索公开仓库；提取仅适用于仓库 README 和 blob 文件 URL。',
-            doubaoHint: '搜索和提取分别使用密钥，可独立配置。',
             tinyfishHint: 'Search 与 Fetch 使用独立 API 地址，共用此密钥。',
             serplyHint: 'Google 搜索与 Markdown 网页提取，共用此密钥。',
             kimiHint: 'REST 搜索与 Markdown 提取，共用密钥。搜索默认 Pro；Basic 在配置文件中设置。接口按次计费。',
@@ -106,15 +102,12 @@ window.__ModuleLoader__.load({
             controlsHint: 'Retains original text and extraction provenance without deciding which variant is true. Request limits include retries, quota checks and reranking, not monetary costs. Host HTTP retrieval has separate limits. Processing notes appear in tool results and logs.',
             freeHint: 'Free preset uses Bing RSS, TinyFish, public GitHub APIs and enabled AIHOT only. Keys may still be required; AIHOT usage terms apply. APIs with paid overages are excluded.',
             keysHint: 'Leave blank to keep a key. Saved keys show status only.', keyHint: 'Leave blank to keep the key',
-            anysearch: 'AnySearch API key', zhipu: 'Zhipu API key', zhihu: 'Zhihu access secret',
+            anysearch: 'AnySearch API key', zhipu: 'Zhipu API key',
             firecrawl: 'Firecrawl API key', tavily: 'Tavily API key', exa: 'Exa API key', keenable: 'Keenable API key',
-            crawl4ai: 'Crawl4AI Cloud API key', github: 'GitHub token', qianfan: 'Baidu Qianfan API key',
-            'doubao-search': 'Doubao search API key', 'doubao-fetch': 'Doubao extraction API key',
-            tinyfish: 'TinyFish API key', serply: 'Serply API key', kimi: 'Kimi API key', siliconflow: 'SiliconFlow API key',
-            'anysearch-service': 'AnySearch AI', 'zhipu-service': 'Zhipu', 'zhihu-service': 'Zhihu',
+            crawl4ai: 'Crawl4AI Cloud API key', github: 'GitHub token', tinyfish: 'TinyFish API key', serply: 'Serply API key', kimi: 'Kimi API key', siliconflow: 'SiliconFlow API key',
+            'anysearch-service': 'AnySearch AI', 'zhipu-service': 'Zhipu',
             'firecrawl-service': 'Firecrawl', 'tavily-service': 'Tavily', 'exa-service': 'Exa', 'keenable-service': 'Keenable',
-            'crawl4ai-service': 'Crawl4AI Cloud', 'github-service': 'GitHub', 'qianfan-service': 'Baidu Qianfan AI Search',
-            'doubao-service': 'Doubao Custom', 'tinyfish-service': 'TinyFish', 'serply-service': 'Serply', 'kimi-service': 'Kimi',
+            'crawl4ai-service': 'Crawl4AI Cloud', 'github-service': 'GitHub', 'tinyfish-service': 'TinyFish', 'serply-service': 'Serply', 'kimi-service': 'Kimi',
             'bing-service': 'Bing RSS', 'aihot-service': 'AIHOT', 'siliconflow-service': 'SiliconFlow', 'http-service': 'Direct HTTP fetch',
             all: 'All', search: 'Search', fetch: 'Extraction', rerank: 'Reranking', searchFetch: 'Search · Extraction',
             githubCapabilities: 'Repository search · README / Files', staticFetch: 'Static resources', aiNews: 'AI news search · API reading',
@@ -133,7 +126,6 @@ window.__ModuleLoader__.load({
             tavilyHint: 'Recommended. Official search and extract support keyless access with a shared rate limit. A configured key uses account quotas; custom endpoints require a key.',
             firecrawlHint: 'Recommended. Official endpoints use anonymous credits without a key, subject to quota and rate limits. A configured key uses account credits; custom endpoints still require a key. The switch controls both search and extraction; select each capability below.',
             githubHint: 'Search public repositories; extract only repository README and blob file URLs.',
-            doubaoHint: 'Search and extraction use separate credentials.',
             tinyfishHint: 'Separate Search and Fetch API endpoints share this key.',
             serplyHint: 'Google search and Markdown extraction share this key.',
             kimiHint: 'REST search and Markdown extraction share this key. Pro by default; configure Basic in the profile. APIs are billed per call.',
@@ -166,14 +158,14 @@ window.__ModuleLoader__.load({
 		/** Config path of the one control this card edits through the settings form. */
 		const TRANSPORT_PATH = ["search", "zhipuTransport"];
         const NUMBER_CONTROLS = {
-            maxSearchServices: { initial: 16, min: 1, max: 16 },
-            maxFetchServices: { initial: 11, min: 1, max: 11 },
+            maxSearchServices: { initial: 13, min: 1, max: 13 },
+            maxFetchServices: { initial: 10, min: 1, max: 10 },
             maxRequests: { initial: 32, min: 1, max: 256 },
             searchDeadlineMs: { initial: 15000, min: 1, max: 3600000 },
             fetchDeadlineMs: { initial: 50000, min: 1, max: 3600000 },
             maxOutputChars: { initial: 100000, min: 1000, max: 1000000 },
         };
-        const EXTENSIONS = ["tavily", "exa", "keenable", "crawl4ai", "github", "qianfan", "doubao", "firecrawl", "tinyfish", "serply", "kimi", "bing", "aihot"];
+        const EXTENSIONS = ["tavily", "exa", "keenable", "crawl4ai", "github", "firecrawl", "tinyfish", "serply", "kimi", "bing", "aihot"];
 		/**
 		* The complete credential slots, mirroring `src/settings-surface.ts`.
 		*
@@ -186,16 +178,12 @@ window.__ModuleLoader__.load({
 		const CREDENTIAL_SLOTS = [
 			{"id": "anysearch", "overridePaths": [["search", "anysearchApiKeyEnv"]], "defaultRef": "ANYSEARCH_API_KEY", "additionalPaths": [["fetch", "anysearchApiKeyEnv"]]},
 			{"id": "zhipu", "overridePaths": [["search", "zhipuApiKeyEnv"], ["apiKeyEnv"]], "defaultRef": "ZHIPU_API_KEY"},
-			{"id": "zhihu", "overridePaths": [["search", "zhihuAccessSecretEnv"]], "defaultRef": "ZHIHU_ACCESS_SECRET"},
 			{"id": "firecrawl", "overridePaths": [["fetch", "firecrawlApiKeyEnv"]], "defaultRef": "FIRECRAWL_API_KEY", "additionalPaths": [["engines", "firecrawl", "apiKeyEnv"]]},
 			{"id": "tavily", "overridePaths": [["engines", "tavily", "apiKeyEnv"]], "defaultRef": "TAVILY_API_KEY"},
 			{"id": "exa", "overridePaths": [["engines", "exa", "apiKeyEnv"]], "defaultRef": "EXA_API_KEY"},
 			{"id": "keenable", "overridePaths": [["engines", "keenable", "apiKeyEnv"]], "defaultRef": "KEENABLE_API_KEY"},
 			{"id": "crawl4ai", "overridePaths": [["engines", "crawl4ai", "apiKeyEnv"]], "defaultRef": "CRAWL4AI_API_KEY"},
 			{"id": "github", "overridePaths": [["engines", "github", "apiKeyEnv"]], "defaultRef": "GITHUB_TOKEN"},
-			{"id": "qianfan", "overridePaths": [["engines", "qianfan", "apiKeyEnv"]], "defaultRef": "QIANFAN_API_KEY"},
-			{"id": "doubao-search", "overridePaths": [["engines", "doubao", "apiKeyEnv"]], "defaultRef": "DOUBAO_SEARCH_API_KEY"},
-			{"id": "doubao-fetch", "overridePaths": [["engines", "doubao", "fetchApiKeyEnv"]], "defaultRef": "DOUBAO_FETCH_API_KEY"},
 			{"id": "tinyfish", "overridePaths": [["engines", "tinyfish", "apiKeyEnv"]], "defaultRef": "TINYFISH_API_KEY"},
 			{"id": "serply", "overridePaths": [["engines", "serply", "apiKeyEnv"]], "defaultRef": "SERPLY_API_KEY"},
 			{"id": "kimi", "overridePaths": [["engines", "kimi", "apiKeyEnv"]], "defaultRef": "MOONSHOT_API_KEY"},
@@ -696,13 +684,10 @@ window.__ModuleLoader__.load({
             { id: 'firecrawl', mark: 'FC', capability: 'searchFetch', capabilities: ['search', 'fetch'], keys: ['firecrawl'], extension: true },
             { id: 'tavily', mark: 'TV', capability: 'searchFetch', capabilities: ['search', 'fetch'], keys: ['tavily'], extension: true },
             { id: 'zhipu', mark: '智', capability: 'search', capabilities: ['search'], keys: ['zhipu'] },
-            { id: 'zhihu', mark: '知', capability: 'search', capabilities: ['search'], keys: ['zhihu'] },
             { id: 'exa', mark: 'EX', capability: 'searchFetch', capabilities: ['search', 'fetch'], keys: ['exa'], extension: true },
             { id: 'keenable', mark: 'KE', capability: 'searchFetch', capabilities: ['search', 'fetch'], keys: ['keenable'], extension: true },
             { id: 'crawl4ai', mark: 'C4', capability: 'searchFetch', capabilities: ['search', 'fetch'], keys: ['crawl4ai'], extension: true },
             { id: 'github', mark: 'GH', capability: 'githubCapabilities', capabilities: ['search', 'fetch'], keys: ['github'], extension: true },
-            { id: 'qianfan', mark: '千', capability: 'search', capabilities: ['search'], keys: ['qianfan'], extension: true },
-            { id: 'doubao', mark: '豆', capability: 'searchFetch', capabilities: ['search', 'fetch'], keys: ['doubao-search', 'doubao-fetch'], extension: true },
             { id: 'tinyfish', mark: 'TF', capability: 'searchFetch', capabilities: ['search', 'fetch'], keys: ['tinyfish'], extension: true },
             { id: 'serply', keywords: 'Google Markdown', mark: 'SP', capability: 'searchFetch', capabilities: ['search', 'fetch'], keys: ['serply'], extension: true },
             { id: 'kimi', keywords: 'Moonshot 月之暗面 REST Basic Pro Markdown', mark: 'K', capability: 'searchFetch', capabilities: ['search', 'fetch'], keys: ['kimi'], extension: true },
@@ -951,7 +936,7 @@ window.__ModuleLoader__.load({
                         const missingKey = service.keys.some(id => { const row = state.keys.find(row => row.id === id); return row.ready && !row.configured && !row.staged; });
                         const name = t(service.id + '-service');
                         const detailId = 'wsf-detail-' + service.id;
-                        const specificHint = ['http', 'siliconflow', 'anysearch', 'tavily', 'firecrawl', 'github', 'doubao', 'tinyfish', 'serply', 'kimi', 'bing', 'aihot', 'dashscope', 'typesafe'].includes(service.id)
+                        const specificHint = ['http', 'siliconflow', 'anysearch', 'tavily', 'firecrawl', 'github', 'tinyfish', 'serply', 'kimi', 'bing', 'aihot', 'dashscope', 'typesafe'].includes(service.id)
                             ? (service.id === 'siliconflow' ? 'rerankHint' : service.id + 'Hint') : service.extension ? 'extensionHint' : 'baseHint';
                         return jsxs('section', { className: 'wsf-service', 'aria-label': name, children: [
                             jsxs('div', { className: 'wsf-row', children: [

@@ -3,7 +3,7 @@
  * module (no cordis, no network): the upper layer constructs one
  * {@link CircuitBreaker}, forwards signals per engine, asks
  * {@link CircuitBreaker.isBroken} before dispatching, and wires `onEvent`
- * onto `ctx.logger` (designed so the pipelines of #8/#9 and the Zhihu quota
+ * onto `ctx.logger` (designed so the pipelines of #8/#9 and engine quota
  * check of #4 can consume it without touching the plugin context).
  * @module breaker
  */

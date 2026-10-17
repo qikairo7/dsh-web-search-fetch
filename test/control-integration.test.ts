@@ -12,7 +12,7 @@ import { startMockServer } from './helpers/mock-server.js';
 import './helpers/anysearch-network-guard.js';
 import { readFixtureText } from './helpers/fixtures.js';
 
-const fixtureRefs = ['TAVILY_API_KEY', 'EXA_API_KEY', 'ZHIPU_API_KEY', 'ZHIHU_ACCESS_SECRET', 'SILICONFLOW_API_KEY', 'DOUBAO_FETCH_API_KEY'];
+const fixtureRefs = ['TAVILY_API_KEY', 'EXA_API_KEY', 'ZHIPU_API_KEY', 'SILICONFLOW_API_KEY'];
 
 class Credentials extends Service {
   constructor(ctx: Context) { super(ctx, 'credentials'); }
@@ -24,10 +24,6 @@ it('native tools organize both extracts, apply live controls and respect actual 
   const url = 'https://example.com/guide';
   const server = await startMockServer((request, response) => {
     const path = new URL(request.url, 'http://localhost').pathname;
-    if (path.includes('doubao')) {
-      response.end(JSON.stringify({ ResponseMetadata: {}, Result: { Data: { Url: url, ContentText: '# Guide\n\nOnly doubao.', StatusCode: 200 } } }));
-      return;
-    }
     const exa = path.startsWith('/exa');
     const content = `# Guide\n\nShared.\n\nOnly ${exa ? 'exa' : 'tavily'}.`;
     response.end(JSON.stringify({ results: [{ url, title: 'Guide', content: 'snippet', text: content, raw_content: content }] }));
@@ -38,9 +34,9 @@ it('native tools organize both extracts, apply live controls and respect actual 
     for (const component of [SystemPrompt, ToolRuntime, WebRuntime, Credentials]) fibers.push(await ctx.plugin(component));
     fibers.push(await ctx.plugin(ToolWeb, { fetch: true, search: true }));
     const config = plugin.Config({
-      engines: { tavily: { baseURL: `${server.url}/tavily` }, exa: { baseURL: `${server.url}/exa` }, doubao: { baseURL: `${server.url}/doubao`, apiKeyEnv: 'MISSING_SEARCH_REF' } },
+      engines: { tavily: { baseURL: `${server.url}/tavily` }, exa: { baseURL: `${server.url}/exa` } },
       controls: { preset: 'custom', searchServices: ['tavily', 'exa'], fetchServices: ['tavily', 'exa'] },
-      search: { rerank: false, zhihuQuotaCheck: false },
+      search: { rerank: false, quotaCheck: false },
     });
     let controls = config.controls!.get()!;
     config.controls = { get: () => controls } as typeof config.controls;
@@ -62,84 +58,11 @@ it('native tools organize both extracts, apply live controls and respect actual 
     expect(searched.isError).toBeFalsy();
     expect(JSON.stringify(searched)).toContain('请求预算');
     expect(server.requests).toHaveLength(4);
-    controls = { ...controls, mode: 'organize', fetchServices: ['doubao'] };
-    const independentFetch = await execute('web_fetch', { url });
-    expect(independentFetch.isError).toBeFalsy();
-    expect(JSON.stringify(independentFetch)).toContain('Only doubao.');
-    expect(server.requests).toHaveLength(5);
     expect((await ctx.systemPrompt.assemble()).tools.map(tool => tool.name).sort()).toEqual(['web_fetch', 'web_search']);
   } finally {
     for (const fiber of fibers.reverse()) await fiber.dispose();
     await server.close();
   }
-});
-
-it('shares the HTTP budget with Zhipu fallback, Zhihu quota and optional reranking', async () => {
-  const server = await startMockServer((request, response) => {
-    const path = new URL(request.url, 'http://localhost').pathname;
-    response.setHeader('content-type', 'application/json');
-    response.end(path.includes('zhipu') ? JSON.stringify({ content: [] })
-      : readFixtureText(path.includes('quota') ? 'zhihu-quota-response.json' : 'zhihu-global-search-response.json'));
-  });
-  const ctx = new Context();
-  const fibers = [];
-  try {
-    for (const component of [SystemPrompt, ToolRuntime, WebRuntime, Credentials]) fibers.push(await ctx.plugin(component));
-    fibers.push(await ctx.plugin(ToolWeb, { search: true }));
-    const config = plugin.Config({
-      controls: { preset: 'custom', searchServices: ['zhipu'], maxRequests: 1 },
-      search: { zhipuAnthropicBaseURL: `${server.url}/zhipu`, zhihuBaseURL: `${server.url}/search`, zhihuQuotaURL: `${server.url}/quota`, rerankBaseURL: `${server.url}/rerank` },
-    });
-    let controls = config.controls!.get()!;
-    config.controls = { get: () => controls } as typeof config.controls;
-    fibers.push(await ctx.plugin({ name: 'budget-integration', inject: ['web', 'credentials'], apply: (host: Context) => plugin.apply(host, config) }));
-    const execute = () => ctx.tools.execute({ name: 'web_search', arguments: { queries: ['fixture'] }, callId: ToolCallId('budget'), signal: AbortSignal.timeout(5000) });
-    const fallback = await execute();
-    expect(fallback.isError).toBe(true);
-    expect(server.requests).toHaveLength(1); // Non-SSE response would otherwise dispatch a second request.
-    controls = { ...controls, searchServices: ['zhihu'], maxRequests: 2 };
-    const searched = await execute();
-    expect(searched.isError).toBeFalsy();
-    expect(server.requests).toHaveLength(3); // Quota + search; rerank is refused before HTTP.
-    expect(server.requests.filter(request => request.url.includes('quota'))).toHaveLength(1);
-    expect(server.requests.filter(request => request.url.includes('rerank'))).toHaveLength(0);
-    expect(JSON.stringify(searched)).toContain('请求预算');
-  } finally {
-    for (const fiber of fibers.reverse()) await fiber.dispose();
-    await server.close();
-  }
-});
-
-
-it('统一服务开关经原生工具生效，关闭不请求，重排关闭后可热启用', async () => {
-  const server = await startMockServer((request, response) => {
-    response.setHeader('content-type', 'application/json');
-    if (request.url.includes('/rerank')) {
-      const body = JSON.parse(request.body) as { documents: unknown[] };
-      response.end(JSON.stringify({ results: body.documents.map((_, index) => ({ index, relevance_score: 1 - index / 100 })) }));
-    } else response.end(readFixtureText(request.url.includes('quota') ? 'zhihu-quota-response.json' : 'zhihu-global-search-response.json'));
-  });
-  const ctx = new Context();
-  const fibers = [];
-  try {
-    for (const component of [SystemPrompt, ToolRuntime, WebRuntime, Credentials]) fibers.push(await ctx.plugin(component));
-    fibers.push(await ctx.plugin(ToolWeb, { search: true }));
-    const config = plugin.Config({ controls: { preset: 'custom', searchServices: ['zhihu'], serviceEnabled: { zhihu: false } }, search: {
-      rerank: false, zhihuBaseURL: server.url + '/search', zhihuQuotaURL: server.url + '/quota', rerankBaseURL: server.url + '/rerank',
-    } });
-    let controls = config.controls!.get()!;
-    config.controls = { get: () => controls } as typeof config.controls;
-    fibers.push(await ctx.plugin({ name: 'service-switches', inject: ['web', 'credentials'], apply: (host: Context) => plugin.apply(host, config) }));
-    const execute = () => ctx.tools.execute({ name: 'web_search', arguments: { queries: ['fixture'] }, callId: ToolCallId('switches'), signal: AbortSignal.timeout(5000) });
-    expect((await execute()).isError).toBe(true);
-    expect(server.requests).toHaveLength(0);
-    controls = { ...controls, serviceEnabled: { zhihu: true } };
-    expect((await execute()).isError).toBeFalsy();
-    expect(server.requests.filter(request => request.url.includes('rerank'))).toHaveLength(0);
-    controls = { ...controls, serviceEnabled: { zhihu: true, siliconflow: true } };
-    expect((await execute()).isError).toBeFalsy();
-    expect(server.requests.filter(request => request.url.includes('rerank'))).toHaveLength(1);
-  } finally { for (const fiber of fibers.reverse()) await fiber.dispose(); await server.close(); }
 });
 
 class AnonymousCredentials extends Service {

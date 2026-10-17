@@ -3,8 +3,6 @@ import { WebError } from '@deepseek-ai/dsh-web';
 import type { WebSearchRequest, WebSearchResult, WebSearchSource } from '@deepseek-ai/dsh-web';
 import { CircuitBreaker, type BreakerSignal } from '../src/breaker/index.js';
 import { AnySearchClientError } from '../src/engines/anysearch/index.js';
-import { ZhihuWebError } from '../src/engines/zhihu/index.js';
-import { mapZhihuSearchResponse } from '../src/engines/zhihu/wire.js';
 import { mapZhipuSearchResponse } from '../src/engines/zhipu/wire.js';
 import {
   AggregatedSearchProvider,
@@ -206,13 +204,6 @@ describe('readSearchFailureSignal', () => {
     expect(readSearchFailureSignal(error)).toEqual({ kind: 'rate-limit' });
   });
 
-  it('知乎 30001 → rate-limit，直接透传', () => {
-    const error = new ZhihuWebError('Zhihu global_search failed with Code 30001', {
-      signal: { kind: 'rate-limit' },
-    });
-    expect(readSearchFailureSignal(error)).toEqual({ kind: 'rate-limit' });
-  });
-
   it('AnySearch 402（欠费）→ quota-exhausted，只留 kind 与 retryAfterMs', () => {
     const inner = new AnySearchClientError('AnySearch search failed', {
       operation: 'search',
@@ -234,9 +225,6 @@ describe('readSearchFailureSignal', () => {
   it('无关失败不给信号', () => {
     expect(readSearchFailureSignal(new Error('boom'))).toBeUndefined();
     expect(readSearchFailureSignal(new WebError('nope', 'WEB_PROVIDER_ERROR'))).toBeUndefined();
-    expect(
-      readSearchFailureSignal(new ZhihuWebError('bad query', { signal: { kind: 'invalid-request' } })),
-    ).toBeUndefined();
   });
 });
 
@@ -252,7 +240,7 @@ function buildProvider(options: {
   maxFanoutMs?: number;
   rrfK?: number;
   rerankPool?: number;
-  zhihuQuotaCheck?: boolean;
+  quotaCheck?: boolean;
   now?: () => number;
 }): AggregatedSearchProvider {
   return new AggregatedSearchProvider({
@@ -261,11 +249,11 @@ function buildProvider(options: {
   });
 }
 
-describe('AggregatedSearchProvider 三路并发', () => {
+describe('AggregatedSearchProvider 多路并发', () => {
   it('三路成功：合并去重后按 RRF 序返回，三路都收到派发', async () => {
     const a = fakeEngine('anysearch', ok([source('https://a/1'), source('https://a/2')]));
     const z = fakeEngine('zhipu', ok([source('https://z/1')]));
-    const h = fakeEngine('zhihu', ok([source('https://h/1')]));
+    const h = fakeEngine('engine-a', ok([source('https://h/1')]));
     const provider = buildProvider({ engines: [a.engine, z.engine, h.engine] });
     const out = await provider.search({ query: '测试', maxResults: 10 });
     expect(out.sources.map((entry) => entry.url)).toEqual([
@@ -303,7 +291,7 @@ describe('AggregatedSearchProvider 三路并发', () => {
 
   it('两路失败一路成功：返回成功路结果，失败路日志带引擎名、延迟与原因', async () => {
     const bad = fakeEngine('anysearch', fails(new WebError('upstream exploded', 'WEB_PROVIDER_ERROR')));
-    const worse = fakeEngine('zhihu', fails(new WebError('zhihu down', 'WEB_PROVIDER_ERROR')));
+    const worse = fakeEngine('engine-a', fails(new WebError('engine-a down', 'WEB_PROVIDER_ERROR')));
     const good = fakeEngine('zhipu', ok([source('https://z/1')]));
     const logger = recordingLogger();
     const provider = buildProvider({ engines: [bad.engine, worse.engine, good.engine], logger });
@@ -312,18 +300,18 @@ describe('AggregatedSearchProvider 三路并发', () => {
     const anysearchLine = logger.lines.find((entry) => entry.includes('anysearch'));
     expect(anysearchLine).toContain('upstream exploded');
     expect(anysearchLine).toMatch(/\d+ms/);
-    expect(logger.lines.some((entry) => entry.includes('zhihu') && entry.includes('zhihu down'))).toBe(true);
+    expect(logger.lines.some((entry) => entry.includes('engine-a') && entry.includes('engine-a down'))).toBe(true);
   });
 
   it('全败抛 WEB_PROVIDER_ERROR，摘要带各引擎失败原因', async () => {
     const a = fakeEngine('anysearch', fails(new WebError('a failed', 'WEB_PROVIDER_ERROR')));
     const z = fakeEngine('zhipu', fails(new WebError('z failed', 'WEB_PROVIDER_ERROR')));
-    const h = fakeEngine('zhihu', fails(new WebError('h failed', 'WEB_PROVIDER_ERROR')));
+    const h = fakeEngine('engine-a', fails(new WebError('h failed', 'WEB_PROVIDER_ERROR')));
     const provider = buildProvider({ engines: [a.engine, z.engine, h.engine] });
     const error = await expectWebError(provider.search({ query: 'q' }), 'WEB_PROVIDER_ERROR');
     expect(error.message).toContain('anysearch');
     expect(error.message).toContain('a failed');
-    expect(error.message).toContain('zhihu');
+    expect(error.message).toContain('engine-a');
   });
 
   it('引擎全部已被熔断时同样抛 WEB_PROVIDER_ERROR，摘要标注跳过', async () => {
@@ -392,7 +380,7 @@ describe('AggregatedSearchProvider 三路并发', () => {
 });
 
 describe('AggregatedSearchProvider 熔断信号转发', () => {
-  it('知乎 30001 转发 rate-limit；智谱 429 带 Retry-After；AnySearch 402 转当日熔断', async () => {
+  it('引擎 A 30001 转发 rate-limit；智谱 429 带 Retry-After；AnySearch 402 转当日熔断', async () => {
     const a = fakeEngine(
       'anysearch',
       fails(
@@ -410,8 +398,8 @@ describe('AggregatedSearchProvider 熔断信号转发', () => {
       ),
     );
     const h = fakeEngine(
-      'zhihu',
-      fails(new ZhihuWebError('Zhihu global_search failed with Code 30001', { signal: { kind: 'rate-limit' } })),
+      'engine-a',
+      fails(new WebError('engine-a limited', 'WEB_PROVIDER_ERROR', { cause: { kind: 'rate-limit' } })),
     );
     const logger = recordingLogger();
     const errors: string[] = [];
@@ -423,10 +411,10 @@ describe('AggregatedSearchProvider 熔断信号转发', () => {
 
     expect(errors).toContain('open:anysearch:quota-exhausted');
     expect(errors).toContain('open:zhipu:rate-limit');
-    expect(errors).toContain('open:zhihu:rate-limit');
+    expect(errors).toContain('open:engine-a:rate-limit');
     expect(breaker.isBroken('anysearch')).toBe(true);
     expect(breaker.isBroken('zhipu')).toBe(true);
-    expect(breaker.isBroken('zhihu')).toBe(true);
+    expect(breaker.isBroken('engine-a')).toBe(true);
     const status = breaker.status('zhipu');
     expect(status.broken && status.reason === 'rate-limit' && status.cooldownUntil !== undefined).toBe(true);
   });
@@ -451,10 +439,10 @@ describe('AggregatedSearchProvider 熔断信号转发', () => {
   });
 });
 
-describe('AggregatedSearchProvider 知乎额度日检', () => {
+describe('AggregatedSearchProvider 引擎 A额度日检', () => {
   function quotaEngine(remaining: number, onQuota: () => void) {
     return fakeEngine(
-      'zhihu',
+      'engine-a',
       ok([source('https://h/1')]),
       async () => {
         onQuota();
@@ -507,18 +495,18 @@ describe('AggregatedSearchProvider 知乎额度日检', () => {
     const out = await provider.search({ query: 'q' });
     expect(out.sources.map((entry) => entry.url)).toEqual(['https://a/1']);
     expect(probes).toBe(1);
-    expect(breaker.status('zhihu').reason).toBe('quota-exhausted');
+    expect(breaker.status('engine-a').reason).toBe('quota-exhausted');
     expect(h.requests).toHaveLength(0);
   });
 
-  it('zhihuQuotaCheck=false 时不查额度', async () => {
+  it('engine-aQuotaCheck=false 时不查额度', async () => {
     let probes = 0;
     const h = quotaEngine(0, () => {
       probes += 1;
     });
     const provider = buildProvider({
       engines: [h.engine],
-      zhihuQuotaCheck: false,
+      quotaCheck: false,
       now: () => Date.UTC(2026, 9, 13, 4, 0, 0),
     });
     await provider.search({ query: 'q' });
@@ -527,7 +515,7 @@ describe('AggregatedSearchProvider 知乎额度日检', () => {
 
   it('额度查询自身失败不阻断搜索（fail-open）', async () => {
     const h = fakeEngine(
-      'zhihu',
+      'engine-a',
       ok([source('https://h/1')]),
       async () => {
         throw new WebError('quota endpoint down', 'WEB_PROVIDER_ERROR');
@@ -538,7 +526,7 @@ describe('AggregatedSearchProvider 知乎额度日检', () => {
     const provider = buildProvider({ engines: [h.engine], breaker, logger, now: () => Date.UTC(2026, 9, 13, 4, 0, 0) });
     const out = await provider.search({ query: 'q' });
     expect(out.sources.map((entry) => entry.url)).toEqual(['https://h/1']);
-    expect(breaker.isBroken('zhihu')).toBe(false);
+    expect(breaker.isBroken('engine-a')).toBe(false);
   });
 });
 
@@ -561,7 +549,7 @@ describe('AggregatedSearchProvider rerank', () => {
       engines: [a2.engine, z2.engine],
       rerank: reranker,
       maxFanoutMs: 1000,
-      zhihuQuotaCheck: false,
+      quotaCheck: false,
     });
     const out = await provider.search({ query: '查询词', maxResults: 3 });
     // RRF 序：x/2, x/1, x/3 → 反转后：x/3, x/1, x/2
@@ -585,7 +573,7 @@ describe('AggregatedSearchProvider rerank', () => {
         },
       },
       logger,
-      zhihuQuotaCheck: false,
+      quotaCheck: false,
     });
     const out = await provider.search({ query: 'q', maxResults: 10 });
     expect(degraded).toBe(1);
@@ -606,7 +594,7 @@ describe('AggregatedSearchProvider rerank', () => {
         },
       },
       rerankPool: 3,
-      zhihuQuotaCheck: false,
+      quotaCheck: false,
     });
     const out = await provider.search({ query: 'q', maxResults: 10 });
     // 只有池内 3 条进重排，其余 3 条按 RRF 序跟随在重排结果之后
@@ -627,7 +615,7 @@ describe('AggregatedSearchProvider 截断语义', () => {
   it('池大于 maxResults 时截断并置 truncated=true', async () => {
     const many = Array.from({ length: 5 }, (_value, index) => source(`https://x/${index}`));
     const a = fakeEngine('anysearch', ok(many));
-    const provider = buildProvider({ engines: [a.engine], zhihuQuotaCheck: false });
+    const provider = buildProvider({ engines: [a.engine], quotaCheck: false });
     const out = await provider.search({ query: 'q', maxResults: 2 });
     expect(out.sources).toHaveLength(2);
     expect(out.truncated).toBe(true);
@@ -646,7 +634,7 @@ describe('AggregatedSearchProvider 截断语义', () => {
         },
       },
       rerankPool: 2,
-      zhihuQuotaCheck: false,
+      quotaCheck: false,
     });
     const out = await provider.search({ query: 'q', maxResults: 4 });
     expect(seen).toEqual([2]);
@@ -661,7 +649,7 @@ describe('AggregatedSearchProvider 截断语义', () => {
 
   it('池不大于 maxResults 时不截断、truncated=false', async () => {
     const a = fakeEngine('anysearch', ok([source('https://x/0'), source('https://x/1')]));
-    const provider = buildProvider({ engines: [a.engine], zhihuQuotaCheck: false });
+    const provider = buildProvider({ engines: [a.engine], quotaCheck: false });
     const out = await provider.search({ query: 'q', maxResults: 5 });
     expect(out.sources).toHaveLength(2);
     expect(out.truncated).toBe(false);
@@ -670,7 +658,7 @@ describe('AggregatedSearchProvider 截断语义', () => {
   it('未给 maxResults 时返回全部且 truncated=false', async () => {
     const many = Array.from({ length: 4 }, (_value, index) => source(`https://x/${index}`));
     const a = fakeEngine('anysearch', ok(many));
-    const provider = buildProvider({ engines: [a.engine], zhihuQuotaCheck: false });
+    const provider = buildProvider({ engines: [a.engine], quotaCheck: false });
     const out = await provider.search({ query: 'q' });
     expect(out.sources).toHaveLength(4);
     expect(out.truncated).toBe(false);
@@ -678,53 +666,19 @@ describe('AggregatedSearchProvider 截断语义', () => {
 });
 
 describe('AggregatedSearchProvider publishedAt 直通', () => {
-  function engineFromFixture(id: string, sources: readonly WebSearchSource[]): SearchEngineClient {
-    return { id, search: async () => result(sources) };
-  }
-
-  it('知乎 EditTime → ISO、智谱 publish_date 原样，穿过融合/重排/截断后仍在', async () => {
-    const zhihuFixture = readFixtureJson('zhihu-global-search-response.json');
-    const zhipuFixture = readFixtureJson('zhipu-web-search-response.json');
-    const zhihuSources = mapZhihuSearchResponse(zhihuFixture as never).sources;
-    const zhipuSources = mapZhipuSearchResponse(zhipuFixture as never).sources;
-    expect(zhihuSources[0]!.publishedAt).toBe(new Date(1748261757 * 1000).toISOString());
-    expect(zhipuSources[0]!.publishedAt).toBe('2025-05-23');
-
+  it('publishedAt 原样穿过融合、重排与截断', async () => {
+    const sources = [
+      source('https://example.com/a', { publishedAt: '2025-05-23' }),
+      source('https://example.com/b', { publishedAt: new Date(1748261757 * 1000).toISOString() }),
+    ];
     const provider = buildProvider({
-      engines: [engineFromFixture('zhihu', zhihuSources), engineFromFixture('zhipu', zhipuSources)],
+      engines: [{ id: 'engine-a', search: async () => result(sources) }],
       rerank: { rerank: async (_q, documents) => documents.map((_doc, index) => index) },
-      zhihuQuotaCheck: false,
+      quotaCheck: false,
     });
     const out = await provider.search({ query: 'q', maxResults: 10 });
-    const byUrl = new Map(out.sources.map((entry) => [entry.url, entry]));
-    const zhihuEntry = [...byUrl.values()].find((entry) => entry.url.includes('zhihu.com'));
-    expect(zhihuEntry?.publishedAt).toBe(new Date(1748261757 * 1000).toISOString());
-    expect(byUrl.get('https://www.sohu.com/a/897879632_121123890')?.publishedAt).toBe('2025-05-23');
+    const byUrl = new Map(out.sources.map((entry) => [entry.url, entry.publishedAt]));
+    expect(byUrl.get('https://example.com/a')).toBe('2025-05-23');
+    expect(byUrl.get('https://example.com/b')).toBe(new Date(1748261757 * 1000).toISOString());
   });
-});
-
-
-it('统一启停控制关闭基础搜索和额度检查，并允许运行时启用原本关闭的重排', async () => {
-  let quotaCalls = 0;
-  let rerankCalls = 0;
-  let flags: Record<string, boolean> = { zhihu: false, siliconflow: false };
-  const lane = fakeEngine('zhihu', ok([source('https://example.com/guide')]), async () => { quotaCalls++; return { remaining: 10 }; });
-  const provider = new AggregatedSearchProvider({
-    engines: [lane.engine], breaker: new CircuitBreaker(),
-    resolveControls: () => ({ serviceEnabled: flags }),
-    rerank: { enabled: false, rerank: async () => { rerankCalls++; return [0]; } },
-  });
-  await expectWebError(provider.search({ query: 'sample' }), 'WEB_PROVIDER_ERROR');
-  expect(lane.requests).toHaveLength(0);
-  expect(quotaCalls).toBe(0);
-  flags = { zhihu: true, siliconflow: false };
-  expect((await provider.search({ query: 'sample' })).sources).toHaveLength(1);
-  expect(quotaCalls).toBe(1);
-  expect(rerankCalls).toBe(0);
-  flags = { zhihu: true, siliconflow: true };
-  await provider.search({ query: 'sample' });
-  expect(rerankCalls).toBe(1);
-  flags = { zhihu: false, siliconflow: true };
-  await expectWebError(provider.search({ query: 'sample' }), 'WEB_PROVIDER_ERROR');
-  expect(lane.requests).toHaveLength(2);
 });
