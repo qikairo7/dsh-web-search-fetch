@@ -79,7 +79,7 @@ export declare function createAdditionalEngines(config: AdditionalEnginesConfig,
     fetchImpl?: typeof fetch;
 }): AdditionalEngine[];
 export declare function additionalExtractionLegs(engines: readonly AdditionalEngine[], url: string): {
-    engineId: "tinyfish" | "bing" | "github" | "aihot" | "firecrawl" | "tavily" | "exa" | "deepseek" | "keenable" | "crawl4ai" | "serply" | "kimi";
+    engineId: "tavily" | "exa" | "firecrawl" | "bing" | "tinyfish" | "github" | "aihot" | "deepseek" | "keenable" | "crawl4ai" | "serply" | "kimi";
     extract: (url: string, signal?: AbortSignal) => Promise<WebFetchResult>;
     signalOf: typeof additionalBreakerSignal;
 }[];

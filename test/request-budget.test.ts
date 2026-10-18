@@ -82,6 +82,27 @@ it('auto preset treats Chinese recency words as multi-channel and leaves non-rec
   }
 });
 
+it('auto preset treats an official-document intent for a supported project as multi-channel', async () => {
+  const services = ['anysearch', 'firecrawl', 'tavily', 'exa', 'kimi'];
+  const breadth = async (requestText: string) => {
+    let selected: string[] = [];
+    await runOperation({ preset: 'auto', request: 'search', requestText }, 'search', undefined, async () => {
+      selected = await selectServices(services, id => id, 'search');
+    });
+    return selected;
+  };
+  // Issue #26 option a: official-document intent plus a supported project fans out.
+  for (const query of ['React useEffect 文档', 'python asyncio 官方文档']) {
+    expect(await breadth(query), query).toEqual(services);
+  }
+  // An explicit site: filter is already a narrowing intent and counts too.
+  expect(await breadth('site:docs.python.org asyncio')).toEqual(services);
+  // The intent word alone, or the project alone, stays single-channel.
+  for (const query of ['文档写法', 'React 组件库推荐']) {
+    expect(await breadth(query), query).toEqual(['anysearch']);
+  }
+});
+
 it('auto preset chooses extraction breadth from the URL instead of asking the user', async () => {
   const services = ['firecrawl', 'anysearch', 'tavily', 'exa', 'kimi'];
   await runOperation({ preset: 'auto', request: 'fetch', requestText: 'https://example.com/docs/guide' }, 'fetch', undefined, async () => {

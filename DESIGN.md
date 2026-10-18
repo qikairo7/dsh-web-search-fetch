@@ -50,7 +50,7 @@
 | 决策模型 `balanced` | 三路 |
 | 决策模型 `deep` | 已选服务范围 |
 
-判断方式由 `controls.decisionRouting` 决定，默认 `off`：使用本地确定性规则，不调用任何模型，也不需要凭证。搜索查询命中 `对比|比较|综述|review|compare|benchmark|研究|调研|资料|证据|引用|来源|最新|新闻|今日|今天|近期|最近|近日|本周|本月|快讯|要闻|热点|today|latest|news|202\d` 时走多通道，其余走单通道。提取侧在此基础上增加两段式探测（见下文）。
+判断方式由 `controls.decisionRouting` 决定，默认 `off`：使用本地确定性规则，不调用任何模型，也不需要凭证。搜索查询命中 `对比|比较|综述|review|compare|benchmark|研究|调研|资料|证据|引用|来源|最新|新闻|今日|今天|近期|最近|近日|本周|本月|快讯|要闻|热点|today|latest|news|202\d` 时走多通道；此外复用 `officialHosts`（与官方域名补充检索同一处定义）：官方文档意图与受支持技术项目同时命中，或查询带显式 `site:` 时也走多通道，其余走单通道。提取侧在此基础上增加两段式探测（见下文）。
 
 `decisionRouting: model` 时才调用 `search.decisionModel`，支持 `Kev-4b`、`SemIf`、`diffusiongemma`、阿里 `decision-model-preview` 和 TypeSafe `jev-latest`。前四个使用各自平台当前提供的免费调用，TypeSafe 为付费模型；费用以服务方为准。硅基流动三款使用 `SILICONFLOW_API_KEY`，阿里使用 `DASHSCOPE_API_KEY`，TypeSafe 使用 `TYPESAFE_API_KEY`。默认模型为 `decision-model-preview`：五题路由样例中三题符合预期、延迟约 94～217 毫秒。决策请求默认限时 2,000 毫秒并计入插件请求预算。
 
