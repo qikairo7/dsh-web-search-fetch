@@ -14,6 +14,11 @@
 
 ---
 
+**文档直推 main 也必须过门禁**
+- 2026-10-19，连续多次文档提交（规则吸收系列）直接 `git push origin main` 未跑 `pnpm run check`——AGENTS.md 里写了 node/pnpm 本机绝对路径，触发 check-repository「公开源码禁止本机路径」门禁；在 #23 worktree 里跑 check 时才暴露，连带阻塞了那次验证。
+- 根因：把「文档改动」误归为无风险 exempt。防复发：main 上的任何提交（含纯文档）先过 check；本机细节一律写 LOCAL.md（已 gitignore），公开文档只指向。检查方式：提交前跑 check-repository；grep 公开 md 无 `C:\Users`。
+- Seen 1× (2026-10-19)。
+
 **一切 GitHub 外发先出草稿，确认后再提交**
 - 2026-10-19，用户明确指令：此前多次直接创建 issue / 评论 / PR（#18-#23），虽然内容事后被认可，但用户要求所有外发（issue、评论、PR、发布）一律先看草稿再提交——这是 HITL 边界，不是效率问题。
 - 已写入 AGENTS.md 硬规则；从此任何外发动作先呈现完整草稿与去向，等确认。
