@@ -14,9 +14,15 @@
 | --- | --- | --- |
 | L0 微改 | 改文案、简单样式、边界一目了然 | lead 直接实现（或派单个 impl 子代理），跑 `pnpm run check`，合并前照常 SHA 审 |
 | L1 明确 bug / 小功能 | 范围明确、单模块、能写清验收 | 定位 → dev-loop（impl → verify → accept → release） |
-| L2 边界清晰的功能 | 新能力但边界清楚 | `grill-with-docs` 澄清 → dev-loop |
-| L3 跨模块中型功能 | 多模块联动 | `grill-with-docs` → `to-spec` → `to-tickets` → dev-loop（可多 worktree 并行，主 Agent 集成） |
-| L4 大型 / 架构不确定 | 多会话、方向未明 | `wayfinder` → `to-spec` → `to-tickets` → dev-loop |
+| L2 边界清晰的功能 | 新能力但边界清楚 | spec 驱动（见下）→ dev-loop |
+| L3 跨模块中型功能 | 多模块联动 | spec 驱动 → `to-tickets` → dev-loop（可多 worktree 并行，主 Agent 集成） |
+| L4 大型 / 架构不确定 | 多会话、方向未明 | `wayfinder` → spec 驱动 → `to-tickets` → dev-loop |
+
+**spec 驱动（L2+ 必经，吸收自 GitHub Spec Kit + R&K Flow）**：先明确需求、边界条件、业务规则和验收标准，再定技术方案、拆任务；**未经用户确认不进入大规模编码**。三个要点：
+
+- **双计划并行**：实现计划（改哪些文件、接口与数据结构、实现顺序、明确不在范围内的事）与测试计划（输入/预期/异常与边界覆盖、要留的验证证据）**同时成形、互相拷问**——writer 提接口、tester 找并发/空值/失败恢复未定义处，打回补齐后才交给用户审。
+- **人审方案，不审代码**：用户注意力花在方案关键取舍上（目标理解、模块边界、接口设计、验收标准），代码正确性由 SHA 对抗复核与测试证据背书。给用户的方案评审默认纯文本；方案复杂（多模块、多取舍）时用 HTML 报告（表格/折叠明细/修订标记，可用 `answer-me-with-html` skill 生成）。
+- **偏差先指出再修正**：实现中发现需求冲突或与计划偏差，先停下指出问题、给出修正方案（NEED-DECISION），不默默改。
 
 **方法论 prompt**（思维快捷键——模型已预训练这些方法论，点名激活比长流程便宜，lead 与各步骤按需使用）：
 
