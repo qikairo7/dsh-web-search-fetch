@@ -11,7 +11,4 @@ node_modules/
 coverage/
 .DS_Store
 Thumbs.db
-AGENTS.md
 CLAUDE.md
-docs/agents/
-docs/adr/
