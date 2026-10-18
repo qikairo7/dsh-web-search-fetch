@@ -253,10 +253,33 @@ export class AggregatedSearchProvider implements WebSearchProvider {
     // usable terms, a candidate that matches none of them is not an answer —
     // returning it as a source is worse than returning nothing.
     const relevant = relevantOnly(request.query, fused);
-    if (fused.length > 0 && relevant.length === 0) {
-      const note = '未找到与查询相关的结果。';
-      this.logger.info(`[搜索] ${note} 本插件 HTTP 请求 ${requestCount()} 次。`);
-      return { sources: [], content: `${note}本插件 HTTP 请求 ${requestCount()} 次。`, truncated: false };
+    // Truncation belongs to the operation, not to the branch that returns it:
+    // the empty-result path must report exactly what the normal path would, or
+    // "the query has no answer" and "this run was cut short" become
+    // indistinguishable (DESIGN.md: a cancelled lane is marked `truncated`).
+    // Evaluated at the point of return, so a deadline that expires during
+    // rerank is still reported.
+    const truncatedNow = (orderedCount?: number): boolean =>
+      window.endedEarly || deadlineReached()
+      || outcomes.some(outcome => outcome.kind === 'ok' && outcome.result.truncated)
+      || (orderedCount !== undefined && request.maxResults !== undefined && orderedCount > request.maxResults);
+    if (relevant.length === 0) {
+      // Two zero-result shapes end here: every lane answered with no sources,
+      // or candidates existed and the relevance filter dropped all of them. The
+      // note names each lane and its end state so "the query has no answer" is
+      // distinguishable from "the coverage was short". A lane that failed sits
+      // beside a successful one here and is reported with its structured state;
+      // when no lane succeeds at all the operation raises WEB_PROVIDER_ERROR
+      // above instead, so a total failure never becomes an empty result.
+      // The operation's own notes still ride along: the total-deadline note is
+      // the only place a caller learns that unfinished lanes were cancelled.
+      const note = emptyResultNote(laneReports(outcomes, deadlineReached() ? signal.reason : undefined));
+      const notes = operationNotes();
+      const content = notes.length === 0
+        ? `${note}本插件 HTTP 请求 ${requestCount()} 次。`
+        : `${note}搜索处理说明：${notes.join(' ')} 本插件 HTTP 请求 ${requestCount()} 次。`;
+      this.logger.info(`[搜索] ${content}`);
+      return { sources: [], content, truncated: truncatedNow() };
     }
     const pool = relevant.slice(0, this.rerankPool);
     const reranked = singleChannel ? pool : await this.applyRerank(request, pool, signal);
@@ -272,8 +295,7 @@ export class AggregatedSearchProvider implements WebSearchProvider {
     return {
       ...(notes.length ? { content: `搜索处理说明：${notes.join(' ')} 本插件 HTTP 请求 ${requestCount()} 次。` } : {}),
       sources: selected.map(toSeamSource),
-      truncated: window.endedEarly || deadlineReached() || outcomes.some(outcome => outcome.kind === 'ok' && outcome.result.truncated)
-        || (maxResults !== undefined && ordered.length > maxResults),
+      truncated: truncatedNow(ordered.length),
     };
   }
 
@@ -736,6 +758,131 @@ function abortedError(signal: AbortSignal | undefined): WebError {
 /** Whether a caller-supplied signal has already fired. */
 function isAborted(signal: AbortSignal | undefined): boolean {
   return signal !== undefined && signal.aborted;
+}
+
+/**
+ * One dispatched lane's end state, as the zero-result note reports it.
+ *
+ * `empty` is a lane that answered successfully with no sources; `cancelled` is
+ * a lane the operation's own total deadline tore down before it answered; every
+ * other value is a lane that produced no answer, named by its structured cause.
+ */
+type LaneState = 'empty' | 'rate-limit' | 'quota-exhausted' | 'insufficient-credits' | 'timeout' | 'cancelled' | 'failed' | 'skipped';
+
+/** One lane's contribution to the zero-result note. */
+interface LaneReport {
+  readonly engineId: string;
+  readonly state: LaneState;
+  /** Sources the lane returned; only an `ok` lane can return more than zero. */
+  readonly returned: number;
+}
+
+/**
+ * Project the lanes this operation dispatched onto the note's vocabulary.
+ *
+ * An engine the breaker had already taken out was never dispatched — with no
+ * successful lane at all the operation raises `WEB_PROVIDER_ERROR` above — so
+ * it is not part of this note; listing it would pad the single-channel note
+ * with channels the preset never used.
+ * @param outcomes - every lane that took part, in dispatch order.
+ * @param deadlineReason - the operation signal's abort reason once its total
+ *   deadline fired; a lane torn down by it is reported as cancelled, not as a
+ *   request failure.
+ */
+function laneReports(outcomes: readonly EngineOutcome[], deadlineReason?: unknown): LaneReport[] {
+  const reports = new Map<string, LaneReport>();
+  for (const outcome of outcomes) {
+    const report: LaneReport = {
+      engineId: outcome.engineId,
+      state: laneState(outcome, deadlineReason),
+      returned: outcome.kind === 'ok' ? outcome.result.sources.length : 0,
+    };
+    const key = `${report.engineId}\u0000${report.state}`;
+    const existing = reports.get(key);
+    // One engine may be dispatched twice (a supplementary `site:` lane); the
+    // note names it once per distinct state, keeping the larger count.
+    reports.set(key, existing === undefined
+      ? report
+      : { ...existing, returned: Math.max(existing.returned, report.returned) });
+  }
+  return [...reports.values()];
+}
+
+/** One outcome's state: the lane's own kind, or the failure's structured kind. */
+function laneState(outcome: EngineOutcome, deadlineReason?: unknown): LaneState {
+  switch (outcome.kind) {
+    case 'ok': return 'empty';
+    case 'timeout': return 'timeout';
+    case 'skipped': return 'skipped';
+    case 'failed':
+      // `dispatch` labels a lane torn down by the operation signal with that
+      // signal's own reason, so identity separates it from a lane that failed
+      // on its own a moment before the deadline.
+      return deadlineReason !== undefined && outcome.error === deadlineReason
+        ? 'cancelled'
+        : failureState(outcome.error);
+  }
+}
+
+/**
+ * Classify a lane failure from structured fields only — the engine's own
+ * classification (`AnySearchClientError.kind`) or a plain `{ kind }` signal on
+ * the error or its `cause`. Message text is never read: it is untrusted.
+ */
+function failureState(error: unknown): LaneState {
+  const kind = structuredFailureKind(error) ?? structuredFailureKind(causeOf(error));
+  switch (kind) {
+    case 'rate-limit': return 'rate-limit';
+    case 'quota-exhausted': return 'quota-exhausted';
+    case 'insufficient-credits': return 'insufficient-credits';
+    case 'timeout': return 'timeout';
+    default: return 'failed';
+  }
+}
+
+/** Read the `kind` an engine hung on a caught value, when it is a string. */
+function structuredFailureKind(value: unknown): string | undefined {
+  const anysearch = anySearchFailureSignal(value);
+  if (anysearch !== undefined) return anysearch.kind;
+  if (value !== null && typeof value === 'object') {
+    const record = value as { kind?: unknown };
+    return typeof record.kind === 'string' ? record.kind : undefined;
+  }
+  return undefined;
+}
+
+/**
+ * The zero-result note.
+ *
+ * A bare "no results" leaves the caller unable to tell a query with no answer
+ * from a lane that returned nothing usable. The note therefore names every
+ * lane and its end state, so the single-channel preset — whose one lane is the
+ * whole coverage — says exactly why nothing came back. It only reads the
+ * states the pipeline already recorded; it never dispatches anything.
+ * @param lanes - every lane that took part, in dispatch order.
+ */
+function emptyResultNote(lanes: readonly LaneReport[]): string {
+  const lead = '未找到与查询相关的结果';
+  if (lanes.length === 0) return `${lead}：本次没有派发任何通道。`;
+  if (lanes.length === 1) return `${lead}：单通道引擎 ${lanes[0]!.engineId} ${describeLane(lanes[0]!)}。`;
+  return `${lead}：各通道状态：${lanes.map(lane => `${lane.engineId} ${describeLane(lane)}`).join('；')}。`;
+}
+
+/** One lane's state as a short, credential-free clause. */
+function describeLane(lane: LaneReport): string {
+  switch (lane.state) {
+    case 'empty':
+      return lane.returned > 0
+        ? `成功返回 ${lane.returned} 条，但均与查询无关`
+        : '成功返回但无结果';
+    case 'rate-limit': return '被限流（rate-limit），本次未取得结果';
+    case 'quota-exhausted': return '当日额度已耗尽（quota-exhausted）';
+    case 'insufficient-credits': return '余额不足（insufficient-credits）';
+    case 'timeout': return '请求超时，未在限时内返回结果';
+    case 'cancelled': return '被操作总限时取消，未取得结果';
+    case 'skipped': return '已熔断，本次未派发';
+    default: return '请求失败';
+  }
 }
 
 /** The failure raised when no engine produced a usable ranking at all. */

@@ -641,6 +641,170 @@ describe('AggregatedSearchProvider 截断语义', () => {
   });
 });
 
+describe('0 结果时的通道状态说明', () => {
+  /** The single-channel preset: one lane is the whole coverage. */
+  const single = () => ({ preset: 'single' as const });
+  const multi = () => ({ preset: 'multi' as const });
+
+  it('单通道真空返回：说明含引擎 id 与「成功但无结果」', async () => {
+    const a = fakeEngine('anysearch', ok([]));
+    const provider = new AggregatedSearchProvider({
+      breaker: new CircuitBreaker(),
+      resolveControls: single,
+      engines: [a.engine],
+    });
+    const out = await provider.search({ query: '如何安装 Node.js' });
+    expect(out.sources).toEqual([]);
+    expect(out.content).toContain('anysearch');
+    expect(out.content).toContain('成功返回但无结果');
+  });
+
+  it('单通道返回了结果但全被相关性过滤：说明含引擎 id 与「均与查询无关」', async () => {
+    const a = fakeEngine('anysearch', ok([source('https://unrelated.test/x', { title: 'Weather forecast', snippet: 'Sunny.' })]));
+    const provider = new AggregatedSearchProvider({
+      breaker: new CircuitBreaker(),
+      resolveControls: single,
+      engines: [a.engine],
+    });
+    const out = await provider.search({ query: 'zxqvj plorptastic nonsense token' });
+    expect(out.sources).toEqual([]);
+    expect(out.content).toContain('anysearch');
+    expect(out.content).toContain('均与查询无关');
+    expect(out.content).not.toContain('成功返回但无结果');
+  });
+
+  it('多通道空结果：真空返回与限流逐路标注，不把限流写成无结果', async () => {
+    const empty = fakeEngine('anysearch', ok([]));
+    const limited = fakeEngine(
+      'engine-z',
+      fails(new WebError('engine-z limited', 'WEB_PROVIDER_ERROR', { cause: { kind: 'rate-limit' } })),
+    );
+    const provider = new AggregatedSearchProvider({
+      breaker: new CircuitBreaker(),
+      resolveControls: multi,
+      engines: [empty.engine, limited.engine],
+    });
+    const out = await provider.search({ query: 'q' });
+    expect(out.sources).toEqual([]);
+    expect(out.content).toContain('anysearch 成功返回但无结果');
+    expect(out.content).toContain('engine-z 被限流');
+  });
+
+  it('多通道空结果：超时也按结构化状态标注', async () => {
+    const slow = fakeEngine('anysearch', hangs());
+    const empty = fakeEngine('engine-z', ok([]));
+    const provider = new AggregatedSearchProvider({
+      breaker: new CircuitBreaker(),
+      resolveControls: multi,
+      engines: [slow.engine, empty.engine],
+      maxFanoutMs: 20,
+    });
+    const out = await provider.search({ query: 'q' });
+    expect(out.sources).toEqual([]);
+    expect(out.content).toContain('anysearch 请求超时');
+    expect(out.content).toContain('engine-z 成功返回但无结果');
+  });
+
+  it('说明只读结构化信号：消息文本写限流但无 kind 时按普通失败标注', async () => {
+    const empty = fakeEngine('anysearch', ok([]));
+    const plain = fakeEngine('engine-z', fails(new WebError('rate-limit exceeded, please retry', 'WEB_PROVIDER_ERROR')));
+    const provider = new AggregatedSearchProvider({
+      breaker: new CircuitBreaker(),
+      resolveControls: multi,
+      engines: [empty.engine, plain.engine],
+    });
+    const out = await provider.search({ query: 'q' });
+    expect(out.content).toContain('engine-z 请求失败');
+    expect(out.content).not.toContain('engine-z 被限流');
+  });
+
+  it('单通道失败仍是 WEB_PROVIDER_ERROR，不会变成空结果说明', async () => {
+    const limited = fakeEngine(
+      'anysearch',
+      fails(new WebError('AnySearch search failed', 'WEB_PROVIDER_ERROR', { cause: { kind: 'rate-limit' } })),
+    );
+    const provider = new AggregatedSearchProvider({
+      breaker: new CircuitBreaker(),
+      resolveControls: single,
+      engines: [limited.engine],
+    });
+    const error = await expectWebError(provider.search({ query: 'q' }), 'WEB_PROVIDER_ERROR');
+    expect(error.message).toContain('anysearch');
+  });
+
+  // A zero-result run is still a run that can be cut short. These three cases
+  // pin `truncated` and the operation note to the same values the non-empty
+  // path reports; the empty branch may not invent its own answer.
+
+  it('单通道 0 条但该路 truncated=true：truncated 仍为 true', async () => {
+    const a = fakeEngine('aihot', async () => ({ sources: [], truncated: true }));
+    const provider = new AggregatedSearchProvider({
+      breaker: new CircuitBreaker(),
+      resolveControls: single,
+      engines: [a.engine],
+    });
+    const out = await provider.search({ query: 'q' });
+    expect(out.sources).toEqual([]);
+    expect(out.truncated).toBe(true);
+  });
+
+  it('双通道同为 0 条、一路 truncated=true：truncated 仍为 true', async () => {
+    const empty = fakeEngine('anysearch', ok([]));
+    const paged = fakeEngine('engine-z', async () => ({ sources: [], truncated: true }));
+    const provider = new AggregatedSearchProvider({
+      breaker: new CircuitBreaker(),
+      resolveControls: multi,
+      engines: [empty.engine, paged.engine],
+    });
+    const out = await provider.search({ query: 'q' });
+    expect(out.sources).toEqual([]);
+    expect(out.truncated).toBe(true);
+  });
+
+  it('候选全被相关性过滤但该路上游 truncated=true：truncated 仍透传', async () => {
+    const a = fakeEngine('aihot', async () => ({
+      sources: [source('https://unrelated.test/x', { title: 'Weather forecast', snippet: 'Sunny.' })],
+      truncated: true,
+    }));
+    const provider = new AggregatedSearchProvider({
+      breaker: new CircuitBreaker(),
+      resolveControls: single,
+      engines: [a.engine],
+    });
+    const out = await provider.search({ query: 'zxqvj plorptastic nonsense token' });
+    expect(out.sources).toEqual([]);
+    expect(out.content).toContain('均与查询无关');
+    expect(out.truncated).toBe(true);
+  });
+
+  it('一路空 + 一路挂起、操作总限时到达：truncated 仍为 true', async () => {
+    const empty = fakeEngine('anysearch', ok([]));
+    const hung = fakeEngine('engine-z', hangs());
+    const provider = new AggregatedSearchProvider({
+      breaker: new CircuitBreaker(),
+      resolveControls: () => ({ preset: 'multi' as const, searchDeadlineMs: 50 }),
+      engines: [empty.engine, hung.engine],
+    });
+    const out = await provider.search({ query: 'q' });
+    expect(out.sources).toEqual([]);
+    expect(out.truncated).toBe(true);
+  });
+
+  it('一路空 + 一路挂起、操作总限时到达：说明保留超时口径，不把被取消的通道写成请求失败', async () => {
+    const empty = fakeEngine('anysearch', ok([]));
+    const hung = fakeEngine('engine-z', hangs());
+    const provider = new AggregatedSearchProvider({
+      breaker: new CircuitBreaker(),
+      resolveControls: () => ({ preset: 'multi' as const, searchDeadlineMs: 50 }),
+      engines: [empty.engine, hung.engine],
+    });
+    const out = await provider.search({ query: 'q' });
+    expect(out.content).toContain('操作总限时已到');
+    expect(out.content).toContain('engine-z 被操作总限时取消');
+    expect(out.content).not.toContain('engine-z 请求失败');
+  });
+});
+
 describe('AggregatedSearchProvider publishedAt 直通', () => {
   it('publishedAt 原样穿过融合、重排与截断', async () => {
     const sources = [
