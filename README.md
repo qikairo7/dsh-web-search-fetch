@@ -256,18 +256,22 @@ flowchart LR
 
 ## 文档
 
-| 文档 | 内容 |
-| --- | --- |
-| [配置参考](./docs/configuration.md) | 参数、端点、凭证回落关系和工具预算 |
-| [网页正文整理](./docs/content-organization.md) | 整理规则、来源标记、差异处理和限制 |
-| [与 ModSearch 的真实对比](./docs/modsearch-comparison.md) | 方法、逐次指标、请求成本与证据边界 |
-| [质量评测](./docs/quality-evaluation.md) | 中文、新闻、长文、挑战页与慢渠道的离线／真实指标 |
-| [AIHOT 接入](./docs/aihot.md) | 原生工具读取 Markdown、结构化报告及精选 API |
-| [架构说明](./DESIGN.md) | 模块职责、数据流、错误处理和扩展方式 |
-| [术语表](./GLOSSARY.md) | 项目术语与接口含义 |
-| [常见问题](./docs/troubleshooting.md) | 装载、凭证、超时和熔断排查 |
-| [卸载与回滚](./docs/lifecycle.md) | 配置备份、移除保存的设置与恢复原 provider |
-| [运行依赖审阅材料](./docs/dependency-review.md) | 直接依赖来源、许可证、安装脚本、分发完整性与复核命令 |
+按意图索引：想**配置**从配置参考进，想**排障**从常见问题进，想**贡献**先读贡献指南。专题文档各自独立，本表即目录。
+
+| 我想… | 文档 | 内容 |
+| --- | --- | --- |
+| 配置服务与预算 | [配置参考](./docs/configuration.md) | 参数、端点、凭证回落关系和工具预算 |
+| 理解正文整理 | [网页正文整理](./docs/content-organization.md) | 整理规则、来源标记、差异处理和限制 |
+| 选型对比 | [与 ModSearch 的真实对比](./docs/modsearch-comparison.md) | 方法、逐次指标、请求成本与证据边界 |
+| 看质量指标 | [质量评测](./docs/quality-evaluation.md) | 中文、新闻、长文、挑战页与慢渠道的离线／真实指标 |
+| 用 AIHOT | [AIHOT 接入](./docs/aihot.md) | 原生工具读取 Markdown、结构化报告及精选 API |
+| 理解架构 / 改代码 | [架构说明](./DESIGN.md) → [贡献指南](./CONTRIBUTING.md) | 模块职责、数据流、错误处理和扩展方式 |
+| 查术语 | [术语表](./GLOSSARY.md) | 项目术语与接口含义 |
+| 排障 | [常见问题](./docs/troubleshooting.md) | 装载、凭证、超时和熔断排查 |
+| 卸载 / 回滚 | [卸载与回滚](./docs/lifecycle.md) | 配置备份、移除保存的设置与恢复原 provider |
+| 审阅依赖 | [运行依赖审阅材料](./docs/dependency-review.md) | 直接依赖来源、许可证、安装脚本、分发完整性与复核命令 |
+
+面向 AI 协作开发的约定（开发循环、质量门禁、模型路由）在 [AGENTS.md](./AGENTS.md) 及其指向的 `docs/agents/`；根目录的 `AGENTS.md` / `GLOSSARY.md` / `DESIGN.md` 是 agent 与贡献者的标准入口，按惯例留在根目录。
 | [隔离 profile 验收](./docs/verification/profile-lifecycle-20261016.md) | 0.2.12 安装、启动、原生工具、设置保存、卸载与版本回滚实测 |
 | [正式 DSH 会话实战验收](./docs/verification/live-session-20261016.md) | 0.2.13 正式会话中模型自主调用原生工具、deep / fast 自动切换与「不读取网页」约束 |
 | [0.2.14 正式 profile 安装验证](./docs/verification/formal-profile-v0.2.14-20261016.md) | 正式 Web profile 升级、宿主重启与原生 `web_fetch` 三路提取实测 |
