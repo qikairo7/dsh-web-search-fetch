@@ -236,7 +236,12 @@ flowchart LR
     Search[web_search] --> Fanout[多来源并发搜索]
     Fanout --> Fusion[URL 去重与 RRF 融合]
     Fusion --> Rerank[可选相关性重排]
-    Rerank --> Sources[统一来源列表]
+    Rerank --> RelEmpty{相关结果为空?}
+    RelEmpty -->|否| Sources[统一来源列表]
+    RelEmpty -->|单通道空返回或全被过滤| Escalate[自动补派一次多路]
+    RelEmpty -->|限流/超时/失败| Error[按引擎错误上报]
+    Escalate --> Fusion2[与首轮结果融合]
+    Escalate --> Still[仍为空：逐路标注引擎与结束状态]
     Fetch[web_fetch] --> Guard{目标地址是内网或回环?}
     Guard -->|是| Blocked[拒绝外发：WEB_BLOCKED_URL]
     Guard -->|否| API{已启用的 AIHOT 专用 API?}
@@ -251,6 +256,8 @@ flowchart LR
     Organize --> Body[正文、来源与文本差异]
     Mode -->|旧版兼容| Select[评分后返回单份正文]
 ```
+
+搜索路径补充：相关性过滤后结果为空时，说明会逐路标注引擎与结束状态（空返回、被过滤、限流、超时、取消）；单通道路径下唯一一路「成功空返回或全被过滤」自动补派一次多路并融合（说明记录补派），预算或通道不可用时如实写明；限流/超时/失败按引擎错误上报，不触发补派。
 
 已启用的 AIHOT 专用 API 先直接读取，其他 URL 再进入分流。分流根据 URL 扩展名和配置的静态域名判断，不检测页面渲染能力。HTML、PDF、未知扩展名及无扩展名 URL 默认进入动态提取。静态提取失败时不会自动转入付费服务；动态提取失败时也不会自动回退到 HTTP。
 
