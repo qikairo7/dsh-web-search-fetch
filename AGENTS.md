@@ -62,7 +62,7 @@
 - 命令执行优先 `ops_bash`（dsh-ops 的 rust 工具，省 token）；Windows 原生操作（注册表、服务）才用 pwsh。文件查找 `ops_glob`、内容搜索 `ops_grep`、读文件 `ops_inspect_local_file`。
 - UI 改动（`client/` 设置页）：验收用 oil-ui 的 `oil_ui_shoot` 截图取证，界面设计先读 `oil-ui` skill。
 - 浏览器一律 ego（先读 `ego-browser-local` skill）；GitHub 操作一律 `gh` CLI，不走浏览器。
-- node/pnpm 不在 PATH：node = `C:\Users\Administrator\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\node\bin\node.exe`；pnpm = `C:\Users\Administrator\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\pnpm\bin\pnpm.mjs`（以 `node <pnpm.mjs> <args>` 运行）；嵌套 `pnpm run` 需 `%TEMP%` 下 node.cmd/pnpm.cmd 转发 shim，用完删；新 worktree 先 `pnpm install --frozen-lockfile --prefer-offline`（约 1 秒，本地 store）。
+- node/pnpm 不在 PATH：确切路径与 shim 技巧见 `LOCAL.md`（本地文件，不入库——公开源码禁止本机路径，check-repository 门禁）。
 
 ## Skill 路由
 
