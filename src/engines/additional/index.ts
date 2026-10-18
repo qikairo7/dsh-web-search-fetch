@@ -1,7 +1,7 @@
 import type { WebFetchResult, WebSearchRequest, WebSearchResult } from '@deepseek-ai/dsh-web';
 import { credentialRef } from '@deepseek-ai/dsh-credentials';
 import type { ResolveCredential } from '../../search-pipeline.js';
-import { EngineHttp, additionalBreakerSignal } from './http.js';
+import { EngineHttp, additionalBreakerSignal, readCrawl4aiTargetStatus } from './http.js';
 import { adapt } from './adapters.js';
 import { budgetedFetch } from '../../request-budget.js';
 export { githubPath } from './adapters.js';
@@ -53,15 +53,25 @@ export function createAdditionalEngines(config: AdditionalEnginesConfig, resolve
     const defaults = ADDITIONAL_ENGINE_DEFAULTS[id];
     const apiKeyEnv = settings.apiKeyEnv ?? defaults.apiKeyEnv;
     const bearer = ['deepseek', 'kimi', 'firecrawl', 'tavily', 'crawl4ai', 'github'].includes(id);
-    const makeHttp = (ref: string, timeoutMs: number, baseURL: string) => new EngineHttp({
+    // Only the extraction transport reads a target status: search responses
+    // carry no target site, so a search-side envelope must stay an engine failure.
+    const makeHttp = (ref: string, timeoutMs: number, baseURL: string, targetStatusReader?: (response: Response) => Promise<number | undefined>) => new EngineHttp({
       id, baseURL, timeoutMs,
       resolveApiKey: () => resolveCredential(credentialRef(ref)),
       auth: id === 'bing' || id === 'aihot' ? 'none' : bearer ? 'bearer' : 'x-api-key',
       ...(id === 'bing' ? { accept: 'application/rss+xml, application/xml, text/xml' } : {}),
+      // Vendor error envelopes that carry the target site's own status. The
+      // transport takes the reader as an option so it stays protocol-agnostic.
+      ...(targetStatusReader === undefined ? {} : { readTargetStatus: targetStatusReader }),
       fetchImpl: budgetedFetch(options.fetchImpl),
     });
     const search = makeHttp(apiKeyEnv, options.searchTimeoutMs, settings.baseURL ?? defaults.baseURL);
-    const fetch = makeHttp(apiKeyEnv, options.fetchTimeoutMs, settings.fetchBaseURL ?? (id === 'tinyfish' ? ADDITIONAL_ENGINE_DEFAULTS.tinyfish.fetchBaseURL : settings.baseURL ?? defaults.baseURL));
+    const fetch = makeHttp(
+      apiKeyEnv,
+      options.fetchTimeoutMs,
+      settings.fetchBaseURL ?? (id === 'tinyfish' ? ADDITIONAL_ENGINE_DEFAULTS.tinyfish.fetchBaseURL : settings.baseURL ?? defaults.baseURL),
+      id === 'crawl4ai' ? readCrawl4aiTargetStatus : undefined,
+    );
     return [adapt(id, search, fetch, settings)];
   });
 }

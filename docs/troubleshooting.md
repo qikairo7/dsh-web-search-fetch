@@ -18,6 +18,18 @@
 
 动态路径全败时不会自动回退到 HTTP。需要只使用 HTTP 时，将 `fetch.staticRouting` 设为 `false`。这会对所有 URL 使用 HTTP，不保证可提取需要 JavaScript 渲染的页面。
 
+## 目标站返回 4xx，却报成服务不可用
+
+各服务报告目标站错误的方式不同，这决定了 404 会以结果还是错误出现：
+
+| 服务 | 目标站 4xx 的表现 | 插件结果 |
+| --- | --- | --- |
+| Crawl4AI | 自身返回 HTTP 502，站点状态在 `origin_status` | `statusCode` 为目标站状态（如 404） |
+| Firecrawl | `metadata.statusCode` 原样透传 | `statusCode` 为目标站状态 |
+| Tavily、Exa、TinyFish | 直接拒绝该 URL | 该路抛错，其余路继续 |
+
+只有 Crawl4AI 和 Firecrawl 会把目标站状态带进 `statusCode`；探测逻辑据此把非 2xx 判为正文不足并升级多路整理。目标站 4xx 在 Tavily、Exa、TinyFish 上表现为该路失败，多路整理时若其余路成功，结果里不会出现该状态。
+
 ## 操作在约 30 秒时取消
 
 检查会话实际使用的 `tool-web.fetchTimeoutMs`。Web preset 内嵌配置与顶层工具条目可能不同，修改顶层不一定影响当前会话。见[工具超时配置](./configuration.md#工具超时配置)。
