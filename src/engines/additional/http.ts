@@ -12,6 +12,16 @@ export interface EngineHttpOptions {
   accept?: string;
   timeoutMs: number;
   fetchImpl?: typeof fetch;
+  /**
+   * Read the target site's own status from a non-2xx response body, when the
+   * engine reports a site-side error as its own gateway failure.
+   *
+   * Injected rather than branched on `id` here: recognising a vendor's error
+   * envelope is response mapping, and the transport stays protocol-agnostic
+   * (CONTRIBUTING「服务协议映射与 HTTP 传输分离」). Returning `undefined` keeps
+   * the response an engine failure.
+   */
+  readTargetStatus?: (response: Response) => Promise<number | undefined>;
 }
 
 /** Transport shared by the additional HTTP engines; each call resolves its own credential. */
@@ -88,6 +98,12 @@ export class EngineHttp {
         ...(body === undefined ? {} : { body: JSON.stringify(body) }), signal: composed,
       }), composed);
       if (!response.ok && !(allowNotModified && response.status === 304)) {
+        // Some engines report a non-2xx *target* as their own gateway error and
+        // put the site's status in the body. That status is the fetched
+        // resource's state, so it is a result, not an engine failure. The
+        // engine supplies the reader; the transport never knows the protocol.
+        const targetStatus = await this.options.readTargetStatus?.(response);
+        if (targetStatus !== undefined) throw new TargetStatusError(this.options.id, targetStatus);
         await response.body?.cancel().catch(() => undefined);
         const rateLimited = response.status === 429 || (this.options.id === 'aihot' && response.status === 503) || (this.options.id === 'github' && response.status === 403 && response.headers.get('x-ratelimit-remaining') === '0');
         let cause: BreakerSignal | undefined;
@@ -109,10 +125,79 @@ export class EngineHttp {
     } catch (error) {
       if (signal?.aborted) throw new WebError(`${this.options.id}: aborted`, 'WEB_ABORTED');
       if (deadline.aborted) throw new WebError(`${this.options.id}: timed out`, 'WEB_PROVIDER_ERROR');
+      // Not a transport failure: the adapter turns this into a fetched result.
+      if (error instanceof TargetStatusError) throw error;
       if (error instanceof WebError) throw error;
       // Vendor responses and transport errors can echo request headers.
       throw new WebError(`${this.options.id}: unreadable response or transport failure`, 'WEB_PROVIDER_ERROR');
     }
+  }
+}
+
+/**
+ * A non-2xx *target* reported inside an engine's own error envelope.
+ *
+ * A `WebError`, so the seam's unified `WEB_*` error contract holds and any
+ * caller that does not special-case it still routes on a stable code. The
+ * target status rides alongside as `targetStatus` so the adapter can turn it
+ * into a fetched result.
+ */
+export class TargetStatusError extends WebError {
+  constructor(readonly engineId: string, readonly targetStatus: number) {
+    super(`${engineId}: target returned HTTP ${targetStatus}`, 'WEB_PROVIDER_ERROR');
+    this.name = 'TargetStatusError';
+  }
+}
+
+/** Bounded read of an error body; a vendor envelope is small, and the cap keeps it that way. */
+const MAX_ERROR_BODY_BYTES = 64_000;
+
+/**
+ * Read a non-2xx response body as text under a byte cap.
+ *
+ * The shared `readText` needs the operation signal and enforces the 1 MB
+ * response limit; error envelopes are small, so this reads under a tighter cap
+ * and never lets an oversized or unreadable body turn into a different error.
+ */
+async function readBoundedErrorText(response: Response): Promise<string | undefined> {
+  if (!response.body) return undefined;
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let bytes = 0;
+  let text = '';
+  try {
+    while (true) {
+      const part = await reader.read();
+      if (part.done) return text + decoder.decode();
+      bytes += part.value.byteLength;
+      if (bytes > MAX_ERROR_BODY_BYTES) return undefined;
+      text += decoder.decode(part.value, { stream: true });
+    }
+  } catch {
+    return undefined;
+  } finally {
+    void reader.cancel().catch(() => undefined);
+    reader.releaseLock();
+  }
+}
+
+/**
+ * Crawl4AI's target-status reader.
+ *
+ * The cloud API answers a site-side 4xx with its own 502 and puts the site's
+ * code in `origin_status` (https://api.crawl4ai.com/llms.txt). Lives here, with
+ * the engine, so the transport stays free of vendor protocol knowledge.
+ */
+export async function readCrawl4aiTargetStatus(response: Response): Promise<number | undefined> {
+  const text = await readBoundedErrorText(response);
+  if (text === undefined) return undefined;
+  try {
+    const payload: unknown = JSON.parse(text);
+    if (payload === null || typeof payload !== 'object' || Array.isArray(payload)) return undefined;
+    const status = (payload as Record<string, unknown>).origin_status;
+    return typeof status === 'number' && Number.isInteger(status) && status >= 100 && status <= 599 ? status : undefined;
+  } catch {
+    return undefined;
   }
 }
 
