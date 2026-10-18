@@ -1,17 +1,17 @@
-# Domain Docs
+# 领域文档
 
-How the engineering skills should consume this repo's domain documentation when exploring the codebase.
+engineering skills 在探索本仓库代码时，如何使用本仓库的领域文档。
 
-## Before exploring, read these
+## 探索前先读
 
-- **`GLOSSARY.md`** at the repo root.
-- **`docs/adr/`**: read ADRs that touch the area you're about to work in.
+- 仓库根的 **`GLOSSARY.md`**。
+- **`docs/adr/`**：读与你将要改动的区域相关的 ADR。
 
-If any of these files don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. The `/domain-modeling` skill (reached via `/grill-with-docs` and `/improve-codebase-architecture`) creates them lazily when terms or decisions actually get resolved.
+这些文件若不存在，**安静地继续**。不要提示它们缺失，也不要预先建议创建。`/domain-modeling` skill（经 `/grill-with-docs` 与 `/improve-codebase-architecture` 触达）会在术语或决策真正落定时惰性创建它们。
 
-## File structure
+## 文件结构
 
-Single-context repo:
+单上下文仓库：
 
 ```
 /
@@ -22,18 +22,18 @@ Single-context repo:
 └── src/
 ```
 
-`docs/adr/` does not exist yet. It is created by `/domain-modeling` when the first hard-to-reverse decision gets recorded, not scaffolded empty.
+`docs/adr/` 目前不存在。第一条难以回退的决策被记录时由 `/domain-modeling` 创建，不预建空目录。
 
-`DESIGN.md` is not a domain doc in the ADR sense: it describes current module responsibilities and is maintained alongside the code. Read it for architecture, but record decisions that constrain future work as ADRs.
+`DESIGN.md` 不是 ADR 意义上的领域文档：它描述当前模块职责，随代码一起维护。架构问题读它；但约束后续工作的决策要记成 ADR。
 
-## Use the glossary's vocabulary
+## 用术语表的词汇
 
-When your output names a domain concept (in an issue title, a refactor proposal, a hypothesis, a test name), use the term as defined in `GLOSSARY.md`. Don't drift to synonyms the glossary explicitly avoids.
+你的产出命名领域概念时（issue 标题、重构提案、假设、测试名），使用 `GLOSSARY.md` 定义的术语，不要漂移到术语表明确避开同义词。
 
-If the concept you need isn't in the glossary yet, that's a signal: either you're inventing language the project doesn't use (reconsider) or there's a real gap (note it for `/domain-modeling`).
+你需要的概念还不在术语表里时，这是一个信号：要么你在发明项目不用的语言（重新考虑），要么存在真实缺口（记给 `/domain-modeling`）。
 
-## Flag ADR conflicts
+## 标出 ADR 冲突
 
-If your output contradicts an existing ADR, surface it explicitly rather than silently overriding:
+你的产出与现有 ADR 矛盾时，显式指出而不是静默覆盖：
 
-> _Contradicts ADR-0007 (event-sourced orders), but worth reopening because…_
+> _与 ADR-0007（订单事件溯源）矛盾，但值得重开，因为……_
