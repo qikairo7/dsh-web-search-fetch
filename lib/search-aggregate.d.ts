@@ -120,6 +120,45 @@ export declare class AggregatedSearchProvider implements WebSearchProvider {
     search(request: WebSearchRequest, signal?: AbortSignal): Promise<WebSearchResult>;
     private searchOperation;
     /**
+     * Dispatch one round of lanes under a settlement window, collecting every
+     * lane's end state so the zero-result note can name all of them.
+     * @param lanes - engine plus the query that lane should run.
+     * @param window - the round's settlement window; closed here.
+     * @param request - the caller's request; each lane gets it with its own query.
+     * @param accept - records each settled lane and feeds the settlement window.
+     */
+    private dispatchRound;
+    /**
+     * Fuse and relevance-filter the successful lanes' rankings.
+     * @param query - the caller's query.
+     * @param rankings - successful lanes' outputs, in dispatch order.
+     * @returns the candidates worth returning, best first.
+     */
+    private relevantCandidates;
+    /**
+     * Issue #20 phase 2: widen a single-channel run exactly once when its only
+     * lane answered successfully but produced nothing usable.
+     *
+     * Only the single-channel breadth escalates — the explicit `single` preset
+     * (mirroring the fetch side's `singleChannelEscalate` precedent) and the
+     * automatic preset's own single-channel decision. A multi-channel preset
+     * already spread the query; widening it would change the breadth the user
+     * asked for. A lane that failed, timed out, was cancelled or hit a rate
+     * limit never escalates: it already consumed its share of the budget and
+     * the remaining channels are likely under the same limit. The escalation
+     * itself respects the preset's service list, enablement, credential
+     * presence, service cap and the operation's remaining request budget, and
+     * it is a single step: no second escalation follows it.
+     * @param request - the caller's request.
+     * @param outcomes - the first round's lanes, in dispatch order.
+     * @param signal - the operation signal.
+     * @returns the escalated round's outcomes and window state, or `undefined`
+     *   when this run must not (or cannot) escalate.
+     */
+    private escalateEmptySearch;
+    /** Build the per-lane recorder that also feeds the settlement window. */
+    private laneAcceptor;
+    /**
      * Probe the daily allowance of every quota-capable engine, at most once per
      * local day. The day is marked as swept before the
      * probes run, so one failed probe cannot make the pipeline retry all day; a

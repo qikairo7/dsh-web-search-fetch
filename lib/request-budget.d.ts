@@ -39,6 +39,8 @@ export interface DecisionRouter {
 export declare function operationNotes(): readonly string[];
 export declare function noteOperation(note: string): void;
 export declare function requestCount(): number;
+/** Requests this operation may still dispatch; unbounded outside an operation. */
+export declare function remainingRequests(): number;
 export declare function currentControls(): RuntimeControls;
 export declare function currentDecisionDepth(): 'fast' | 'balanced' | 'deep' | undefined;
 export declare function serviceEnabled(id: string, fallback?: boolean): boolean;
@@ -95,6 +97,19 @@ export declare function resolveAutoCap(controls: RuntimeControls, face: 'search'
  * @returns whether several channels are warranted.
  */
 export declare function multiChannelQuery(query: string): boolean;
+/**
+ * Whether this operation's search breadth resolved to a single channel.
+ *
+ * Mirrors the automatic preset's rule in {@link resolveAutoCap}: an explicit
+ * `single` preset is always one channel, the automatic preset is one channel
+ * when the decision model answered `fast` or, without a model answer, when the
+ * local query rule found no comparison/research/recency intent. Every other
+ * preset dispatches several channels by design.
+ * @param controls - the operation's controls; defaults to the current operation.
+ * @param decisionDepth - the decision model's answer, when it ran.
+ * @returns whether only one search channel is dispatched.
+ */
+export declare function singleChannelSearch(controls?: RuntimeControls, decisionDepth?: 'fast' | 'balanced' | 'deep' | undefined): boolean;
 /**
  * Whether the current preset dispatches several channels, so a settlement
  * window may end the slow lanes early. The single-channel presets never have

@@ -50,6 +50,11 @@ const operations = new AsyncLocalStorage<Operation>();
 export function operationNotes(): readonly string[] { return operations.getStore()?.notes ?? []; }
 export function noteOperation(note: string): void { operations.getStore()?.notes.push(note); }
 export function requestCount(): number { return operations.getStore()?.requests ?? 0; }
+/** Requests this operation may still dispatch; unbounded outside an operation. */
+export function remainingRequests(): number {
+  const operation = operations.getStore();
+  return operation === undefined ? Number.POSITIVE_INFINITY : Math.max(0, operation.maxRequests - operation.requests);
+}
 export function currentControls(): RuntimeControls { return operations.getStore()?.controls ?? {}; }
 export function currentDecisionDepth(): 'fast' | 'balanced' | 'deep' | undefined { return operations.getStore()?.decisionDepth; }
 export function serviceEnabled(id: string, fallback = true): boolean { return currentControls().serviceEnabled?.[id] ?? fallback; }
@@ -247,6 +252,28 @@ export function resolveAutoCap(controls: RuntimeControls, face: 'search' | 'fetc
  */
 export function multiChannelQuery(query: string): boolean {
   return /对比|比较|综述|review|compare|benchmark|研究|调研|资料|证据|引用|来源|最新|新闻|今日|今天|近期|最近|近日|本周|本月|快讯|要闻|热点|today|latest|news|202\d/i.test(query);
+}
+
+/**
+ * Whether this operation's search breadth resolved to a single channel.
+ *
+ * Mirrors the automatic preset's rule in {@link resolveAutoCap}: an explicit
+ * `single` preset is always one channel, the automatic preset is one channel
+ * when the decision model answered `fast` or, without a model answer, when the
+ * local query rule found no comparison/research/recency intent. Every other
+ * preset dispatches several channels by design.
+ * @param controls - the operation's controls; defaults to the current operation.
+ * @param decisionDepth - the decision model's answer, when it ran.
+ * @returns whether only one search channel is dispatched.
+ */
+export function singleChannelSearch(
+  controls: RuntimeControls = currentControls(),
+  decisionDepth: 'fast' | 'balanced' | 'deep' | undefined = currentDecisionDepth(),
+): boolean {
+  if (controls.preset === 'single') return true;
+  if (controls.preset !== 'auto') return false;
+  if (decisionDepth !== undefined) return decisionDepth === 'fast';
+  return !multiChannelQuery(controls.requestText ?? '');
 }
 
 /**
