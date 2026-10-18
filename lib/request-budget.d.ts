@@ -82,11 +82,11 @@ export declare function selectServices<T>(items: readonly T[], id: (item: T) => 
  * The preset names the breadth directly (`single` = one channel, `multi` =
  * every eligible one), while the automatic preset decides between those two.
  * The local rule is deterministic and free: a query that asks for comparison,
- * research or recency is worth several channels, and everything else starts
- * with one. A decision model is consulted only when `decisionRouting` is
- * `model`, and its `fast`/`balanced`/`deep` answer maps onto the same breadth
- * scale. `balanced` and `deep` are legacy presets kept for saved
- * configurations; they behave as capped and full breadth.
+ * research, recency or an official document is worth several channels, and
+ * everything else starts with one. A decision model is consulted only when
+ * `decisionRouting` is `model`, and its `fast`/`balanced`/`deep` answer maps
+ * onto the same breadth scale. `balanced` and `deep` are legacy presets kept
+ * for saved configurations; they behave as capped and full breadth.
  *
  * The fetch face keeps its URL-shape rule as a second signal: the automatic
  * two-stage probe (see `fetch-pipeline.ts`) already spends one request before
@@ -94,8 +94,14 @@ export declare function selectServices<T>(items: readonly T[], id: (item: T) => 
  */
 export declare function resolveAutoCap(controls: RuntimeControls, face: 'search' | 'fetch', decisionDepth?: 'fast' | 'balanced' | 'deep'): number;
 /**
- * The local breadth rule: does this query ask for comparison, research or
- * recency — the intents where one channel demonstrably misses material?
+ * The local breadth rule: does this query ask for comparison, research,
+ * recency or an official document — the intents where one channel
+ * demonstrably misses material?
+ *
+ * The official-document case reuses {@link officialHosts}, the single source
+ * that also drives the supplemental `site:` searches, so breadth and
+ * supplementation can never disagree. Its explicit-`site:` branch means any
+ * `site:` query counts as multi-channel too.
  * @param query - the search query as the caller wrote it.
  * @returns whether several channels are warranted.
  */
