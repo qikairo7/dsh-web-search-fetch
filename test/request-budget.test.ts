@@ -58,6 +58,30 @@ it('auto preset keeps simple requests single-channel and research requests multi
   });
 });
 
+it('auto preset treats Chinese recency words as multi-channel and leaves non-recency Chinese requests single-channel', async () => {
+  const services = ['anysearch', 'firecrawl', 'tavily', 'exa', 'kimi'];
+  const breadth = async (requestText: string) => {
+    let selected: string[] = [];
+    await runOperation({ preset: 'auto', request: 'search', requestText }, 'search', undefined, async () => {
+      selected = await selectServices(services, id => id, 'search');
+    });
+    return selected;
+  };
+  // The bug report's query: a Chinese recency word alone must fan out.
+  expect(await breadth('今天 AI 大模型 新闻')).toEqual(services);
+  for (const query of ['今日 AI 要闻', '近期大模型进展', '最近发布的模型', '本周 AI 热点', '国产模型快讯']) {
+    expect(await breadth(query), query).toEqual(services);
+  }
+  // English recency and research words keep working.
+  for (const query of ['latest AI model news', 'AI research benchmark comparison']) {
+    expect(await breadth(query), query).toEqual(services);
+  }
+  // A plain Chinese request with no recency or research intent stays single-channel.
+  for (const query of ['如何安装 Node.js', 'Python 列表排序', 'Docker 容器入门教程']) {
+    expect(await breadth(query), query).toEqual(['anysearch']);
+  }
+});
+
 it('auto preset chooses extraction breadth from the URL instead of asking the user', async () => {
   const services = ['firecrawl', 'anysearch', 'tavily', 'exa', 'kimi'];
   await runOperation({ preset: 'auto', request: 'fetch', requestText: 'https://example.com/docs/guide' }, 'fetch', undefined, async () => {
