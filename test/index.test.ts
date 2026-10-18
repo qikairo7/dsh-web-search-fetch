@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Context } from '@deepseek-ai/cordis';
 import type { WebFetchProvider, WebSearchProvider } from '@deepseek-ai/dsh-web';
 import { apply, Config, createAggregatedSearchProvider } from '../src/index.js';
+import { readVolatile } from '../src/settings-surface.js';
 import { readFixtureText } from './helpers/fixtures.js';
 
 interface StubContext {
@@ -94,6 +95,14 @@ describe('Config', () => {
 
   it('fetch 子对象：分流/域名画像/扩展名表/超时/权重默认值就位', () => {
     const resolved = Config({}).fetch;
+    // These three are `.volatile()` so the settings card can edit them from the
+    // served form; a volatile field parses into a live accessor whose value is
+    // read through `.get()`. Unwrap them before comparing defaults.
+    expect({
+      blockPrivateAddresses: readVolatile(resolved.blockPrivateAddresses),
+      probeTimeoutMs: readVolatile(resolved.probeTimeoutMs),
+      singleChannelEscalate: readVolatile(resolved.singleChannelEscalate),
+    }).toEqual({ blockPrivateAddresses: true, probeTimeoutMs: 15_000, singleChannelEscalate: false });
     expect(resolved).toMatchObject({
       staticRouting: true,
       staticDomains: [],
@@ -119,9 +128,6 @@ describe('Config', () => {
       ],
       perEngineTimeoutMs: 45_000,
       engineWeights: {},
-      blockPrivateAddresses: true,
-      probeTimeoutMs: 15_000,
-      singleChannelEscalate: false,
       firecrawlBaseURL: 'https://api.firecrawl.dev/v2/scrape',
       anysearchBaseURL: 'https://api.anysearch.com',
     });

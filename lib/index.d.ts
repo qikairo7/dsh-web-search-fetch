@@ -80,11 +80,11 @@ export interface FetchConfig {
     /** 择优 weight overrides per engine id; missing entries keep the defaults. */
     engineWeights?: Record<string, number>;
     /** Refuse loopback/private destinations before any third-party engine sees them. Default `true`. */
-    blockPrivateAddresses?: boolean;
+    blockPrivateAddresses?: Volatile<boolean> | boolean;
     /** Deadline of the automatic preset's first-path probe, in milliseconds. Default 15 s. */
-    probeTimeoutMs?: number;
+    probeTimeoutMs?: Volatile<number> | number;
     /** Let the `single` preset fall back to multi-path organization. Default `false`. */
-    singleChannelEscalate?: boolean;
+    singleChannelEscalate?: Volatile<boolean> | boolean;
     /** Firecrawl credential reference; defaults to `FIRECRAWL_API_KEY`. */
     firecrawlApiKeyEnv?: Volatile<string>;
     /** AnySearch extract credential reference; falls back to the search-face one. */
@@ -175,9 +175,9 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
         staticDomains: z<string[], string[], "defined">;
         staticExtensions: z<string[], string[], "defined">;
         perEngineTimeoutMs: z<number, number, "defined">;
-        blockPrivateAddresses: z<boolean, boolean, "defined">;
-        probeTimeoutMs: z<number, number, "defined">;
-        singleChannelEscalate: z<boolean, boolean, "defined">;
+        blockPrivateAddresses: z<boolean, boolean, "volatile-defined">;
+        probeTimeoutMs: z<number, number, "volatile-defined">;
+        singleChannelEscalate: z<boolean, boolean, "volatile-defined">;
         engineWeights: z<Dict<number, string>, Dict<number, string>, "defined">;
         firecrawlApiKeyEnv: z<string, string, "volatile-defined">;
         anysearchApiKeyEnv: z<string, string, "volatile">;
@@ -188,9 +188,9 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
         staticDomains: z<string[], string[], "defined">;
         staticExtensions: z<string[], string[], "defined">;
         perEngineTimeoutMs: z<number, number, "defined">;
-        blockPrivateAddresses: z<boolean, boolean, "defined">;
-        probeTimeoutMs: z<number, number, "defined">;
-        singleChannelEscalate: z<boolean, boolean, "defined">;
+        blockPrivateAddresses: z<boolean, boolean, "volatile-defined">;
+        probeTimeoutMs: z<number, number, "volatile-defined">;
+        singleChannelEscalate: z<boolean, boolean, "volatile-defined">;
         engineWeights: z<Dict<number, string>, Dict<number, string>, "defined">;
         firecrawlApiKeyEnv: z<string, string, "volatile-defined">;
         anysearchApiKeyEnv: z<string, string, "volatile">;
@@ -268,9 +268,9 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
         staticDomains: z<string[], string[], "defined">;
         staticExtensions: z<string[], string[], "defined">;
         perEngineTimeoutMs: z<number, number, "defined">;
-        blockPrivateAddresses: z<boolean, boolean, "defined">;
-        probeTimeoutMs: z<number, number, "defined">;
-        singleChannelEscalate: z<boolean, boolean, "defined">;
+        blockPrivateAddresses: z<boolean, boolean, "volatile-defined">;
+        probeTimeoutMs: z<number, number, "volatile-defined">;
+        singleChannelEscalate: z<boolean, boolean, "volatile-defined">;
         engineWeights: z<Dict<number, string>, Dict<number, string>, "defined">;
         firecrawlApiKeyEnv: z<string, string, "volatile-defined">;
         anysearchApiKeyEnv: z<string, string, "volatile">;
@@ -281,9 +281,9 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
         staticDomains: z<string[], string[], "defined">;
         staticExtensions: z<string[], string[], "defined">;
         perEngineTimeoutMs: z<number, number, "defined">;
-        blockPrivateAddresses: z<boolean, boolean, "defined">;
-        probeTimeoutMs: z<number, number, "defined">;
-        singleChannelEscalate: z<boolean, boolean, "defined">;
+        blockPrivateAddresses: z<boolean, boolean, "volatile-defined">;
+        probeTimeoutMs: z<number, number, "volatile-defined">;
+        singleChannelEscalate: z<boolean, boolean, "volatile-defined">;
         engineWeights: z<Dict<number, string>, Dict<number, string>, "defined">;
         firecrawlApiKeyEnv: z<string, string, "volatile-defined">;
         anysearchApiKeyEnv: z<string, string, "volatile">;

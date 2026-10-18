@@ -161,11 +161,11 @@ export interface FetchConfig {
   /** 择优 weight overrides per engine id; missing entries keep the defaults. */
   engineWeights?: Record<string, number>;
   /** Refuse loopback/private destinations before any third-party engine sees them. Default `true`. */
-  blockPrivateAddresses?: boolean;
+  blockPrivateAddresses?: Volatile<boolean> | boolean;
   /** Deadline of the automatic preset's first-path probe, in milliseconds. Default 15 s. */
-  probeTimeoutMs?: number;
+  probeTimeoutMs?: Volatile<number> | number;
   /** Let the `single` preset fall back to multi-path organization. Default `false`. */
-  singleChannelEscalate?: boolean;
+  singleChannelEscalate?: Volatile<boolean> | boolean;
   /** Firecrawl credential reference; defaults to `FIRECRAWL_API_KEY`. */
   firecrawlApiKeyEnv?: Volatile<string>;
   /** AnySearch extract credential reference; falls back to the search-face one. */
@@ -276,16 +276,19 @@ export const Config = z.object({
       blockPrivateAddresses: z
         .boolean()
         .default(true)
+        .volatile()
         .description('拒绝把本机或内网地址外发给第三方提取服务。解析失败不拦截；列在静态域名画像里的主机不受影响，由内置 HTTP 提取器按自身策略处理。'),
       probeTimeoutMs: z
         .natural()
         .min(1000)
         .max(120000)
         .default(DEFAULT_PROBE_TIMEOUT_MS)
+        .volatile()
         .description('自动预设首路探测的限时（毫秒）。探测到一个请求就够用的完整正文时直接返回原文，不再派发其他服务。默认 15000。'),
       singleChannelEscalate: z
         .boolean()
         .default(false)
+        .volatile()
         .description('单通道预设是否在唯一通道失败或正文不足时改走多路整理。默认关闭：明确选择单通道时只用一路。'),
       engineWeights: z
         .dict(z.number())
@@ -444,9 +447,9 @@ export function apply(ctx: Context, config: Config): void {
       logger: log,
       perEngineTimeoutMs,
       engineWeights: fetchConfig.engineWeights ?? {},
-      blockPrivateAddresses: fetchConfig.blockPrivateAddresses ?? true,
-      probeTimeoutMs: fetchConfig.probeTimeoutMs ?? DEFAULT_PROBE_TIMEOUT_MS,
-      singleChannelEscalate: fetchConfig.singleChannelEscalate ?? false,
+      blockPrivateAddresses: readVolatile(fetchConfig.blockPrivateAddresses) ?? true,
+      probeTimeoutMs: readVolatile(fetchConfig.probeTimeoutMs) ?? DEFAULT_PROBE_TIMEOUT_MS,
+      singleChannelEscalate: readVolatile(fetchConfig.singleChannelEscalate) ?? false,
     }),
   );
 

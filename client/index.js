@@ -29,6 +29,13 @@ window.__ModuleLoader__.load({
             presetLabel: '调用预设', autoPreset: '自动', singlePreset: '单通道', multiPreset: '多通道', customPreset: '自定义', freePreset: '免费接口', balancedPreset: '均衡', deepPreset: '深度',
             maxSearchServices: '每个查询的搜索服务上限', maxFetchServices: '每个 URL 的提取服务上限', maxRequests: '每次操作的 HTTP 请求上限',
             searchDeadlineMs: '搜索总限时（毫秒）', fetchDeadlineMs: '提取总限时（毫秒）', maxOutputChars: '整理输出上限（字符）',
+            fetchSectionTitle: '提取策略',
+            blockPrivateAddresses: '拒绝内网地址',
+            blockPrivateAddressesHint: '本机与内网地址不发给第三方提取服务；解析失败不拦截，静态域名画像里的主机由内置 HTTP 处理。',
+            probeTimeoutMs: '首路探测限时（毫秒）',
+            probeTimeoutMsHint: '自动预设先派一路，探测到完整正文就直接返回原文，不再派发其他服务。',
+            singleChannelEscalate: '单通道失败时改走多路',
+            singleChannelEscalateHint: '单通道预设的唯一通道失败或正文不足时，改走多路整理。默认关闭。',
             participateSearch: '参与搜索', participateFetch: '参与提取',
             controlsHint: '整理保留原文和提取来源；差异不会自动判定真伪。请求上限包括重试、额度检查与重排，不是金额上限；宿主 HTTP 抓取另有独立限制。处理情况见本次工具结果和日志。',
             freeHint: '免费预设仅使用 Bing RSS、TinyFish、GitHub 公开 API 和已启用的 AIHOT；部分仍需密钥，AIHOT 仍受用途限制。不调用免费额度用尽后收费的接口。',
@@ -97,6 +104,13 @@ window.__ModuleLoader__.load({
             presetLabel: 'Call preset', autoPreset: 'Auto', singlePreset: 'Single channel', multiPreset: 'Multi channel', customPreset: 'Custom', freePreset: 'Free APIs', balancedPreset: 'Balanced', deepPreset: 'Deep',
             maxSearchServices: 'Search services per query', maxFetchServices: 'Extraction services per URL', maxRequests: 'HTTP requests per operation',
             searchDeadlineMs: 'Search deadline (ms)', fetchDeadlineMs: 'Extraction deadline (ms)', maxOutputChars: 'Organized output limit (characters)',
+            fetchSectionTitle: 'Extraction strategy',
+            blockPrivateAddresses: 'Block private addresses',
+            blockPrivateAddressesHint: 'Loopback and private addresses are not sent to third-party extraction services. Failed resolution is not blocked, and hosts in the static-domain profile are handled by the built-in HTTP fetch.',
+            probeTimeoutMs: 'Probe deadline (ms)',
+            probeTimeoutMsHint: 'The automatic preset sends one request first; when it already returns a complete body that body is returned as-is and no other service is dispatched.',
+            singleChannelEscalate: 'Escalate when the single channel fails',
+            singleChannelEscalateHint: 'When the single preset\u2019s only channel fails or returns too little body, fall back to multi-channel organization. Off by default.',
             participateSearch: 'Participate in search', participateFetch: 'Participate in extraction',
             controlsHint: 'Retains original text and extraction provenance without deciding which variant is true. Request limits include retries, quota checks and reranking, not monetary costs. Host HTTP retrieval has separate limits. Processing notes appear in tool results and logs.',
             freeHint: 'Free preset uses Bing RSS, TinyFish, public GitHub APIs and enabled AIHOT only. Keys may still be required; AIHOT usage terms apply. APIs with paid overages are excluded.',
@@ -160,6 +174,19 @@ window.__ModuleLoader__.load({
             searchDeadlineMs: { initial: 15000, min: 1, max: 3600000 },
             fetchDeadlineMs: { initial: 50000, min: 1, max: 3600000 },
             maxOutputChars: { initial: 15000, min: 1000, max: 1000000 },
+        };
+        /**
+        * Fetch-face settings that live under `fetch.*` instead of `controls.*`.
+        *
+        * They belong to the fetch strategy rather than to the call budget, so the
+        * Host serves them at their own config paths. `kind` picks the control: a
+        * switch for the booleans, a number field for the probe deadline. Values
+        * are staged in their own draft map so a save writes the right path.
+        */
+        const FETCH_CONTROLS = {
+            blockPrivateAddresses: { kind: 'boolean', initial: true },
+            probeTimeoutMs: { kind: 'number', initial: 15000, min: 1000, max: 120000 },
+            singleChannelEscalate: { kind: 'boolean', initial: false },
         };
         const EXTENSIONS = ["deepseek", "tavily", "exa", "keenable", "crawl4ai", "github", "firecrawl", "tinyfish", "serply", "kimi", "bing", "aihot"];
 		/**
@@ -263,11 +290,43 @@ window.__ModuleLoader__.load({
             engineDrafts = new Map();
             controlDrafts = new Map();
             numberDrafts = new Map();
+            fetchDrafts = new Map();
             controls() {
                 return { mode: 'organize', preset: 'auto', ...Object.fromEntries(Object.entries(NUMBER_CONTROLS).map(([name, spec]) => [name, spec.initial])),
                     serviceEnabled: {}, searchServices: SERVICES.filter(service => service.capabilities.includes('search')).map(service => service.id),
                     fetchServices: SERVICES.filter(service => service.capabilities.includes('fetch') && service.id !== 'http').map(service => service.id),
                     ...this.section()?.controls, ...Object.fromEntries(this.controlDrafts) };
+            }
+            /**
+            * Read one `fetch.*` setting as the card renders it.
+            * @param name - key under `FETCH_CONTROLS`.
+            * @returns the served value, the staged value, and whether they differ.
+            */
+            fetchField(name) {
+                const spec = FETCH_CONTROLS[name];
+                const served = this.section()?.fetch?.[name] ?? spec.initial;
+                const staged = this.fetchDrafts.has(name) ? this.fetchDrafts.get(name) : served;
+                return { served, value: staged, dirty: this.fetchDrafts.has(name),
+                    ...(spec.kind === 'number' ? { min: spec.min, max: spec.max } : {}) };
+            }
+            /**
+            * Stage one `fetch.*` setting.
+            * @param name - key under `FETCH_CONTROLS`.
+            * @param value - the new boolean or number, already parsed by the caller.
+            */
+            editFetch(name, value) {
+                if (this.saving || !Object.hasOwn(FETCH_CONTROLS, name)) return;
+                const spec = FETCH_CONTROLS[name];
+                if (spec.kind === 'boolean') {
+                    if (typeof value !== 'boolean') return;
+                } else if (!Number.isInteger(value) || value < spec.min || value > spec.max) return;
+                this.baselineRevision ??= this.scope.getSnapshot().revision;
+                const served = this.section()?.fetch?.[name] ?? spec.initial;
+                if (JSON.stringify(served) === JSON.stringify(value)) this.fetchDrafts.delete(name);
+                else this.fetchDrafts.set(name, value);
+                this.failed = false;
+                this.saved = false;
+                this.publish();
             }
             numberField(name) {
                 const spec = NUMBER_CONTROLS[name];
@@ -443,7 +502,7 @@ window.__ModuleLoader__.load({
                 this.publish();
             }
 			dirty() {
-				return this.decisionDraft !== undefined || this.engineDrafts.size > 0 || this.keyDrafts.size > 0 || this.controlDrafts.size > 0 || this.numberDrafts.size > 0;
+				return this.decisionDraft !== undefined || this.engineDrafts.size > 0 || this.keyDrafts.size > 0 || this.controlDrafts.size > 0 || this.numberDrafts.size > 0 || this.fetchDrafts.size > 0;
 			}
 			/**
 			* Ask the credentials domain about the reference each slot resolves to.
@@ -503,6 +562,7 @@ window.__ModuleLoader__.load({
 				if (this.decisionDraft !== undefined) ops.push({ op: 'set', path: ['search', 'decisionModel'], value: this.decisionDraft });
 				ops.push(...[...this.engineDrafts].map(([id, enabled]) => ({ op: "set", path: ["engines", id, "enabled"], value: enabled })));
                 ops.push(...[...this.controlDrafts].map(([name, value]) => ({ op: 'set', path: ['controls', name], value })));
+                ops.push(...[...this.fetchDrafts].map(([name, value]) => ({ op: 'set', path: ['fetch', name], value })));
                 // Keep the submitted references independent of a page closing during the write.
                 const keys = [...this.keyDrafts].map(([id, text]) => [id, text, this.keyRefs.get(id)]);
 				if (ops.length === 0 && keys.length === 0) return;
@@ -519,6 +579,7 @@ window.__ModuleLoader__.load({
                                 this.decisionDraft = undefined;
                                 this.engineDrafts.clear();
                                 this.controlDrafts.clear();
+                                this.fetchDrafts.clear();
                                 this.numberDrafts.clear();
                                 this.baselineRevision = this.scope.getSnapshot().revision;
                             }
@@ -542,6 +603,7 @@ window.__ModuleLoader__.load({
                         this.keyRefs.clear();
                         this.engineDrafts.clear();
                         this.controlDrafts.clear();
+                        this.fetchDrafts.clear();
                          this.numberDrafts.clear();
 						this.baselineRevision = void 0;
 					}
@@ -565,6 +627,7 @@ window.__ModuleLoader__.load({
                 this.keyRefs.clear();
                 this.engineDrafts.clear();
                 this.controlDrafts.clear();
+                this.fetchDrafts.clear();
                 this.numberDrafts.clear();
                 this.baselineRevision = undefined;
             }
@@ -582,6 +645,7 @@ window.__ModuleLoader__.load({
                         this.keyRefs.clear();
                         this.engineDrafts.clear();
                         this.controlDrafts.clear();
+                        this.fetchDrafts.clear();
                          this.numberDrafts.clear();
 				this.baselineRevision = void 0;
 				this.failed = false;
@@ -610,6 +674,7 @@ window.__ModuleLoader__.load({
                     saved: this.saved,
                     controls: this.controls(),
                     numberFields: Object.fromEntries(Object.keys(NUMBER_CONTROLS).map(name => [name, this.numberField(name)])),
+                    fetchFields: Object.fromEntries(Object.keys(FETCH_CONTROLS).map(name => [name, this.fetchField(name)])),
                     view: { ...this.view },
                     visibleServiceIds: SERVICES.filter(service => this.matchesService(service)).map(service => service.id),
                     changedServiceIds: SERVICES.filter(service => this.serviceDirty(service)).map(service => service.id),
@@ -771,7 +836,7 @@ window.__ModuleLoader__.load({
             { value: 'jev-latest', label: 'TypeSafe · jev-latest', key: 'typesafe' },
         ];
         function WebSearchFetchCard(props) {
-            const { t, editKey, editDecision, chooseStart, editService, editControl, editNumber, editParticipation, editView, toggleService, refresh, save, discard } = props;
+            const { t, editKey, editDecision, chooseStart, editService, editControl, editNumber, editFetch, editParticipation, editView, toggleService, refresh, save, discard } = props;
             const state = props.useWebSearchFetch(snapshot => snapshot);
             const onDiscard = React.useRef(props.leave);
             const decisionInput = React.useRef(null);
@@ -873,6 +938,36 @@ window.__ModuleLoader__.load({
                             }) }, name);
                         }) }),
                         jsx('p', { className: 'wsf-muted wsf-controls-hint', children: t('controlsHint') }),
+                        jsxs('div', { className: 'wsf-fetch-strategy', children: [
+                            jsx('p', { className: 'wsf-muted', children: t('fetchSectionTitle') }),
+                            Object.keys(FETCH_CONTROLS).map(name => {
+                                const field = state.fetchFields[name];
+                                const spec = FETCH_CONTROLS[name];
+                                if (spec.kind === 'boolean') {
+                                    return jsxs('div', { className: 'wsf-fetch-toggle', children: [
+                                        jsx(ui.Switch, {
+                                            label: t(name), checked: field.value === true, disabled,
+                                            onChange: checked => editFetch(name, checked),
+                                        }),
+                                        jsxs('div', { children: [
+                                            jsx('strong', { children: t(name) }),
+                                            jsx('p', { className: 'wsf-muted', children: t(name + 'Hint') }),
+                                            field.dirty && jsx('span', { className: 'wsf-muted', children: t('staged') }),
+                                        ] }),
+                                    ] }, name);
+                                }
+                                const text = String(field.value);
+                                const invalid = !/^\d+$/.test(text) || Number(text) < spec.min || Number(text) > spec.max;
+                                return jsx('div', { children: jsx(ui.SettingsValueField, {
+                                    id: 'wsf-fetch-' + name, label: t(name), numeric: true, disabled,
+                                    text, invalid, overridden: field.dirty,
+                                    overriddenLabel: t('staged'), resetLabel: t('resetField'),
+                                    invalidLabel: t('invalidNumber') + spec.min + '–' + spec.max,
+                                    hint: t(name + 'Hint') + ' ' + t('range') + ': ' + spec.min + '–' + spec.max,
+                                    onEdit: value => editFetch(name, Number(value)), onReset: () => editFetch(name, field.served),
+                                }) }, name);
+                            }),
+                        ] }),
                     ] }),
                     ] }),
                     jsxs('div', { className: 'wsf-heading', children: [
@@ -986,6 +1081,7 @@ window.__ModuleLoader__.load({
 				editService: (id, enabled) => card.editService(id, enabled),
 				editControl: (name, value) => card.editControl(name, value),
 				editNumber: (name, text) => card.editNumber(name, text),
+                editFetch: (name, value) => card.editFetch(name, value),
 				leave: () => card.leave(),
 				editParticipation: (id, face, enabled) => card.editParticipation(id, face, enabled),
 				save: () => card.save(),

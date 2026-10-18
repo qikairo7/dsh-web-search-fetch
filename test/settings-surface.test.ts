@@ -182,6 +182,34 @@ describe('client bundle parity', () => {
     const source = readFileSync(new URL('../client/index.js', import.meta.url), 'utf8');
     expect(source).toContain(`const SETTINGS_NS = "${WEB_SEARCH_FETCH_SETTINGS_NAMESPACE}"`);
   });
+
+  it('fetch.* 控件表与 schema 上的 volatile 字段一一对应', () => {
+    const source = readFileSync(new URL('../client/index.js', import.meta.url), 'utf8');
+    const match = /const FETCH_CONTROLS = (\{[\s\S]*?\n\t\t\});/.exec(source);
+    expect(match, 'client/index.js 里应有 FETCH_CONTROLS 字面量').not.toBeNull();
+    const json = Config.toJSON() as {
+      uid: number;
+      refs: Record<string, { meta?: { volatile?: boolean }; dict?: Record<string, number> }>;
+    };
+    const volatileAt = (path: readonly string[]): boolean => {
+      let node = json.refs[String(json.uid)];
+      for (const segment of path) {
+        const next = node?.dict?.[segment];
+        if (next === undefined) return false;
+        node = json.refs[String(next)];
+      }
+      return node?.meta?.volatile === true;
+    };
+    // The card writes these under `fetch.<name>`, so each one must also be a
+    // declared editable path and a volatile schema field; otherwise the edit is
+    // refused by the settings domain and the control silently does nothing.
+    const keys = [...match![1]!.matchAll(/^\s{12}(\w+):/gm)].map(entry => entry[1]!);
+    expect(keys.length).toBeGreaterThan(0);
+    for (const key of keys) {
+      expect(isEditableSettingsPath(['fetch', key]), `${key} 应在 EDITABLE_SETTINGS_PATHS 中`).toBe(true);
+      expect(volatileAt(['fetch', key]), `${key} 在 schema 上应为 volatile`).toBe(true);
+    }
+  });
 });
 
 

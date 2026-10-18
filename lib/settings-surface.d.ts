@@ -27,7 +27,7 @@ export declare const WEB_SEARCH_FETCH_SETTINGS_NAMESPACE = "web-search-fetch";
 /** Fields served by native settings: transport, credential references and the extension map.
  * The map is volatile as a whole so path mutations can preserve custom endpoints and refs.
  */
-export declare const EDITABLE_SETTINGS_PATHS: readonly [readonly ["controls"], readonly ["search", "rerank"], readonly ["engines"], readonly ["fetch", "anysearchApiKeyEnv"], readonly ["search", "anysearchApiKeyEnv"], readonly ["search", "siliconflowApiKeyEnv"], readonly ["search", "decisionModel"], readonly ["fetch", "firecrawlApiKeyEnv"]];
+export declare const EDITABLE_SETTINGS_PATHS: readonly [readonly ["controls"], readonly ["search", "rerank"], readonly ["engines"], readonly ["fetch", "anysearchApiKeyEnv"], readonly ["fetch", "blockPrivateAddresses"], readonly ["fetch", "probeTimeoutMs"], readonly ["fetch", "singleChannelEscalate"], readonly ["search", "anysearchApiKeyEnv"], readonly ["search", "siliconflowApiKeyEnv"], readonly ["search", "decisionModel"], readonly ["fetch", "firecrawlApiKeyEnv"]];
 /** One editable config path. */
 export type EditableSettingsPath = (typeof EDITABLE_SETTINGS_PATHS)[number];
 /**
