@@ -3,12 +3,12 @@ import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-// `AGENTS.md`, `CLAUDE.md`, `docs/adr`, `docs/agents` and `.workflow-lite` are
-// local, gitignored working notes: they are never part of the public source, so
-// this check does not read them (it also skips the other generated or private
-// trees). Entries are matched against the path relative to the repository root,
-// with `/` as the separator on every platform.
-const skip = new Set(['.git', 'node_modules', 'lib', '.scratch', '.workflow-lite', 'coverage', 'AGENTS.md', 'CLAUDE.md', 'docs/adr', 'docs/agents']);
+// `AGENTS.md` and `docs/agents` are tracked agent configuration: they are part
+// of the public source, so this check reads them and validates their links.
+// `CLAUDE.md`, `docs/adr` and `.workflow-lite` stay local working notes.
+// Entries are matched against the path relative to the repository root, with
+// `/` as the separator on every platform.
+const skip = new Set(['.git', 'node_modules', 'lib', '.scratch', '.workflow-lite', 'coverage', 'CLAUDE.md', 'docs/adr']);
 const errors = [];
 const files = [];
 
@@ -46,7 +46,7 @@ function anchors(text) {
 
 for (const path of files) {
   const name = relative(root, path).split(sep).join('/');
-  if (name !== '.env.example' && /^(docs\/(agents|adr)\/)|(^|\/)(\.env(?:\..*)?|\.credentials\.ya?ml|.*\.(log|tgz))$/.test(name)) {
+  if (name !== '.env.example' && /^(docs\/adr\/)|(^|\/)(\.env(?:\..*)?|\.credentials\.ya?ml|.*\.(log|tgz))$/.test(name)) {
     errors.push(`Private or generated file in public source: ${name}`);
   }
   if (!/\.(md|ts|js|mjs|json|ya?ml)$/.test(path) || name === 'scripts/check-repository.mjs') continue;
