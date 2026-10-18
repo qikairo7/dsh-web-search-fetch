@@ -33,9 +33,12 @@
 
 ## Skill 路由
 
+全流程 skill 融入表（intake → 实施 → 复核 → 验收 → 收口 → 维护 → 沉淀，含触发条件）见 `docs/agents/skill-routing.md`，命中条件才加载。核心几条：
+
 - 复核审查用 `code-review` skill 的双轴：Standards 轴（本文件 + CONTRIBUTING 实现约定 + DESIGN 模块职责）、Spec 轴（需求的验收标准逐条）。
-- 大型功能（多模块、跨会话）先走 `superpowers` 的设计/计划阶段；需求成票用 `to-spec` / `to-tickets`；大规划用 `wayfinder`。
+- 大型功能（多模块、跨会话）先走 `superpowers` 的设计/计划阶段（设计对话可用 `elephant` + `goldfish`）；需求成票用 `to-spec` / `to-tickets`；大规划用 `wayfinder`。
 - Issue/PR 处理流水线用 `issue-pipeline`；全仓质量审计用 `ponytail-audit`；债务清单 `ponytail-debt`。
+- 每次会话结束或有返工时跑 `retro`，环境改进候选写进 LESSONS.md。
 
 ## Agent skills
 
