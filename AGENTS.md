@@ -1,5 +1,11 @@
 # AGENTS.md
 
+## Dev loop
+
+Development requests run through the `dev-loop` workflow-lite graph (impl → verify → accept → release, team mode). Entry: the user describes a need; the lead compiles the graph with the request. Ledger of delivered requests: `.scratch/dev-loop/ledger.md`. Rules the loop already enforces: worktree task branches, `pnpm run check` gate, red-on-revert regression proof, no merge/push without explicit user authorization.
+
+Model routing is strict — `spawn_teammate` cannot select a model, so every step with a required model dispatches via `subagent` instead: impl / verify / accept → provider `magpie`, model `group/deepseek-v4.1-flash1017`, reasoning_effort `high`; release and GitHub Issue/PR maintenance → `group/glm-5.3-flash`, `high`. The lead keeps glm-5.3 for analysis, review and decisions.
+
 ## Agent skills
 
 ### Issue tracker
