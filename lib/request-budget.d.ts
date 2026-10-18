@@ -71,8 +71,11 @@ export declare function budgetedFetch(fetcher?: typeof fetch): typeof fetch;
  * @param ready - optional credential/availability probe.
  * @param capOverride - explicit breadth, used when a preset escalates beyond
  *   its own cap (for example the single preset's documented fallback).
+ * @param noteSelection - record the generic selection and cap lines; an
+ *   escalation caller states its own selection instead, so the operation note
+ *   does not repeat the first round's wording.
  */
-export declare function selectServices<T>(items: readonly T[], id: (item: T) => string, face: 'search' | 'fetch', ready?: (id: string, face: 'search' | 'fetch') => Promise<boolean>, capOverride?: number): Promise<T[]>;
+export declare function selectServices<T>(items: readonly T[], id: (item: T) => string, face: 'search' | 'fetch', ready?: (id: string, face: 'search' | 'fetch') => Promise<boolean>, capOverride?: number, noteSelection?: boolean): Promise<T[]>;
 /**
  * Resolve how many services one operation may dispatch.
  *

@@ -174,8 +174,11 @@ export function budgetedFetch(fetcher?: typeof fetch): typeof fetch {
  * @param ready - optional credential/availability probe.
  * @param capOverride - explicit breadth, used when a preset escalates beyond
  *   its own cap (for example the single preset's documented fallback).
+ * @param noteSelection - record the generic selection and cap lines; an
+ *   escalation caller states its own selection instead, so the operation note
+ *   does not repeat the first round's wording.
  */
-export async function selectServices<T>(items: readonly T[], id: (item: T) => string, face: 'search' | 'fetch', ready?: (id: string, face: 'search' | 'fetch') => Promise<boolean>, capOverride?: number): Promise<T[]> {
+export async function selectServices<T>(items: readonly T[], id: (item: T) => string, face: 'search' | 'fetch', ready?: (id: string, face: 'search' | 'fetch') => Promise<boolean>, capOverride?: number, noteSelection = true): Promise<T[]> {
   const controls = currentControls();
   const chosen = face === 'search' ? controls.searchServices : controls.fetchServices;
   const free = ['tinyfish', 'bing', 'github', 'aihot'];
@@ -185,8 +188,10 @@ export async function selectServices<T>(items: readonly T[], id: (item: T) => st
   const available = await Promise.all(allowed.map(async item => !ready || await ready(id(item), face)));
   const usable = allowed.filter((_, index) => available[index]);
   const selected = usable.slice(0, cap);
-  noteOperation(`实际选择 ${selected.length} 路${face === 'search' ? '搜索' : '提取'}服务。`);
-  if (usable.length > selected.length) noteOperation(`服务数量上限：仅派发 ${selected.length} 路，未派发 ${usable.length - selected.length} 路。`);
+  if (noteSelection) {
+    noteOperation(`实际选择 ${selected.length} 路${face === 'search' ? '搜索' : '提取'}服务。`);
+    if (usable.length > selected.length) noteOperation(`服务数量上限：仅派发 ${selected.length} 路，未派发 ${usable.length - selected.length} 路。`);
+  }
   return selected;
 }
 

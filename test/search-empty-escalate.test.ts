@@ -49,7 +49,7 @@ function fails(error: unknown) {
 
 function buildProvider(options: {
   engines: readonly SearchEngineClient[];
-  resolveControls: () => { preset?: 'auto' | 'single' | 'multi'; maxRequests?: number };
+  resolveControls: () => { preset?: 'auto' | 'single' | 'multi'; maxRequests?: number; maxSearchServices?: number };
 }): AggregatedSearchProvider {
   return new AggregatedSearchProvider({
     breaker: new CircuitBreaker(),
@@ -73,7 +73,7 @@ describe('单通道空结果自动补派多路', () => {
     const out = await provider.search({ query: PLAIN_QUERY });
     expect(out.sources.map(entry => entry.url)).toEqual(['https://docs.test/node-install']);
     expect(out.content).toContain('单路 anysearch 空结果');
-    expect(out.content).toContain('已补派 1 路搜索');
+    expect(out.content).toContain('补派选择 1 路搜索');
     expect(empty.requests).toHaveLength(1);
     expect(backup.requests).toHaveLength(1);
   });
@@ -90,7 +90,7 @@ describe('单通道空结果自动补派多路', () => {
     const provider = buildProvider({ engines: [irrelevant.engine, backup.engine], resolveControls: plainControls });
     const out = await provider.search({ query: 'zxqvj plorptastic nonsense token' });
     expect(out.sources.map(entry => entry.url)).toEqual(['https://docs.test/token']);
-    expect(out.content).toContain('已补派 1 路搜索');
+    expect(out.content).toContain('补派选择 1 路搜索');
     expect(backup.requests).toHaveLength(1);
   });
 
@@ -106,7 +106,7 @@ describe('单通道空结果自动补派多路', () => {
     });
     const out = await provider.search({ query: 'DeepSeek Harness 使用入门' });
     expect(out.sources.map(entry => entry.url)).toEqual(['https://docs.test/harness']);
-    expect(out.content).toContain('已补派 1 路搜索');
+    expect(out.content).toContain('补派选择 1 路搜索');
   });
 
   it('限流的一路不触发补派：该路已消耗预算，本次照旧报 WEB_PROVIDER_ERROR', async () => {
@@ -158,7 +158,7 @@ describe('单通道空结果自动补派多路', () => {
     });
     const out = await provider.search({ query: PLAIN_QUERY });
     expect(out.sources).toEqual([]);
-    expect(out.content).not.toContain('已补派');
+    expect(out.content).not.toContain('补派选择');
     expect(first.requests).toHaveLength(1);
     expect(second.requests).toHaveLength(1);
   });
@@ -172,7 +172,7 @@ describe('单通道空结果自动补派多路', () => {
     });
     const out = await provider.search({ query: '对比 Node.js 与 Deno 最新资料' });
     expect(out.sources).toEqual([]);
-    expect(out.content).not.toContain('已补派');
+    expect(out.content).not.toContain('补派选择');
     expect(first.requests).toHaveLength(1);
     expect(second.requests).toHaveLength(1);
   });
@@ -197,7 +197,10 @@ describe('单通道空结果自动补派多路', () => {
       'https://docs.test/node-version',
       'https://docs.test/node-nvm',
     ]);
-    expect(out.content).toContain('已补派 2 路搜索');
+    expect(out.content).toContain('补派选择 2 路搜索');
+    // Issue #23: the escalation states its own selection, so the first round's
+    // generic selection line must appear exactly once.
+    expect(out.content?.match(/实际选择/g)).toHaveLength(1);
     expect(out.content).toContain('本插件 HTTP 请求');
     expect(second.requests).toHaveLength(1);
     expect(third.requests).toHaveLength(1);
@@ -213,9 +216,29 @@ describe('单通道空结果自动补派多路', () => {
     });
     const out = await provider.search({ query: PLAIN_QUERY });
     expect(out.sources).toEqual([]);
-    expect(out.content?.match(/已补派/g)).toHaveLength(1);
+    expect(out.content?.match(/补派选择/g)).toHaveLength(1);
     expect(empty.requests).toHaveLength(1);
     expect(second.requests).toHaveLength(1);
     expect(third.requests).toHaveLength(1);
+  });
+
+  it('maxSearchServices=1 时补派仍可多接触一个服务，说明不重复首轮上限句', async () => {
+    const empty = fakeEngine('anysearch', ok([]));
+    const backup = fakeEngine(
+      'engine-z',
+      ok([source('https://docs.test/node-install', { title: '如何安装 Node.js', snippet: '安装 Node.js 的步骤' })]),
+    );
+    const provider = buildProvider({
+      engines: [empty.engine, backup.engine],
+      resolveControls: () => ({ preset: 'auto' as const, maxSearchServices: 1 }),
+    });
+    const out = await provider.search({ query: PLAIN_QUERY });
+    expect(out.sources.map(entry => entry.url)).toEqual(['https://docs.test/node-install']);
+    // The cap counts the first round; the fallback is allowed past it (Issue #23).
+    expect(empty.requests).toHaveLength(1);
+    expect(backup.requests).toHaveLength(1);
+    expect(out.content).toContain('补派选择 1 路搜索');
+    expect(out.content?.match(/实际选择/g)).toHaveLength(1);
+    expect(out.content?.match(/服务数量上限/g)).toHaveLength(1);
   });
 });
