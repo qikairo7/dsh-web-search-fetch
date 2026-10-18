@@ -2,9 +2,13 @@
 
 ## Dev loop
 
-Development requests run through the `dev-loop` workflow-lite graph (impl → verify → accept → release, team mode). Entry: the user describes a need; the lead compiles the graph with the request. Ledger of delivered requests: `.scratch/dev-loop/ledger.md`. Rules the loop already enforces: worktree task branches, `pnpm run check` gate, red-on-revert regression proof, no merge/push without explicit user authorization.
+Development requests run through the `dev-loop` workflow-lite graph (impl → verify → accept → release, `subagent` mode). Entry: the user describes a need; the lead compiles the graph with the request. Ledger of delivered requests: `.scratch/dev-loop/ledger.md`. Rules the loop already enforces: worktree task branches, `pnpm run check` gate, red-on-revert regression proof, no merge/push without explicit user authorization. PR bodies follow the `pr` skill; Issue/PR triage follows `issue-pipeline`; acceptance probes reuse `.scratch/dev-loop/live-probe.mjs` (parameterize the query list, never rewrite).
 
-Model routing is strict — `spawn_teammate` cannot select a model, so every step with a required model dispatches via `subagent` instead: impl / verify / accept → provider `magpie`, model `group/deepseek-v4.1-flash1017`, reasoning_effort `high`; release and GitHub Issue/PR maintenance → `group/glm-5.3-flash`, `high`. The lead keeps glm-5.3 for analysis, review and decisions.
+Model routing is strict — `spawn_teammate` cannot select a model, so every step with a required model dispatches via `subagent` instead (the graph runs in `subagent` mode for the same reason): impl / verify / accept → provider `magpie`, model `group/deepseek-v4.1-flash1017`, reasoning_effort `high`; release and GitHub Issue/PR maintenance → `group/glm-5.3-flash`, `high`. The lead keeps glm-5.3 for analysis, review and decisions.
+
+Toolchain on this machine: node/pnpm are not on PATH. node = `C:\Users\Administrator\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\node\bin\node.exe`; pnpm = `C:\Users\Administrator\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\pnpm\bin\pnpm.mjs` (run as `node <pnpm.mjs> <args>`). Nested `pnpm run` needs shims: create `node.cmd` + `pnpm.cmd` in `%TEMP%` forwarding to those paths, delete after. Fresh worktrees need `pnpm install --frozen-lockfile --prefer-offline` once (~1s, local store).
+
+Review rule earned in PR #21's rework: when a change widens an early-return condition (dropping a guard like `fused.length > 0 &&`), the reviewer must run old-vs-new probes on the previously-fall-through path and compare every observable field, not just the changed message — a green suite does not prove untracked fields (`truncated`, operation notes) survived.
 
 ## Agent skills
 
