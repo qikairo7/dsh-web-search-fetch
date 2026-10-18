@@ -381,7 +381,9 @@ export class AggregatedSearchProvider implements WebSearchProvider {
     // One lane needs at least one request, so the remaining budget bounds how
     // many lanes can be afforded even before the service cap applies.
     const limit = Math.min(controls.maxSearchServices ?? 13, remaining);
-    const selected = await selectServices(candidates, engine => engine.id, 'search', this.ready, limit);
+    // The escalation states its own selection below; the generic selection and
+    // cap lines would repeat the first round's wording (Issue #23).
+    const selected = await selectServices(candidates, engine => engine.id, 'search', this.ready, limit, false);
     if (selected.length === 0) {
       noteOperation('单通道空结果；没有可补派的其他通道。');
       return undefined;
@@ -390,8 +392,8 @@ export class AggregatedSearchProvider implements WebSearchProvider {
     const laneCount = outcomes.length;
     this.logger.info(`[搜索] 单通道 ${engineId} 无相关结果，补派 ${selected.length} 路搜索`);
     noteOperation(laneCount === 1
-      ? `单路 ${engineId} 空结果，已补派 ${selected.length} 路搜索。`
-      : `单通道 ${engineId} 的 ${laneCount} 次检索均无相关结果，已补派 ${selected.length} 路搜索。`);
+      ? `单路 ${engineId} 空结果，补派选择 ${selected.length} 路搜索。`
+      : `单通道 ${engineId} 的 ${laneCount} 次检索均无相关结果，补派选择 ${selected.length} 路搜索。`);
     const window = new SettlementWindow(signal, currentDecisionDepth() === 'deep');
     const completed: EngineOutcome[] = [];
     const accept = this.laneAcceptor(request, window, completed);
