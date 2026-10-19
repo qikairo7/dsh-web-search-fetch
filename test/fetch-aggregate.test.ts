@@ -509,6 +509,9 @@ describe('aggregateDynamicFetch 编排', () => {
   it('目标站状态码全败时进 target-rejected 组，422 提取失败仍归 engine-unavailable', async () => {
     // 目标站 404 是资源状态；AnySearch 的 HTTP 422 `extract_failed` 是 provider
     // 自己的 envelope，两者不能混进同一组（见 docs/troubleshooting.md）。
+    // 边界：这条腿是合成的——生产里 Crawl4AI 适配器会把该错误转成结果，
+    // 聚合器收不到它（见 test/fetch-target-status-product-path.test.ts）。
+    // 本用例只锁 `allFailedError` 的分组规则，不作为生产 404 可达性的证据。
     const target = new TargetStatusError('crawl4ai', 404);
     const provider = new WebError('AnySearch extract failed: HTTP 422 extract_failed', 'WEB_PROVIDER_ERROR');
     const error = await catchError(aggregateDynamicFetch({

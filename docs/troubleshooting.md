@@ -30,7 +30,7 @@
 
 只有 Crawl4AI 和 Firecrawl 会把目标站状态带进 `statusCode`；探测逻辑据此把非 2xx 判为正文不足并升级多路整理。目标站 4xx 在 Tavily、Exa、TinyFish 上表现为该路失败，多路整理时若其余路成功，结果里不会出现该状态。
 
-全部路都失败时，错误消息把原因分成两组：`目标被拒绝 target-rejected`（页面自身状态，例如 Crawl4AI 报出的站点 404，换链接才有用）与 `引擎不可用 engine-unavailable`（服务自己的故障或额度问题，例如 AnySearch 的 `HTTP 422 extract_failed`）。看分组就能判断该改链接还是该换服务。
+全部路都失败时，错误消息把原因分成两组：`目标被拒绝 target-rejected`（实际抛出的目标级错误，如 AnySearch 的 `extract_target_blocked`、Firecrawl 自身的 403/404，换链接才有用）与 `引擎不可用 engine-unavailable`（服务自己的故障、额度问题，或没有 `origin_status` 的 502，例如 AnySearch 的 `HTTP 422 extract_failed`）。Crawl4AI 报出的目标站码不会出现在这两组里：它已经被适配器转成 `statusCode` 结果。看分组就能判断该改链接还是该换服务。
 
 静态路径（命中静态扩展名或配置的静态域名）返回非 2xx 且正文为空时，插件抛出 `WEB_BLOCKED_URL`，消息里带目标状态码；带正文的非 2xx 仍是结果，状态码原样返回。宿主 HTTP 提取器对任何状态都给正文域，空页与「取到空内容」在它的返回里长得一样，所以由插件补这道判断。
 

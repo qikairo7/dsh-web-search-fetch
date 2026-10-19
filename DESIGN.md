@@ -131,7 +131,7 @@ HTTP 路径复用 `@deepseek-ai/dsh-web-fetch-http` 的校验与限制：默认�
 
 `controls.mode: select` 保留旧版单份正文评分。仅此模式使用 `fetch.engineWeights`：Firecrawl 默认 `3`、AnySearch 和扩展服务默认 `2`，同分按派发顺序选择。
 
-目标网页的非 2xx 状态可随有效正文返回。服务报告目标站错误的方式不同：Firecrawl 透传 `metadata.statusCode`；Crawl4AI 对目标站 4xx 回自己的 502，把站点码放在 `origin_status`，适配器据此返回目标站状态，正文为一条说明而非站点原文；Tavily、Exa、TinyFish 直接拒绝该 URL，该路失败。读取目标站状态的能力由各服务在构造传输层时注入，传输层不识别厂商协议。这类目标站状态错误携带 `WEB_BLOCKED_URL`（目标级错误），因此全部服务失败时列在「目标被拒绝 `target-rejected`」组并带站点状态码；服务自身的失败（含 AnySearch 的 `HTTP 422 extract_failed` envelope）仍是 `WEB_PROVIDER_ERROR`，列在「引擎不可用 `engine-unavailable`」组。分组之外优先保留 `WEB_BLOCKED_URL`、`WEB_INVALID_URL`、`WEB_FETCH_TOO_LARGE`、`WEB_UNSUPPORTED_CONTENT_TYPE`、`WEB_FETCH_TIMEOUT` 等具体错误，让调用方看出重试是否有意义。调用方取消使用 `WEB_ABORTED`。
+目标网页的非 2xx 状态可随有效正文返回。服务报告目标站错误的方式不同：Firecrawl 透传 `metadata.statusCode`；Crawl4AI 对目标站 4xx 回自己的 502，把站点码放在 `origin_status`，适配器据此返回目标站状态，正文为一条说明而非站点原文；Tavily、Exa、TinyFish 直接拒绝该 URL，该路失败。读取目标站状态的能力由各服务在构造传输层时注入，传输层不识别厂商协议。Crawl4AI 这一路的状态是**结果**：适配器在引擎内部把它转成 `statusCode` 为站点码的抓取结果，于是它照常进入候选、被首路探测判为非 2xx 而升级，最终把站点码交给调用方；它不会以错误身份参与失败分组。传输层的 `TargetStatusError` 携带 `WEB_BLOCKED_URL`，只对没有适配器接住它的调用方有意义，不能据此推断生产目标 404 会进入「目标被拒绝 `target-rejected`」组——该组只列实际抛出的目标级错误（AnySearch 的 `extract_target_blocked`、Firecrawl 自身的 403/404 等）。服务自身的失败（含 Crawl4AI 没有 `origin_status` 的 502、AnySearch 的 `HTTP 422 extract_failed` envelope）仍是 `WEB_PROVIDER_ERROR`，列在「引擎不可用 `engine-unavailable`」组。分组之外优先保留 `WEB_BLOCKED_URL`、`WEB_INVALID_URL`、`WEB_FETCH_TOO_LARGE`、`WEB_UNSUPPORTED_CONTENT_TYPE`、`WEB_FETCH_TIMEOUT` 等具体错误，让调用方看出重试是否有意义。调用方取消使用 `WEB_ABORTED`。
 
 ## 熔断与超时
 
