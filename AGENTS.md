@@ -6,17 +6,17 @@
 
 ## 开发循环（dev-loop）
 
-需求一律走 `dev-loop` 工作流图（impl → verify → accept → release，`subagent` 模式）：用户描述需求，lead 编译图并调度。交付台账在 `.scratch/dev-loop/ledger.md`，错题本在仓库根 `LESSONS.md`。
+**两档流程，按量级选**：小修与已定位的 bug 批次默认走轻流程 impl → verify → accept（复核失败 fix → verify），lead 负责范围、收口、归档、台账与直接答复；复杂新需求（新能力、跨模块、边界未定）仍走完整七节点图 scout → impl → verify → accept → release → summary（复核失败走 fix → verify，`subagent` 模式）。轻流程见 [`docs/agents/dev-loop-lite.md`](docs/agents/dev-loop-lite.md)，完整图执行细则见 [`docs/agents/dev-loop.md`](docs/agents/dev-loop.md)：主链与固定路由、VERDICT 与 waiting、3 轮复核预算、派发 SHA 链、合同不可变、产出与台账。两档共用同一批质量边界与模型路由。交付台账在 `.scratch/dev-loop/ledger.md`，错题本在仓库根 `LESSONS.md`。
 
 **任务分级路由**（lead 在 intake 时定级，轻任务走轻流程——重量级流程用在简单任务上是浪费）：
 
 | 量级 | 判定 | 流程 |
 | --- | --- | --- |
 | L0 微改 | 改文案、简单样式、边界一目了然 | lead 直接实现（或派单个 impl 子代理），跑 `pnpm run check`，合并前照常 SHA 审 |
-| L1 明确 bug / 小功能 | 范围明确、单模块、能写清验收 | 定位 → dev-loop（impl → verify → accept → release） |
-| L2 边界清晰的功能 | 新能力但边界清楚 | spec 驱动（见下）→ dev-loop |
-| L3 跨模块中型功能 | 多模块联动 | spec 驱动 → `to-tickets` → dev-loop（可多 worktree 并行，主 Agent 集成） |
-| L4 大型 / 架构不确定 | 多会话、方向未明 | `wayfinder` → spec 驱动 → `to-tickets` → dev-loop |
+| L1 明确 bug / 小功能 | 范围明确、单模块、能写清验收 | 轻流程：impl → verify → accept（失败 fix → verify） |
+| L2 边界清晰的功能 | 新能力但边界清楚 | spec 驱动（见下）→ 完整 dev-loop 七节点 |
+| L3 跨模块中型功能 | 多模块联动 | spec 驱动 → `to-tickets` → 完整 dev-loop（可多 worktree 并行，主 Agent 集成） |
+| L4 大型 / 架构不确定 | 多会话、方向未明 | `wayfinder` → spec 驱动 → `to-tickets` → 完整 dev-loop |
 
 **spec 驱动（L2+ 必经，吸收自 GitHub Spec Kit + R&K Flow）**：先明确需求、边界条件、业务规则和验收标准，再定技术方案、拆任务；**未经用户确认不进入大规模编码**。三个要点：
 
@@ -43,23 +43,36 @@
 - 真实使用验收：改动要过真实调用（`live-probe.mjs` 或独立 profile 实测），模拟测试不能替代；宣布完成前亲眼核对用户可见输出。
 - 放宽提前返回条件（如去掉 `fused.length > 0 &&` 这类守卫）时，必须对旧路径的可观察行为做新旧全字段对照探针——测试全绿不证明未跟踪字段（`truncated`、操作说明）幸免。此规则由 PR #21 返工换来。
 - 合并 main、推送、发版必须用户明确授权；合并用 `gh pr merge --match-head-commit <审过的 sha>`，审后新 push 的代码进不来。
-- 每次功能或行为更新必须同步 README：新能力进「项目特点」表与行为描述段，被替代或移除的行为同步删改——用户从 README 看到的永远是当前功能集，不是旧功能或已淘汰的功能。收口步骤把 README 核对当必做项，不是「需要才改」。**规格归档同理**：交付后把本次变更的 spec（需求、边界、验收、关键设计决定）回写进项目知识——行为规范进 DESIGN.md/docs、术语进 GLOSSARY.md、难回退决策记 ADR——下一个需求的 AI 直接从项目文档读到当前行为定义，不依赖会话记忆、不重复摸索（吸收自 OpenSpec 的 archive 环节）。
+- 每次功能或行为更新必须同步 README：新能力进「项目特点」表与行为描述段，被替代或移除的行为同步删改——用户从 README 看到的永远是当前功能集，不是旧功能或已淘汰的功能。**规格归档同理**：把本次变更的 spec（需求、边界、验收、关键设计决定）回写进项目知识——行为规范进 DESIGN.md/docs、术语进 GLOSSARY.md、难回退决策记 ADR——下一个需求的 AI 直接从项目文档读到当前行为定义，不依赖会话记忆、不重复摸索（吸收自 OpenSpec 的 archive 环节）。**代码、测试、`lib/` 产物与 README/规格归档都在 `impl`/`fix` 送审前完成**，随实现一起提交，verify 审的是含文档的 candidate；`release` 只核对 README 与归档是否齐备，缺了标 `BLOCKED` 退回 `fix → verify`，收口步骤不自己补文档或补代码，也不提交。
 - **一切 GitHub 外发先出草稿**：建 issue、issue 评论、关闭、开 PR、PR 正文与评论、打 tag、发 release——先把完整草稿给用户看（注明去向：哪个仓库、哪个编号），用户确认后才提交。被拒立即停手，不换路径绕过。
 - Issue/PR 处理走 `issue-pipeline` skill 五阶段（同步 → 分诊 → 实现 → 审查 → 回写）；回写文本按该 skill 的成稿校对要求过中文风格。**对齐尺度**：当剩余的未决问题已不会显著改变实现方向和验收结果时，即可开工，不追求提前规划全部细节。
 - **工作流定期做减法**：模型或工具升级后，重审每条约束是否仍有收益（为旧短板设计的步骤该删就删）；简单任务直接做，复杂任务才加规划、拆分、交叉审查。
 - **工作流对齐三问**（每次 retro 或对流程产生困惑时过一遍；也可按需开一个元审计 subagent：A 检索同类开源工作流范式 → B 找三个核心差异 → C 出改进提案，结论进 LESSONS.md）：① 当前流程属于 Anthropic 五种基本拓扑（链条/路由/并行/编排-执行/评判-优化）的哪种组合，Evaluator 是否在场？② 同类场景（GitHub/LangGraph/顶会范式）排名前三的实现搜过并对照过吗？③ 手里有没有 10 个最脏的真实案例能压测这套流程（信息残缺的需求、中断的执行者、门禁冲突、预算耗尽）——没有就先攒，攒的过程本身就是测试集。
-- **复核轮上限**（吸收自 Claude Code 团队）：同一改动的复核-返工循环最多 **3 轮**；第 3 轮仍 FAIL 时停止逐条修补，退一步重审方案（需求理解或设计错了，不是实现细节）；第 2 轮起复核只报**新增改动**里的问题，首轮已通过的部分不重复挑（防 AI 审 AI 无限循环——他们实测 59% 的反复意见指向老代码）。
+- **复核轮上限**（吸收自 Claude Code 团队）：同一改动的复核-返工循环最多 **3 轮**；第 3 轮仍 FAIL 时停止逐条修补，退一步重审方案（需求理解或设计错了，不是实现细节）；第 2 轮起复核只报**新增改动**里的问题，首轮已通过的部分不重复挑（防 AI 审 AI 无限循环——他们实测 59% 的反复意见指向老代码）。dev-loop 的计数口径与停止动作见 `docs/agents/dev-loop.md`。
 - **人定期抽查文档**：规则再严也会漏——台账 §0 记录「上次文档审计」，每合并 5 个 PR 或发版前（取先到者），lead 跑一次文档-行为一致性审计（对照已合并 PR 清单，逐个核对 README/DESIGN/docs 是否同步），结果报用户；用户也可随时说「查文档」触发。**方案讨论期间不改文档**：讨论归讨论，方案经用户确认后一并同步，避免文档跟着草案反复改。
 - PR 正文按 CONTRIBUTING 四段：问题、最终行为、验证命令、未验证部分。
 
 ## 模型路由（严格分工）
 
-- 实施 / 验收 → `subagent`，provider `magpie`，model `group/deepseek-v4.1-flash1017`，reasoning_effort `high`；实施开工先加载 `ponytail` skill（最小改动：能 50 行不写 200 行，不加投机抽象、不建单次使用的抽象）。
-- **复核换模型**：`group/glm-5.3-flash`，`high`——写码与审码不同模型，从「找反例」角度对抗式审查；高风险改动（删除数据、授权、付费、放宽门禁）加载 `mean-review`。
-- 收口与 GitHub Issue/PR 维护 → `group/glm-5.3-flash`，`high`。
-- lead 保持 glm-5.3，负责分析、拆解、审查、决策与用户沟通。
-- **可追溯**：每份步骤产出的第一行写执行者与模型/effort（例：`执行者：deepseek-v4.1-flash1017/high`），结果才可复盘。
-- `spawn_teammate` 不能选模型，禁止用于有模型要求的步骤；需要结构化任务图（依赖、attempt、质量门、验收记录）时用 `@nanmicoder/dsh-agent-teams` 的工具（`agent_teams_add_member` 支持 model 参数；质量类任务带 objective/acceptance/inScope/verify 合同，review 只以 verdict 收口）。
+工作流执行方式固定为 `subagent`，执行者复用设为 `auto`。所有节点的 provider 均为 `magpie`，reasoning_effort 均为 `high`。下表与 dev-loop 图的七个节点一一对应，增删节点时同步改两处；轻流程只用其中的 `impl`、`verify`、`fix`、`accept` 四项，路由不变。派发参数与各步职责见 `docs/agents/dev-loop.md`：
+
+| 节点 | model |
+| --- | --- |
+| 侦察 `scout` | `group/step-5-preview` |
+| 实施 `impl` | `group/deepseek-v4.1-flash1017` |
+| 复核 `verify` | `group/glm-5.3-flash` |
+| 修复 `fix` | `group/deepseek-v4.1-flash1017` |
+| 验收 `accept` | `group/deepseek-v4.1-flash1017` |
+| 收口 `release` | `antigravity/gemini-3.8-flash` |
+| 汇总 `summary` | `antigravity/gemini-3.8-flash` |
+
+- lead 派发时必须显式填写 `provider`、`model`、`reasoning_effort`，不得继承默认模型。`antigravity/` 是 model 标识的一部分，不是 provider。
+- 指定路由不可用时，该节点标 `BLOCKED`；不得换模型、降低思考强度或由 lead 代做。模型出现在设置页不代表当前会话允许派发，以实际工具调用结果为准。
+- 实施与修复优先复用同一执行者；复用前核对原路由，不匹配时新建。复核每轮新建独立上下文，验收独立于实施者。
+- 实施开工先加载 `ponytail`；高风险复核加载 `mean-review`。复核从找反例的角度执行，保持写审模型分离。
+- GitHub Issue/PR 维护仍用 `group/glm-5.3-flash`、`high`。lead 保持 glm-5.3，负责分析、拆解、审查、决策与用户沟通。
+- **可追溯**：每份步骤产出的第一行写实际执行者与完整模型/effort；lead 以实际派发参数核对，不以模型自报身份作为路由证据。
+- `spawn_teammate` 不能选模型，禁止用于有模型要求的步骤；需要结构化任务图时用 AgentTeams 工具，并显式指定同一节点的固定路由。质量类任务带 objective/acceptance/inScope/verify 合同，review 以 verdict 收口。
 
 ## 工具优先级（本机）
 

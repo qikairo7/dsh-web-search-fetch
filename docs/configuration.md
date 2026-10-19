@@ -187,7 +187,7 @@ AnySearch 提取凭证优先使用 `fetch.anysearchApiKeyEnv`，其次 `search.a
 
 ## 两段式提取与地址守卫
 
-自动预设在整理模式（`mode: organize`）下先走两段式提取：按参与顺序选出第一路，在 `fetch.probeTimeoutMs`（默认 15 秒）内取一次。结果为 2xx、返回目标与请求目标一致（同资源 HTTPS 升级允许）、不是登录或挑战页，且段落字符数不少于 400 时，直接把该路原文返回，不加 `提取来源：`、不加补充片段、不加尾注。否则升级为多路整理，已取得的这一路结果并入候选，不会重复请求同一服务。`single` 预设同样只派发一路，但按用户的明确选择原样返回，即使正文很薄；`singleChannelEscalate: true` 时才在失败或过薄时升级。
+自动预设在整理模式（`mode: organize`）下先走两段式提取：按参与顺序选出第一路，在 `fetch.probeTimeoutMs`（默认 15 秒）内取一次。结果为 2xx、返回目标与请求目标一致（同资源 HTTPS 升级允许）、不是登录或挑战页，且段落字符数不少于 400 时，直接把该路原文返回，不加 `提取来源：`、不加补充片段、不加尾注。该路正文超过 `maxOutputChars` 时按完整内容块省略、标 `truncated` 并说明省略数量，不裁断代码围栏与段落；结构化 JSON／XML 超预算报错。否则升级为多路整理，已取得的这一路结果并入候选，不会重复请求同一服务。`single` 预设同样只派发一路，但按用户的明确选择原样返回，即使正文很薄、超过 `maxOutputChars` 也不裁剪；`singleChannelEscalate: true` 时才在失败或过薄时升级。
 
 地址守卫在 AIHOT 专用 API 判定、URL 适配器和静态/动态分流之前执行。字面量地址直接判定；主机名先解析，任一答案为回环、私网、链路本地、保留或转换前缀地址时，本次以 `WEB_BLOCKED_URL` 拒绝，且不派发任何第三方引擎。解析失败不拦截。`fetch.staticDomains` 显式列出的主机跳过守卫，改由内置 HTTP 提取器按自身策略处理；`fetch.blockPrivateAddresses: false` 关闭整条守卫（仅供测试或明确放行）。
 

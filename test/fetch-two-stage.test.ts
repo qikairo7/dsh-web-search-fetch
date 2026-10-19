@@ -54,6 +54,57 @@ describe('probeVerdict', () => {
   });
 });
 
+describe('自动首路的输出预算', () => {
+  it('首路正文超过预算 → 复用整理器省略完整块，标记 truncated', async () => {
+    // 用户裁决：自动模式遵守 maxOutputChars，single 保留原文（见 decisions）。
+    const long = body(50_000);
+    const first = countedLeg('firecrawl', async target => page(long, { url: target }));
+    const provider = new AggregatedFetchProvider({
+      legs: [first.leg],
+      resolveControls: () => ({ preset: 'auto', mode: 'organize', maxOutputChars: 3000 }),
+    });
+    const output = await provider.fetch({ url });
+    expect(first.calls()).toBe(1);
+    expect(output.body.content.length).toBeLessThanOrEqual(3000);
+    expect(output.truncated).toBe(true);
+    expect(output.body.content).toContain('输出预算不足');
+  });
+
+  it('首路未超过预算 → 仍原样直返，不加尾注与标记', async () => {
+    const short = body(900);
+    const first = countedLeg('firecrawl', async target => page(short, { url: target }));
+    const provider = new AggregatedFetchProvider({
+      legs: [first.leg],
+      resolveControls: () => ({ preset: 'auto', mode: 'organize', maxOutputChars: 3000 }),
+    });
+    const output = await provider.fetch({ url });
+    expect(output.body.content).toBe(short);
+    expect(output.truncated).toBe(false);
+  });
+
+  it('首路结构化正文超预算 → 明确报错，不裁坏结构', async () => {
+    const json = JSON.stringify({ items: Array.from({ length: 4_000 }, (_value, index) => ({ index, text: 'value' })) });
+    const first = countedLeg('firecrawl', async target => page(json, { url: target }));
+    const provider = new AggregatedFetchProvider({
+      legs: [first.leg],
+      resolveControls: () => ({ preset: 'auto', mode: 'organize', maxOutputChars: 3000 }),
+    });
+    const error = await provider.fetch({ url }).then(() => undefined, (caught: unknown) => caught as { code?: string });
+    expect(error?.code).toBe('WEB_FETCH_TOO_LARGE');
+  });
+
+  it('single 预设的长正文仍原样返回，不受自动路径的预算修复影响', async () => {
+    const long = body(5_000);
+    const first = countedLeg('firecrawl', async target => page(long, { url: target }));
+    const provider = new AggregatedFetchProvider({
+      legs: [first.leg],
+      resolveControls: () => ({ preset: 'single', mode: 'organize', maxOutputChars: 3000 }),
+    });
+    const output = await provider.fetch({ url });
+    expect(output.body.content).toBe(long);
+  });
+});
+
 describe('两段式抓取', () => {
   it('首路正文够用 → 只派发一路，返回原文，不加溯源标记', async () => {
     const first = countedLeg('firecrawl', async target => page(body(900), { url: target }));

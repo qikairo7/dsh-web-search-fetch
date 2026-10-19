@@ -109,6 +109,22 @@ export declare class AggregatedFetchProvider implements WebFetchProvider {
      */
     private selectLegs;
     /**
+     * Serve the probe's own text under the page's output budget.
+     *
+     * The automatic preset is the plugin's configured mode, so its output obeys
+     * `maxOutputChars` like every organized result (user decision, 2026-10-20:
+     * auto obeys the budget, `single` keeps the channel's own text). A body that
+     * already fits is served verbatim — no footer, no markers — and a longer one
+     * goes through {@link organizeDocuments}, which drops complete blocks, says
+     * so, and marks `truncated`; that keeps code fences and structured payloads
+     * intact instead of cutting mid-block. Structured JSON/XML over budget still
+     * throws, as it does on the multi-path route.
+     * @param request - the caller's request (for the target URL).
+     * @param result - the probe's complete body.
+     * @returns the served result, unchanged when it fits the budget.
+     */
+    private serveProbeUnderBudget;
+    /**
      * Run the first-path probe: one request, no fan-out.
      *
      * Returns `undefined` when nothing is eligible to probe; otherwise a result

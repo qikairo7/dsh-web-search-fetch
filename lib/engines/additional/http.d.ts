@@ -40,6 +40,13 @@ export declare class EngineHttp {
  * caller that does not special-case it still routes on a stable code. The
  * target status rides alongside as `targetStatus` so the adapter can turn it
  * into a fetched result.
+ *
+ * The code is target-level on purpose: a page that answers 404/403 fails the
+ * same way on every engine. It only decides how a caller that actually sees
+ * this error groups it; every adapter catches it and returns a result carrying
+ * the site's status, so in the product it never reaches the all-failed message.
+ * `WEB_PROVIDER_ERROR` stays for the engine's own failures, including a
+ * provider envelope such as AnySearch's `HTTP 422 extract_failed`.
  */
 export declare class TargetStatusError extends WebError {
     readonly engineId: string;
