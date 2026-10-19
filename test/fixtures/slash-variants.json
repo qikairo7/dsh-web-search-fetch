@@ -1,0 +1,22 @@
+[
+  {
+    "url": "https://www.zair.top/post/vector-database-compare/",
+    "title": "向量数据库对比:Weaviate、Milvus和Qdrant | 逐水寻源",
+    "snippet": "RAG系统的成功在很大程度上取决于其高效地获取和处理海量信息的能力。向量数据库又在其中发挥了不可替代的作用，并构成了RAG系统的核心。向量数据库专门用于存储和管理高维向量数据，它们能把文本、图像、音频甚至视频转换为向量并存储（这一点将在后文中详细阐述）。RAG系统最终能实现的效果就取决于这些底层向量数据库的表现。\n\n在众多向量数据库和向量库中，每个都有自己的一些特点，选择一个适合自己应用场景的也需要经过评估。本文中将深入探讨选择向量数据库用于RAG时需要考虑的关键因素，包括开源可用性、CRUD（增删查改）支持、分布式架构、副本支持、可扩展性、性能和持续维护等6方面。\n\n目前，像Weaviate、Milvus、Qdrant、Vespa和Pinecone这样的专为向量设计的数据库在行业中极受关注。除此之外，还有一些诞生较早的向量库也又这种功能。本文还将对比各种向量库，如FAISS、HNSWLi"
+  },
+  {
+    "url": "https://www.zair.top/post/vector-database-compare",
+    "title": "向量数据库对比:Weaviate、Milvus和Qdrant | 逐水寻源",
+    "snippet": "Pinecone是一个封闭源代码的向量数据库，由专业团队维护，其免费版本在可扩展性方面提供有限的功能。Chroma则是专门为音频数据设计的系统，但在处理文本数据方面并未进行特别优化。相较于其他主流的向量数据库，Chroma在综合性能基准测试"
+  },
+  {
+    "url": "https://www.syndataworks.cn/blog/blog/2024-10-29-vectoc-db-eval/",
+    "title": "向量数据库比较报告:12款主流向量数据库详细对比",
+    "snippet": "### 一、表格比较\n\n| 名称 | 是否开源 | 主要特性 | 优点 | 缺点 |\n| --- | --- | --- | --- | --- |\n| Weaviate | 是 | 向量搜索、混合搜索、模块化、可扩展 | 开源、可扩展、支持混合搜索、丰富的社区支持 | 对大型部署可能需要较多资源 |\n| Qdrant | 是 | 高性能向量相似搜索、过滤功能 | 开源、高性能、易于部署 | 相对较新，社区规模较小 |\n| Milvus | 是 | 可扩展的向量数据库、分布式部署 | 开源、高度可扩展、丰富的生态系统 | 设置复杂，需较多资源 |\n| MyScale | 是 | 基于ClickHouse的向量搜索支持 | 高性能、与SQL兼容 | 社区支持有限，资料较少 |\n| pgvector | 是 | PostgreSQL的向量相似搜索扩展 | 与PostgreSQL集成、熟悉的SQ"
+  },
+  {
+    "url": "https://www.syndataworks.cn/blog/blog/2024-10-29-vectoc-db-eval",
+    "title": "向量数据库比较报告:12款主流向量数据库详细对比 | 数荣量标-SynDataWorks",
+    "snippet": "| OpenSearch | 是 | 搜索和分析套件，支持向量搜索插件 | 开源、可扩展、熟悉的API | 向量搜索需要插件，性能可能不如专用的向量数据库 |\n| TiDB Vector | 是 | TiDB的向量扩展，支持混合工作负载 | 开源、分布式事务、与MySQL兼容 | 向量功能相对较新，"
+  }
+]

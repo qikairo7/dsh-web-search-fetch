@@ -140,6 +140,47 @@ describe('AggregatedFetchProvider 静态档（复用 dsh-web-fetch-http）', () 
     }
   });
 
+  it('空正文的 4xx 不再是成功结果：抛错并带上目标状态码', async () => {
+    // 宿主 HTTP 提取器对任何状态都返回 `body.content: ''`，于是无正文的
+    // 404/403 曾以 isError:false、bodyChars:0 返回（P2-2）。
+    const server = await startMockServer((_request, response) => {
+      response.writeHead(404, { 'content-type': 'text/html' });
+      response.end();
+    });
+    try {
+      const provider = createProvider();
+      const error = await catchError(provider.fetch({ url: server.url })) as WebError;
+      expect(error).toBeInstanceOf(WebError);
+      expect(error.code).toBe('WEB_BLOCKED_URL');
+      expect(error.message).toContain('404');
+    } finally {
+      await server.close();
+    }
+  });
+
+  it('空正文的 403 同样抛错，而有正文的 4xx 仍是结果', async () => {
+    const emptyForbidden = await startMockServer((_request, response) => {
+      response.writeHead(403, { 'content-type': 'text/html' });
+      response.end();
+    });
+    try {
+      const error = await catchError(createProvider().fetch({ url: emptyForbidden.url })) as WebError;
+      expect(error.code).toBe('WEB_BLOCKED_URL');
+      expect(error.message).toContain('403');
+    } finally {
+      await emptyForbidden.close();
+    }
+    const withBody = await startMockServer((_request, response) => {
+      response.writeHead(404, { 'content-type': 'text/html' });
+      response.end('<h1>not found</h1>');
+    });
+    try {
+      expect((await createProvider().fetch({ url: withBody.url })).statusCode).toBe(404);
+    } finally {
+      await withBody.close();
+    }
+  });
+
   it('不支持的 Content-Type → WEB_UNSUPPORTED_CONTENT_TYPE', async () => {
     const server = await startMockServer((_request, response) => {
       response.writeHead(200, { 'content-type': 'application/octet-stream' });

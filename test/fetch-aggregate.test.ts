@@ -4,7 +4,7 @@ import type { WebFetchResult } from '@deepseek-ai/dsh-web';
 import { CircuitBreaker } from '../src/breaker/index.js';
 import { AnySearchClientError } from '../src/engines/anysearch/error.js';
 import { FirecrawlError } from '../src/engines/firecrawl/client.js';
-import { additionalBreakerSignal } from '../src/engines/additional/http.js';
+import { additionalBreakerSignal, TargetStatusError } from '../src/engines/additional/http.js';
 import {
   aggregateDynamicFetch,
   anysearchBreakerSignal,
@@ -504,6 +504,26 @@ describe('aggregateDynamicFetch 编排', () => {
     expect(error).toBeInstanceOf(WebError);
     expect((error as WebError).code).toBe('WEB_BLOCKED_URL');
     expect((error as WebError).message).toContain('firecrawl');
+  });
+
+  it('目标站状态码全败时进 target-rejected 组，422 提取失败仍归 engine-unavailable', async () => {
+    // 目标站 404 是资源状态；AnySearch 的 HTTP 422 `extract_failed` 是 provider
+    // 自己的 envelope，两者不能混进同一组（见 docs/troubleshooting.md）。
+    const target = new TargetStatusError('crawl4ai', 404);
+    const provider = new WebError('AnySearch extract failed: HTTP 422 extract_failed', 'WEB_PROVIDER_ERROR');
+    const error = await catchError(aggregateDynamicFetch({
+      url: REQUEST_URL,
+      legs: [failingLeg('crawl4ai', target), failingLeg('anysearch', provider)],
+    }));
+    expect(error).toBeInstanceOf(WebError);
+    const message = (error as WebError).message;
+    expect(message).toContain('目标被拒绝 target-rejected');
+    expect(message).toContain('crawl4ai');
+    expect(message).toContain('404');
+    const [rejected, unavailable] = message.split('|');
+    expect(rejected).not.toContain('anysearch');
+    expect(unavailable).toContain('engine-unavailable');
+    expect(unavailable).toContain('anysearch');
   });
 
   it('200 但正文为空/纯白空的候选不给分；全部为空视为全败', async () => {

@@ -2,6 +2,8 @@
 
 `dev-loop` 工作流图的执行细则：主链、状态、复核预算、派发输入、各步职责、产出与证据、案例。节点模型路由以 [AGENTS.md 模型路由](../../AGENTS.md#模型路由严格分工) 为唯一来源，本文件不重复。
 
+**适用范围**：本文件的七节点图用于新能力、跨模块与边界未清的复杂需求（AGENTS 分级 L2 及以上）。范围明确的 bug 修复与小功能走三阶段轻流程，见 [dev-loop-lite 执行合同](dev-loop-lite.md)；两者共用本文件的判定词、复核预算、质量边界与派发 SHA 规则，轻流程只省去 scout、release、summary 三步。
+
 ## 路由与主链
 
 - 七个固定节点：`scout`、`impl`、`fix`、`verify`、`accept`（使用验收）、`release`、`summary`。
@@ -87,5 +89,6 @@ qualityCount=<已完成质量判定数>; lastDecision=R<官方轮次>@<完整can
 
 ## 轻量例外与文档现状
 
-- L0 微改保留轻量路径：lead 直接实现或派单个 impl，跑 `pnpm run check`，合并前照常 SHA 审。选用 dev-loop（L1 及以上）时，本文件的固定路由、VERDICT、复核预算与台账要求同样适用。
+- L0 微改保留轻量路径：lead 直接实现或派单个 impl，跑 `pnpm run check`，合并前照常 SHA 审。
+- L1 明确 bug / 小功能改走三阶段轻流程（[dev-loop-lite](dev-loop-lite.md)）：本文件的判定词、复核预算、质量边界与派发 SHA 规则照旧适用，只不再派 scout、release、summary。
 - 纯流程或内部规则变更且不影响产品能力时，在交付报告说明 README 核对结论；产品 README 不写本次开发会话。产品能力变化时按 AGENTS 规则同步 README。

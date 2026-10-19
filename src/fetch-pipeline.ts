@@ -19,7 +19,7 @@
  * @module fetch-pipeline
  */
 import { DEFAULT_USER_AGENT, HttpFetchProvider } from '@deepseek-ai/dsh-web-fetch-http';
-import { budgetedFetch, currentControls, serviceEnabled, selectServices, resolveRuntimeRequest, runOperation, noteOperation, deadlineReached } from './request-budget.js';
+import { budgetedFetch, currentControls, serviceEnabled, selectServices, resolveRuntimeRequest, runOperation, noteOperation, deadlineReached, requestCount } from './request-budget.js';
 import { WebError } from '@deepseek-ai/dsh-web';
 import type { RuntimeControls } from './request-budget.js';
 import type { HttpFetchLimits, HttpFetchResolver } from '@deepseek-ai/dsh-web-fetch-http';
@@ -42,6 +42,7 @@ import type { FetchCandidate, FetchEngineLeg, FetchPipelineLogger, FetchRouteOpt
 import { additionalExtractionLegs, type AdditionalEngine } from './engines/additional/index.js';
 import { blockedTargetError, guardTargetAddress, type AddressLookup } from './address-guard.js';
 import { DEFAULT_MAX_OUTPUT_CHARS } from './fetch-document/organize.js';
+import { organizeDocuments } from './fetch-document/organize.js';
 
 /** Transport and response limits, matching `dsh-web-fetch-http`'s own plugin defaults. */
 export const DEFAULT_HTTP_FETCH_LIMITS: HttpFetchLimits = {
@@ -192,7 +193,20 @@ export class AggregatedFetchProvider implements WebFetchProvider {
     const route = classifyFetchRoute(request.url, this.options.route);
     if (!useUrlEngine && route === 'static') {
       if (!serviceEnabled('http')) throw new WebError('直接 HTTP 抓取已关闭，无法提取此静态 URL；请启用该服务后重试。', 'WEB_PROVIDER_ERROR');
-      return this.http.fetch(request, signal);
+      const result = await this.http.fetch(request, signal);
+      // A non-2xx *with* a body is a result (the seam's contract): the page
+      // answered, and its status is part of the resource. The HTTP extractor
+      // reports every status with a body field, so an empty non-2xx means the
+      // site refused and sent nothing — serving it as a success showed a blank
+      // page as fetched content (P2-2). The dynamic path already drops such a
+      // candidate ({@link isUsableCandidate}).
+      if ((result.statusCode < 200 || result.statusCode >= 300) && result.body.content.trim().length === 0) {
+        throw new WebError(
+          `静态抓取失败：目标站返回 HTTP ${result.statusCode} 且无正文`,
+          'WEB_BLOCKED_URL',
+        );
+      }
+      return result;
     }
     // Two-stage fetch: the automatic preset in organize mode spends one request
     // on the recommended single channel and serves that原文 when it already
@@ -315,6 +329,31 @@ export class AggregatedFetchProvider implements WebFetchProvider {
   }
 
   /**
+   * Serve the probe's own text under the page's output budget.
+   *
+   * The automatic preset is the plugin's configured mode, so its output obeys
+   * `maxOutputChars` like every organized result (user decision, 2026-10-20:
+   * auto obeys the budget, `single` keeps the channel's own text). A body that
+   * already fits is served verbatim — no footer, no markers — and a longer one
+   * goes through {@link organizeDocuments}, which drops complete blocks, says
+   * so, and marks `truncated`; that keeps code fences and structured payloads
+   * intact instead of cutting mid-block. Structured JSON/XML over budget still
+   * throws, as it does on the multi-path route.
+   * @param request - the caller's request (for the target URL).
+   * @param result - the probe's complete body.
+   * @returns the served result, unchanged when it fits the budget.
+   */
+  private serveProbeUnderBudget(request: WebFetchRequest, result: WebFetchResult): WebFetchResult {
+    const budget = currentControls().maxOutputChars ?? DEFAULT_MAX_OUTPUT_CHARS;
+    if (result.body.content.length <= budget) return result;
+    const candidate = { engineId: 'probe', result };
+    return organizeDocuments(request.url, [candidate], budget, [
+      `首路原文 ${result.body.content.length} 字符超过单页输出预算 ${budget}，已按预算省略完整内容块。`,
+      `本插件 HTTP 请求：${requestCount()} 次。`,
+    ]);
+  }
+
+  /**
    * Run the first-path probe: one request, no fan-out.
    *
    * Returns `undefined` when nothing is eligible to probe; otherwise a result
@@ -352,6 +391,6 @@ export class AggregatedFetchProvider implements WebFetchProvider {
       `[提取] 首路探测 ${channel.id} 已取得完整正文（状态 ${result.statusCode}，${result.body.content.length} 字符），直接返回原文`,
     );
     noteOperation(`首路 ${channel.id} 已取得完整正文，未派发其他提取服务。`);
-    return { result, seeds: [], skip: [] };
+    return { result: this.serveProbeUnderBudget(request, result), seeds: [], skip: [] };
   }
 }

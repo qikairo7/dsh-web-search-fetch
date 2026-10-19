@@ -5,6 +5,7 @@ import { aggregateDynamicFetch } from '../src/fetch-aggregate.js';
 import { CircuitBreaker } from '../src/breaker/index.js';
 import type { WebFetchResult } from '@deepseek-ai/dsh-web';
 import { budgetedFetch } from '../src/request-budget.js';
+import { readFixtureJson } from './helpers/fixtures.js';
 
 afterEach(() => vi.useRealTimers());
 const multi = { preset: 'multi' as const, decision: { decide: async () => ({ depth: 'balanced' as const, model: 'test' }) } };
@@ -39,6 +40,21 @@ it('合并已知 MDN 参数变体和有相同内容证据的尾斜杠变体，�
   ] }], 60);
   expect(results).toHaveLength(4);
   expect(results[0]?.score).toBeCloseTo(1 / 61);
+});
+
+it('真实尾斜杠变体按归一化标题合并：站点后缀与摘要长度差异不阻止并键', () => {
+  // 2026-10-19 审计保存的真实 sources（8 条里的两对变体，摘要为控制体积已截短）。
+  // 两条 zair.top 与两条 syndataworks 是同一页面，标题被部分引擎加了站点后缀；
+  // 旧规则要求标题全等 + 摘要同长，于是两对都留下了重复（P2-4）。
+  const sources = readFixtureJson<{ url: string; title: string; snippet: string }[]>('slash-variants.json');
+  const fused = rrfFuse([{ engineId: 'a', sources }], 60);
+  expect(fused).toHaveLength(2);
+  expect(new Set(fused.map(candidate => candidate.url))).toEqual(new Set([
+    'https://www.zair.top/post/vector-database-compare/',
+    'https://www.syndataworks.cn/blog/blog/2024-10-29-vectoc-db-eval/',
+  ]));
+  const zair = fused.find(candidate => candidate.url.includes('zair.top'));
+  expect(zair?.snippet).toBe(sources[0]!.snippet);
 });
 
 it('去掉明确的导航控件，合并标题锚点差异，保留代码、正文链接与不同数字', () => {

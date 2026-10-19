@@ -141,10 +141,16 @@ export class EngineHttp {
  * caller that does not special-case it still routes on a stable code. The
  * target status rides alongside as `targetStatus` so the adapter can turn it
  * into a fetched result.
+ *
+ * The code is target-level on purpose: a page that answers 404/403 fails the
+ * same way on every engine, so the all-failed message must list it under
+ * `target-rejected` rather than blame the engines (P2-1). `WEB_PROVIDER_ERROR`
+ * stays for the engine's own failures, including a provider envelope such as
+ * AnySearch's `HTTP 422 extract_failed`.
  */
 export class TargetStatusError extends WebError {
   constructor(readonly engineId: string, readonly targetStatus: number) {
-    super(`${engineId}: target returned HTTP ${targetStatus}`, 'WEB_PROVIDER_ERROR');
+    super(`${engineId}: target returned HTTP ${targetStatus}`, 'WEB_BLOCKED_URL');
     this.name = 'TargetStatusError';
   }
 }

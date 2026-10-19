@@ -26,7 +26,7 @@
 import { WebError } from '@deepseek-ai/dsh-web';
 import { runOperation, selectServices, currentControls, currentDecisionDepth, serviceEnabled, noteOperation, operationNotes, requestCount, remainingRequests, deadlineReached, abortable, resolveRuntimeRequest, multiChannelPreset, singleChannelSearch } from './request-budget.js';
 import { SettlementWindow } from './settlement-window.js';
-import { officialHosts, isOfficial, topicMatches, preferOfficial, contentVariantKey } from './search-quality.js';
+import { officialHosts, isOfficial, topicMatches, topicTerms, queryTerms, preferOfficial, contentVariantKey } from './search-quality.js';
 import type { RuntimeControls } from './request-budget.js';
 import type { WebSearchProvider, WebSearchRequest, WebSearchResult, WebSearchSource } from '@deepseek-ai/dsh-web';
 import { anySearchFailureSignal } from './engines/anysearch/index.js';
@@ -667,7 +667,7 @@ export function rrfFuse(rankings: readonly EngineRanking[], k: number): FusedCan
     let rank = 0;
     for (const source of ranking.sources) {
       const normalized = normalizeSearchUrl(source.url);
-      const identity = contentVariantKey(normalized, source.title, source.snippet);
+      const identity = contentVariantKey(normalized, source.title);
       const key = variants.get(identity) ?? normalized;
       variants.set(identity, key);
       if (seenInEngine.has(key)) continue;
@@ -754,10 +754,9 @@ function candidateDocument(candidate: FusedCandidate): string {
   return parts.length === 0 ? candidate.url : parts.join(' ');
 }
 
-/** The query's usable terms, using the same vocabulary as {@link topicMatches}. */
+/** The query's usable terms, from the shared vocabulary in {@link topicMatches}. */
 function usableQueryTerms(query: string): string[] {
-  const terms = query.toLowerCase().match(/[a-z][a-z0-9_+-]{2,}|[\u3400-\u9fff]{2,}/g) ?? [];
-  return terms.filter(term => !['official', 'documentation', 'document', 'docs', 'site', 'https', 'http', 'www', 'org', 'com', 'the', 'and', 'for', 'with', 'versus'].includes(term));
+  return queryTerms(query);
 }
 
 /**
@@ -792,7 +791,7 @@ function compoundTokenMatches(segments: readonly string[], candidate: FusedCandi
 /**
  * Drop fused candidates the query has nothing to do with.
  *
- * Two shapes are judged. A query with at least two usable terms is judged by
+ * Two shapes are judged. A query with at least two topic terms is judged by
  * {@link topicMatches}. A one-term query is normally left alone — a single word
  * (`上海天气`) is too thin to judge without over-filtering — but a *compound*
  * token is not one word: it splits into segments, and a candidate sharing only
@@ -800,16 +799,22 @@ function compoundTokenMatches(segments: readonly string[], candidate: FusedCandi
  * judged by segment majority, which is how `zxqvj-9931-plorptastic-nonsense-token`
  * stops returning eight unrelated pages while `deepseek-harness-guide` still
  * matches its own documentation.
+ *
+ * Recency qualifiers (`最近`, `最新`) are dropped before the count, so a
+ * Chinese query that leads with one is judged on its subject alone; a
+ * remaining single subject still has to match, which is what keeps
+ * `最近的 AI 芯片新闻` relevant without letting a weather page through.
  * @param query - the caller's query.
  * @param candidates - fused candidates, best first.
  * @returns the candidates worth returning, order preserved.
  */
 function relevantOnly(query: string, candidates: readonly FusedCandidate[]): FusedCandidate[] {
-  const terms = usableQueryTerms(query);
+  const terms = topicTerms(usableQueryTerms(query));
   if (terms.length >= 2) return candidates.filter(candidate => topicMatches(query, candidate));
   if (terms.length === 1) {
     const segments = tokenSegments(terms[0]!);
     if (segments.length >= 2) return candidates.filter(candidate => compoundTokenMatches(segments, candidate));
+    if (usableQueryTerms(query).length >= 2) return candidates.filter(candidate => topicMatches(query, candidate));
   }
   return [...candidates];
 }

@@ -6,17 +6,17 @@
 
 ## 开发循环（dev-loop）
 
-需求一律走 `dev-loop` 工作流图（scout → impl → verify → accept → release → summary，复核失败走 fix → verify，`subagent` 模式）：用户描述需求，lead 编译图并调度。交付台账在 `.scratch/dev-loop/ledger.md`，错题本在仓库根 `LESSONS.md`。执行细则与案例见 [`docs/agents/dev-loop.md`](docs/agents/dev-loop.md)：主链与固定路由、VERDICT 与 waiting、3 轮复核预算、派发 SHA 链、合同不可变、产出与台账；本节不重复。
+**两档流程，按量级选**：小修与已定位的 bug 批次默认走轻流程 impl → verify → accept（复核失败 fix → verify），lead 负责范围、收口、归档、台账与直接答复；复杂新需求（新能力、跨模块、边界未定）仍走完整七节点图 scout → impl → verify → accept → release → summary（复核失败走 fix → verify，`subagent` 模式）。轻流程见 [`docs/agents/dev-loop-lite.md`](docs/agents/dev-loop-lite.md)，完整图执行细则见 [`docs/agents/dev-loop.md`](docs/agents/dev-loop.md)：主链与固定路由、VERDICT 与 waiting、3 轮复核预算、派发 SHA 链、合同不可变、产出与台账。两档共用同一批质量边界与模型路由。交付台账在 `.scratch/dev-loop/ledger.md`，错题本在仓库根 `LESSONS.md`。
 
 **任务分级路由**（lead 在 intake 时定级，轻任务走轻流程——重量级流程用在简单任务上是浪费）：
 
 | 量级 | 判定 | 流程 |
 | --- | --- | --- |
 | L0 微改 | 改文案、简单样式、边界一目了然 | lead 直接实现（或派单个 impl 子代理），跑 `pnpm run check`，合并前照常 SHA 审 |
-| L1 明确 bug / 小功能 | 范围明确、单模块、能写清验收 | 定位 → dev-loop（scout → impl → verify → accept → release → summary，复核失败走 fix → verify） |
-| L2 边界清晰的功能 | 新能力但边界清楚 | spec 驱动（见下）→ dev-loop |
-| L3 跨模块中型功能 | 多模块联动 | spec 驱动 → `to-tickets` → dev-loop（可多 worktree 并行，主 Agent 集成） |
-| L4 大型 / 架构不确定 | 多会话、方向未明 | `wayfinder` → spec 驱动 → `to-tickets` → dev-loop |
+| L1 明确 bug / 小功能 | 范围明确、单模块、能写清验收 | 轻流程：impl → verify → accept（失败 fix → verify） |
+| L2 边界清晰的功能 | 新能力但边界清楚 | spec 驱动（见下）→ 完整 dev-loop 七节点 |
+| L3 跨模块中型功能 | 多模块联动 | spec 驱动 → `to-tickets` → 完整 dev-loop（可多 worktree 并行，主 Agent 集成） |
+| L4 大型 / 架构不确定 | 多会话、方向未明 | `wayfinder` → spec 驱动 → `to-tickets` → 完整 dev-loop |
 
 **spec 驱动（L2+ 必经，吸收自 GitHub Spec Kit + R&K Flow）**：先明确需求、边界条件、业务规则和验收标准，再定技术方案、拆任务；**未经用户确认不进入大规模编码**。三个要点：
 
@@ -54,7 +54,7 @@
 
 ## 模型路由（严格分工）
 
-工作流执行方式固定为 `subagent`，执行者复用设为 `auto`。所有节点的 provider 均为 `magpie`，reasoning_effort 均为 `high`。下表与 dev-loop 图的七个节点一一对应，增删节点时同步改两处；派发参数与各步职责见 `docs/agents/dev-loop.md`：
+工作流执行方式固定为 `subagent`，执行者复用设为 `auto`。所有节点的 provider 均为 `magpie`，reasoning_effort 均为 `high`。下表与 dev-loop 图的七个节点一一对应，增删节点时同步改两处；轻流程只用其中的 `impl`、`verify`、`fix`、`accept` 四项，路由不变。派发参数与各步职责见 `docs/agents/dev-loop.md`：
 
 | 节点 | model |
 | --- | --- |

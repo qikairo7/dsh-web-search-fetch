@@ -2,7 +2,9 @@
 
 按开发循环的环节组织：什么时候、什么条件、加载哪个 skill。通用原则：skill 在触发条件命中时才加载（上下文按需进入），不预防性加载；一次任务涉及多个环节时按流程顺序串联。本表只回答「命中什么条件加载哪个 skill」：节点的固定模型、思考强度与复用规则以 [AGENTS.md 模型路由](../../AGENTS.md#模型路由严格分工) 为准，各节点的职责、完成判据、判定词与产出位置见 [dev-loop 执行合同](dev-loop.md)。
 
-## 需求 intake（lead）
+**按模式取用**：下表覆盖两档流程。L1 明确 bug / 小功能走三阶段轻流程（[dev-loop-lite](dev-loop-lite.md)），只命中「实施」与「复核」两节加上「验收」；intake、收口与回写两节只在完整七节点图里使用——轻流程的 lead 自己定级、把需求写进报告、直接答复用户。L2 及以上照全表走。
+
+## 需求 intake（lead，完整图）
 
 | 条件 | skill | 用法 |
 | --- | --- | --- |
@@ -34,6 +36,7 @@
 | 条件 | skill | 用法 |
 | --- | --- | --- |
 | 每次 | `code-review` | 双轴：Standards（AGENTS.md + CONTRIBUTING + DESIGN）/ Spec（验收标准逐条） |
+| 轻流程（L1）复核 | `code-review` | 一个独立 `glm-5.3-flash` 会话自己走完两轴，不再嵌套两个子代理；结论、findings 与 revert 结果写同一份报告 |
 | 用户点名「狠狠审」或高风险改动 | `mean-review` | 对抗性审查，问题清单存 MEAN-REVIEW.md |
 | 接口/可用性回归 | `interface-review` | 布局、写作、排版、颜色、UI 的引入性回归 |
 | 动效改动 | `review-animations` | 默认 flag，达标才认可 |
@@ -49,9 +52,9 @@
 | 想穷举 UI 状态 | `state-machine` / `break` | 临时页渲染全部状态再验收 |
 | 用户截图反馈 | `magpie-vision`（MCP） | 读图定位问题 |
 
-## 收口与回写（release）
+## 收口与回写（release，完整图）
 
-不改仓库文档、不提交；本表只列外发文本与 skill 选择，SHA 核对与台账更新见 [dev-loop 执行合同](dev-loop.md)。
+不改仓库文档、不提交；本表只列外发文本与 skill 选择，SHA 核对与台账更新见 [dev-loop 执行合同](dev-loop.md)。轻流程没有该节点：lead 自己收口、归档与答复用户。
 
 | 条件 | skill | 用法 |
 | --- | --- | --- |
